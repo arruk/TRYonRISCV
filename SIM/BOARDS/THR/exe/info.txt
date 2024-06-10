@@ -1,0 +1,230 @@
+Info: Using uarch 'gowin' for device 'GW2A-LV18PG256C8/I7'
+
+Info: Reading constraints...
+Info: Create constant nets...
+Info: Modify LUTs...
+Info: Pack IOBs...
+Info: Pack diff IOBs...
+Info: Pack IO logic...
+Info: Pack DESER16 logic...
+Info: Pack GSR...
+Info: Pack INV...
+Info: Pack wide LUTs...
+Info: Packed MUX2_LUT8:0, MUX2_LU7:0, MUX2_LUT6:0, MUX2_LUT5:0
+Info: Pack ALUs...
+Info: Pack PLL...
+Info: Pack RAMs...
+Info: Pack BSRAMs...
+Info: Pack DSP...
+Info: Pack buffered nets...
+Info: Checksum: 0x65f6f978
+
+Info: Device utilisation:
+Info: 	                 VCC:       1/      1   100%
+Info: 	                 IOB:       8/    383     2%
+Info: 	                LUT4:    2176/  20736    10%
+Info: 	            IOLOGICI:       0/    384     0%
+Info: 	            IOLOGICO:       0/    384     0%
+Info: 	           MUX2_LUT5:       0/  10368     0%
+Info: 	           MUX2_LUT6:       0/   5184     0%
+Info: 	           MUX2_LUT7:       0/   2592     0%
+Info: 	           MUX2_LUT8:       0/   2592     0%
+Info: 	                 ALU:       0/  15552     0%
+Info: 	                 GND:       1/      1   100%
+Info: 	                 DFF:     514/  15552     3%
+Info: 	           RAM16SDP4:      32/    648     4%
+Info: 	               BSRAM:      46/     46   100%
+Info: 	              ALU54D:       0/     24     0%
+Info: 	     MULTADDALU18X18:       0/     24     0%
+Info: 	        MULTALU18X18:       0/     24     0%
+Info: 	        MULTALU36X18:       0/     24     0%
+Info: 	           MULT36X36:       0/     12     0%
+Info: 	           MULT18X18:       0/     48     0%
+Info: 	             MULT9X9:       0/     96     0%
+Info: 	              PADD18:       0/     48     0%
+Info: 	               PADD9:       0/     96     0%
+Info: 	                 GSR:       1/      1   100%
+Info: 	                 OSC:       0/      1     0%
+Info: 	                rPLL:       0/      4     0%
+Info: 	                BUFG:       0/     24     0%
+
+Info: Placed 0 cells based on constraints.
+Info: Creating initial analytic placement for 2643 cells, random placement wirelen = 142539.
+Info:     at initial placer iter 0, wirelen = 258
+Info:     at initial placer iter 1, wirelen = 349
+Info:     at initial placer iter 2, wirelen = 362
+Info:     at initial placer iter 3, wirelen = 327
+Info: Running main analytical placer, max placement attempts per cell = 965355.
+Info:     at iteration #1, type GSR: wirelen solved = 327, spread = 327, legal = 353; time = 0.01s
+Info:     at iteration #1, type LUT4: wirelen solved = 2151, spread = 28738, legal = 28824; time = 0.02s
+Info:     at iteration #1, type DFF: wirelen solved = 22087, spread = 22246, legal = 24663; time = 0.12s
+Info:     at iteration #1, type VCC: wirelen solved = 24663, spread = 24663, legal = 24714; time = 0.01s
+Info:     at iteration #1, type RAM16SDP4: wirelen solved = 23685, spread = 24093, legal = 26812; time = 0.02s
+Info:     at iteration #1, type BSRAM: wirelen solved = 22811, spread = 34182, legal = 36247; time = 0.02s
+Info:     at iteration #1, type GND: wirelen solved = 36237, spread = 36237, legal = 36247; time = 0.01s
+Info:     at iteration #1, type ALL: wirelen solved = 215, spread = 29874, legal = 36131; time = 0.16s
+Info:     at iteration #2, type GSR: wirelen solved = 36131, spread = 36131, legal = 36131; time = 0.01s
+Info:     at iteration #2, type LUT4: wirelen solved = 19520, spread = 26252, legal = 28855; time = 0.09s
+Info:     at iteration #2, type DFF: wirelen solved = 26740, spread = 26748, legal = 27336; time = 0.04s
+Info:     at iteration #2, type VCC: wirelen solved = 27331, spread = 27331, legal = 27336; time = 0.01s
+Info:     at iteration #2, type RAM16SDP4: wirelen solved = 26572, spread = 27160, legal = 27468; time = 0.02s
+Info:     at iteration #2, type BSRAM: wirelen solved = 22418, spread = 25594, legal = 27932; time = 0.02s
+Info:     at iteration #2, type GND: wirelen solved = 27922, spread = 27922, legal = 27932; time = 0.01s
+Info:     at iteration #2, type ALL: wirelen solved = 1450, spread = 27053, legal = 35174; time = 0.17s
+Info:     at iteration #3, type GSR: wirelen solved = 35173, spread = 35173, legal = 35174; time = 0.01s
+Info:     at iteration #3, type LUT4: wirelen solved = 17891, spread = 25676, legal = 26773; time = 0.05s
+Info:     at iteration #3, type DFF: wirelen solved = 24496, spread = 24536, legal = 24879; time = 0.02s
+Info:     at iteration #3, type VCC: wirelen solved = 24874, spread = 24874, legal = 24879; time = 0.01s
+Info:     at iteration #3, type RAM16SDP4: wirelen solved = 23901, spread = 24531, legal = 25095; time = 0.02s
+Info:     at iteration #3, type BSRAM: wirelen solved = 20945, spread = 23251, legal = 25876; time = 0.02s
+Info:     at iteration #3, type GND: wirelen solved = 25872, spread = 25872, legal = 25876; time = 0.01s
+Info:     at iteration #3, type ALL: wirelen solved = 2268, spread = 25874, legal = 34903; time = 0.17s
+Info:     at iteration #4, type GSR: wirelen solved = 34900, spread = 34900, legal = 34903; time = 0.01s
+Info:     at iteration #4, type LUT4: wirelen solved = 18435, spread = 23908, legal = 28278; time = 0.10s
+Info:     at iteration #4, type DFF: wirelen solved = 25946, spread = 26081, legal = 26627; time = 0.03s
+Info:     at iteration #4, type VCC: wirelen solved = 26624, spread = 26624, legal = 26627; time = 0.01s
+Info:     at iteration #4, type RAM16SDP4: wirelen solved = 25985, spread = 26464, legal = 26987; time = 0.02s
+Info:     at iteration #4, type BSRAM: wirelen solved = 22046, spread = 25068, legal = 27736; time = 0.02s
+Info:     at iteration #4, type GND: wirelen solved = 27726, spread = 27726, legal = 27736; time = 0.01s
+Info:     at iteration #4, type ALL: wirelen solved = 3508, spread = 24372, legal = 32041; time = 0.14s
+Info:     at iteration #5, type GSR: wirelen solved = 32040, spread = 32040, legal = 32041; time = 0.01s
+Info:     at iteration #5, type LUT4: wirelen solved = 18045, spread = 22387, legal = 26751; time = 0.09s
+Info:     at iteration #5, type DFF: wirelen solved = 24867, spread = 24950, legal = 25436; time = 0.03s
+Info:     at iteration #5, type VCC: wirelen solved = 25431, spread = 25431, legal = 25436; time = 0.01s
+Info:     at iteration #5, type RAM16SDP4: wirelen solved = 24671, spread = 25245, legal = 25650; time = 0.02s
+Info:     at iteration #5, type BSRAM: wirelen solved = 20738, spread = 23714, legal = 26355; time = 0.02s
+Info:     at iteration #5, type GND: wirelen solved = 26345, spread = 26345, legal = 26355; time = 0.01s
+Info:     at iteration #5, type ALL: wirelen solved = 4537, spread = 23725, legal = 32728; time = 0.14s
+Info:     at iteration #6, type GSR: wirelen solved = 32727, spread = 32727, legal = 32728; time = 0.01s
+Info:     at iteration #6, type LUT4: wirelen solved = 18942, spread = 22327, legal = 26434; time = 0.07s
+Info:     at iteration #6, type DFF: wirelen solved = 25091, spread = 25109, legal = 25687; time = 0.03s
+Info:     at iteration #6, type VCC: wirelen solved = 25685, spread = 25685, legal = 25687; time = 0.01s
+Info:     at iteration #6, type RAM16SDP4: wirelen solved = 25065, spread = 25829, legal = 25851; time = 0.01s
+Info:     at iteration #6, type BSRAM: wirelen solved = 19811, spread = 23466, legal = 25922; time = 0.02s
+Info:     at iteration #6, type GND: wirelen solved = 25920, spread = 25920, legal = 25922; time = 0.01s
+Info:     at iteration #6, type ALL: wirelen solved = 5207, spread = 21606, legal = 29569; time = 0.12s
+Info:     at iteration #7, type GSR: wirelen solved = 29568, spread = 29568, legal = 29569; time = 0.01s
+Info:     at iteration #7, type LUT4: wirelen solved = 18541, spread = 22151, legal = 25686; time = 0.06s
+Info:     at iteration #7, type DFF: wirelen solved = 24325, spread = 24401, legal = 24828; time = 0.03s
+Info:     at iteration #7, type VCC: wirelen solved = 24826, spread = 24826, legal = 24828; time = 0.01s
+Info:     at iteration #7, type RAM16SDP4: wirelen solved = 24448, spread = 24955, legal = 24992; time = 0.01s
+Info:     at iteration #7, type BSRAM: wirelen solved = 18735, spread = 22691, legal = 25036; time = 0.02s
+Info:     at iteration #7, type GND: wirelen solved = 25034, spread = 25034, legal = 25036; time = 0.01s
+Info:     at iteration #7, type ALL: wirelen solved = 5896, spread = 20814, legal = 28689; time = 0.11s
+Info:     at iteration #8, type GSR: wirelen solved = 28688, spread = 28688, legal = 28689; time = 0.01s
+Info:     at iteration #8, type LUT4: wirelen solved = 18795, spread = 21602, legal = 25840; time = 0.08s
+Info:     at iteration #8, type DFF: wirelen solved = 24808, spread = 24837, legal = 25308; time = 0.02s
+Info:     at iteration #8, type VCC: wirelen solved = 25306, spread = 25306, legal = 25308; time = 0.01s
+Info:     at iteration #8, type RAM16SDP4: wirelen solved = 25092, spread = 25700, legal = 25700; time = 0.01s
+Info:     at iteration #8, type BSRAM: wirelen solved = 19171, spread = 23492, legal = 26094; time = 0.02s
+Info:     at iteration #8, type GND: wirelen solved = 26092, spread = 26092, legal = 26094; time = 0.01s
+Info:     at iteration #8, type ALL: wirelen solved = 6378, spread = 19790, legal = 26177; time = 0.09s
+Info:     at iteration #9, type GSR: wirelen solved = 26176, spread = 26176, legal = 26177; time = 0.01s
+Info:     at iteration #9, type LUT4: wirelen solved = 18534, spread = 20326, legal = 24804; time = 0.08s
+Info:     at iteration #9, type DFF: wirelen solved = 23737, spread = 23756, legal = 24255; time = 0.03s
+Info:     at iteration #9, type VCC: wirelen solved = 24253, spread = 24253, legal = 24255; time = 0.01s
+Info:     at iteration #9, type RAM16SDP4: wirelen solved = 24059, spread = 24518, legal = 24531; time = 0.01s
+Info:     at iteration #9, type BSRAM: wirelen solved = 18491, spread = 22560, legal = 24441; time = 0.02s
+Info:     at iteration #9, type GND: wirelen solved = 24439, spread = 24439, legal = 24441; time = 0.01s
+Info:     at iteration #9, type ALL: wirelen solved = 6817, spread = 19404, legal = 27054; time = 0.10s
+Info:     at iteration #10, type GSR: wirelen solved = 27053, spread = 27053, legal = 27054; time = 0.01s
+Info:     at iteration #10, type LUT4: wirelen solved = 19441, spread = 21220, legal = 25420; time = 0.07s
+Info:     at iteration #10, type DFF: wirelen solved = 24676, spread = 24741, legal = 25174; time = 0.03s
+Info:     at iteration #10, type VCC: wirelen solved = 25173, spread = 25173, legal = 25174; time = 0.01s
+Info:     at iteration #10, type RAM16SDP4: wirelen solved = 24957, spread = 25449, legal = 25482; time = 0.01s
+Info:     at iteration #10, type BSRAM: wirelen solved = 18272, spread = 23386, legal = 25378; time = 0.02s
+Info:     at iteration #10, type GND: wirelen solved = 25376, spread = 25376, legal = 25378; time = 0.01s
+Info:     at iteration #10, type ALL: wirelen solved = 7190, spread = 19425, legal = 26029; time = 0.09s
+Info:     at iteration #11, type GSR: wirelen solved = 26028, spread = 26028, legal = 26029; time = 0.01s
+Info:     at iteration #11, type LUT4: wirelen solved = 19672, spread = 21377, legal = 24645; time = 0.06s
+Info:     at iteration #11, type DFF: wirelen solved = 23648, spread = 23689, legal = 24227; time = 0.03s
+Info:     at iteration #11, type VCC: wirelen solved = 24227, spread = 24227, legal = 24227; time = 0.01s
+Info:     at iteration #11, type RAM16SDP4: wirelen solved = 23983, spread = 24477, legal = 24508; time = 0.01s
+Info:     at iteration #11, type BSRAM: wirelen solved = 16803, spread = 22268, legal = 24907; time = 0.02s
+Info:     at iteration #11, type GND: wirelen solved = 24907, spread = 24907, legal = 24907; time = 0.01s
+Info:     at iteration #11, type ALL: wirelen solved = 7695, spread = 19266, legal = 26713; time = 0.10s
+Info:     at iteration #12, type GSR: wirelen solved = 26712, spread = 26712, legal = 26713; time = 0.01s
+Info:     at iteration #12, type LUT4: wirelen solved = 19898, spread = 21359, legal = 26120; time = 0.07s
+Info:     at iteration #12, type DFF: wirelen solved = 25266, spread = 25311, legal = 25890; time = 0.03s
+Info:     at iteration #12, type VCC: wirelen solved = 25890, spread = 25890, legal = 25890; time = 0.01s
+Info:     at iteration #12, type RAM16SDP4: wirelen solved = 25660, spread = 26148, legal = 26209; time = 0.01s
+Info:     at iteration #12, type BSRAM: wirelen solved = 18438, spread = 24160, legal = 26197; time = 0.02s
+Info:     at iteration #12, type GND: wirelen solved = 26197, spread = 26197, legal = 26197; time = 0.01s
+Info:     at iteration #12, type ALL: wirelen solved = 8000, spread = 19518, legal = 26264; time = 0.09s
+Info:     at iteration #13, type GSR: wirelen solved = 26263, spread = 26263, legal = 26264; time = 0.01s
+Info:     at iteration #13, type LUT4: wirelen solved = 19766, spread = 21171, legal = 25825; time = 0.08s
+Info:     at iteration #13, type DFF: wirelen solved = 25230, spread = 25307, legal = 25755; time = 0.03s
+Info:     at iteration #13, type VCC: wirelen solved = 25755, spread = 25755, legal = 25755; time = 0.01s
+Info:     at iteration #13, type RAM16SDP4: wirelen solved = 25508, spread = 25908, legal = 25949; time = 0.01s
+Info:     at iteration #13, type BSRAM: wirelen solved = 18149, spread = 23914, legal = 26162; time = 0.02s
+Info:     at iteration #13, type GND: wirelen solved = 26162, spread = 26162, legal = 26162; time = 0.01s
+Info:     at iteration #13, type ALL: wirelen solved = 8256, spread = 19595, legal = 27301; time = 0.10s
+Info:     at iteration #14, type GSR: wirelen solved = 27300, spread = 27300, legal = 27301; time = 0.01s
+Info:     at iteration #14, type LUT4: wirelen solved = 20355, spread = 22000, legal = 25276; time = 0.06s
+Info:     at iteration #14, type DFF: wirelen solved = 24688, spread = 24708, legal = 25140; time = 0.03s
+Info:     at iteration #14, type VCC: wirelen solved = 25140, spread = 25140, legal = 25140; time = 0.01s
+Info:     at iteration #14, type RAM16SDP4: wirelen solved = 24855, spread = 25294, legal = 25481; time = 0.01s
+Info:     at iteration #14, type BSRAM: wirelen solved = 17214, spread = 23306, legal = 25823; time = 0.02s
+Info:     at iteration #14, type GND: wirelen solved = 25823, spread = 25823, legal = 25823; time = 0.01s
+Info:     at iteration #14, type ALL: wirelen solved = 8731, spread = 19157, legal = 26624; time = 0.09s
+Info:     at iteration #15, type GSR: wirelen solved = 26623, spread = 26623, legal = 26624; time = 0.01s
+Info:     at iteration #15, type LUT4: wirelen solved = 20777, spread = 22144, legal = 26713; time = 0.07s
+Info:     at iteration #15, type DFF: wirelen solved = 26032, spread = 26125, legal = 26643; time = 0.03s
+Info:     at iteration #15, type VCC: wirelen solved = 26643, spread = 26643, legal = 26643; time = 0.01s
+Info:     at iteration #15, type RAM16SDP4: wirelen solved = 26452, spread = 26901, legal = 26959; time = 0.01s
+Info:     at iteration #15, type BSRAM: wirelen solved = 18135, spread = 24769, legal = 27078; time = 0.02s
+Info:     at iteration #15, type GND: wirelen solved = 27078, spread = 27078, legal = 27078; time = 0.01s
+Info:     at iteration #15, type ALL: wirelen solved = 9013, spread = 19762, legal = 26664; time = 0.09s
+Info: HeAP Placer Time: 4.70s
+Info:   of which solving equations: 2.08s
+Info:   of which spreading cells: 0.19s
+Info:   of which strict legalisation: 2.18s
+
+Info: Running simulated annealing placer for refinement.
+Info:   at iteration #1: temp = 0.000000, timing cost = 0, wirelen = 26029
+Info:   at iteration #5: temp = 0.000000, timing cost = 0, wirelen = 17997
+Info:   at iteration #10: temp = 0.000000, timing cost = 0, wirelen = 16583
+Info:   at iteration #15: temp = 0.000000, timing cost = 0, wirelen = 16026
+Info:   at iteration #20: temp = 0.000000, timing cost = 0, wirelen = 15636
+Info:   at iteration #25: temp = 0.000000, timing cost = 0, wirelen = 15292
+Info:   at iteration #30: temp = 0.000000, timing cost = 0, wirelen = 15181
+Info:   at iteration #35: temp = 0.000000, timing cost = 0, wirelen = 15130
+Info:   at iteration #39: temp = 0.000000, timing cost = 0, wirelen = 15122 
+Info: SA placement time 2.33s
+
+Info: No Fmax available; no interior timing paths found in design.
+Info: Checksum: 0x403e435e
+Info: Routing globals...
+Info:     routed net 'CPU.clk' using global resources only.
+
+Info: Routing..
+Info: Setting up routing queue.
+Info: Routing 10867 arcs.
+Info:            |   (re-)routed arcs  |   delta    | remaining|       time spent     |
+Info:    IterCnt |  w/ripup   wo/ripup |  w/r  wo/r |      arcs| batch(sec) total(sec)|
+Info:       1000 |        2        997 |    2   997 |      9872|       2.35       2.35|
+Info:       2000 |       12       1987 |   10   990 |      8884|       2.37       4.72|
+Info:       3000 |       29       2970 |   17   983 |      7904|       2.47       7.19|
+Info:       4000 |       75       3924 |   46   954 |      6980|       2.02       9.21|
+Info:       5000 |      130       4869 |   55   945 |      6063|       2.20      11.42|
+Info:       6000 |      238       5761 |  108   892 |      5368|       2.52      13.94|
+Info:       7000 |      380       6619 |  142   858 |      4697|       2.33      16.26|
+Info:       8000 |      555       7444 |  175   825 |      3997|       2.55      18.82|
+Info:       9000 |      756       8243 |  201   799 |      3330|       2.40      21.22|
+Info:      10000 |      973       9026 |  217   783 |      2756|       1.64      22.86|
+Info:      11000 |     1241       9758 |  268   732 |      2287|       1.64      24.49|
+Info:      12000 |     1519      10480 |  278   722 |      1860|       1.63      26.12|
+Info:      13000 |     1843      11156 |  324   676 |      1467|       1.69      27.81|
+Info:      14000 |     2221      11778 |  378   622 |      1271|       1.17      28.98|
+Info:      15000 |     2583      12416 |  362   638 |      1003|       1.53      30.51|
+Info:      16000 |     2867      13132 |  284   716 |       580|       1.93      32.44|
+Info:      17000 |     3200      13799 |  333   667 |       249|       2.24      34.68|
+Info:      18000 |     3637      14362 |  437   563 |       172|       1.17      35.86|
+Info:      18419 |     3763      14656 |  126   294 |         0|       0.77      36.62|
+Info: Routing complete.
+Info: Router1 time 36.62s
+Info: Checksum: 0xe4ec75d2
+
+Info: No Fmax available; no interior timing paths found in design.
+
+Info: Program finished normally.

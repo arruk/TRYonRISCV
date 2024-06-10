@@ -1,0 +1,5 @@
+IMPLEM		CM/MHZ		CPI
+core2.v		0.723		1.860
+core2_1.v	0.723		1.860
+core3.v		0.930		1.445
+core4.v		1.121		1.199

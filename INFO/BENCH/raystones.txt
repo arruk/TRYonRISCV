@@ -1,0 +1,5 @@
+IMPLE	CPI	RAYSTONES
+core2.v	1.883	4.280
+core2_1.v	1.883		4.280
+core3.v	1.422	5.666
+core4.v	1.214	6.635
