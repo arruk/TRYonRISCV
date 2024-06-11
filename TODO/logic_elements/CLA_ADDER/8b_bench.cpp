@@ -21,20 +21,20 @@ int main(int argc, char** argv, char** env) {
 
 	srand(time(0));
 
-	uint32_t result = 0;
+	unsigned char result = 0;
 	int x=0;
-	while(x<10) {
-		top->a = 4294967295;//(uint32_t)rand()%WORDSZ;
-		top->b = 1;//(uint32_t)rand()%WORDSZ;
-		top->cin = 0;//(uint32_t)rand()%2;	
-                
-		top->eval();
+	while(x<10000) {
+		top->a = (unsigned char)rand()%WORDSZ;
+		top->b = (unsigned char)rand()%WORDSZ;
+		top->cin = (unsigned char)rand()%2;
+
+                top->eval();
                 m_trace->dump(sim_time);
                 sim_time++;
 
-		result = (uint32_t)top->s;
-		if(result != (uint32_t)(top->a + top->b + top->cin)) cout<<" A="<<top->a<<" B="<<top->b<<" cin="<<(int)top->cin<<" s="<<top->s<<endl;
-		else cout<<"succes"<<endl<<" A="<<top->a<<" B="<<top->b<<" cin="<<(int)top->cin<<" s="<<top->s<<" cout = "<<(int)top->cout<<endl;
+		result = (unsigned char)top->s;
+		if(result != (unsigned char)(top->a + top->b + top->cin)) cout<<" A="<<(int)top->a<<" B="<<(int)top->b<<" cin="<<(int)top->cin<<" s="<<(int)top->s<<endl;
+		else cout<<"succes"<<" A="<<(int)top->a<<" B="<<(int)top->b<<" cin="<<(int)top->cin<<" s="<<(int)top->s<<endl;
 		x++;
 	}
 	m_trace->close();
