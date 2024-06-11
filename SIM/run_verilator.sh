@@ -15,11 +15,11 @@ then
 
 elif [ "$NAME" = "raystones" ]
 then
-	obj_dir/VSOC $2 | grep -e CPI -e RAYSTONES | grep -Eo [0-9]+\.[0-9]+ | sed '1d' | sed '1i\'$1'' | column -o"\t\t" >> ${INFO_DIR}/raystones.txt
+	obj_dir/VSOC $2 #| grep -e CPI -e RAYSTONES | grep -Eo [0-9]+\.[0-9]+ | sed '1d' | sed '1i\'$1'' | column -o"\t\t" >> ${INFO_DIR}/raystones.txt
 
 elif [ "$NAME" = "coremark" ]
 then
-	obj_dir/VSOC $2 | grep -e CPI -e Coremark/MHz | grep -Eo [0-9]+\.[0-9]+ | sed '1i\'$1'' | column -o"\t\t" >> ${INFO_DIR}/coremark.txt
+	obj_dir/VSOC $2 #| grep -e CPI -e Coremark/MHz | grep -Eo [0-9]+\.[0-9]+ | sed '1i\'$1'' | column -o"\t\t" >> ${INFO_DIR}/coremark.txt
 
 else
 	obj_dir/VSOC $2

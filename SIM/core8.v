@@ -1,5 +1,6 @@
-`define BENCH
-`define BENCH_BP
+//`define BENCH
+`define BENCH_PB
+//`define NANO9K
 
 `default_nettype none
 `include "clockworks.v"
@@ -13,9 +14,14 @@ module core(
 	output [31:0] IO_mem_wdata, // data written to IO
 	output        IO_mem_wr     // IO write flag
 );
+        `ifdef BENCH
+                parameter dsz=16384, isz=16384;
+        `elsif NANO9K
+                parameter dsz=4096, isz=4096;
+        `else
+                parameter dsz=8192, isz=8192;
+        `endif
 
-	parameter dsz=16384, isz=16384;
-	
 	reg [31:0] RAM [0:dsz-1];
 	reg [31:0] ROM [0:isz-1];
 
@@ -77,6 +83,22 @@ module core(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
+	function [BHT_ADDR_BITS-1:0] BHT_index;
+		input [31:0] PC;
+		/* verilator lint_off WIDTH */
+		BHT_index = PC[BHT_ADDR_BITS+1:2] ^ (BH << (BHT_ADDR_BITS - BP_HIST_BITS));
+		/* verilator lint_on WIDTH */
+	endfunction
+
+	localparam BP_HIST_BITS  =6;	
+	localparam BHT_ADDR_BITS =9;
+	localparam BHT_SIZE=1<<BHT_ADDR_BITS;
+
+       	reg [1:0] BHT [BHT_SIZE-1:0];
+	reg [BP_HIST_BITS-1:0] BH;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
 	reg [31:0] PC;
 	wire [31:0] f_PC = d_JoB_now  ? d_JoB_ADDR  :
 	       		   em_JoB_now ? em_JoB_ADDR :
@@ -104,7 +126,7 @@ module core(
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	wire d_predict = fd_IR[31];
+	wire d_predict = BHT[BHT_index(fd_PC)][1];
 
 	wire d_JoB_now = !fd_NOP & (isJAL(fd_IR) | (isBtype(fd_IR) & d_predict));
 
@@ -121,6 +143,7 @@ module core(
 			de_IR      <= (e_flush | fd_NOP) ? NOP : fd_IR;
 			de_PC      <= fd_PC;	
 			de_predict <= d_predict;
+			de_BHTindex<= BHT_index(fd_PC);
 		end	
 
 		if(e_flush)
@@ -134,7 +157,9 @@ module core(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	reg [31:0] de_IR, de_PC; reg de_predict;
+	reg [31:0] de_IR, de_PC; 
+	reg de_predict;
+        reg [BHT_ADDR_BITS-1:0] de_BHTindex;
 	wire [31:0] de_rs1 = reg_file[rs1ID(de_IR)];
        	wire [31:0] de_rs2 = reg_file[rs2ID(de_IR)];
 
@@ -188,6 +213,20 @@ module core(
 	wire e_JoB = isJALR(de_IR) | (isBtype(de_IR) & (e_takeB^de_predict));
 	wire [31:0] e_JoB_ADDR = e_ADDR;
 
+	function [1:0] incdec_sat;
+		input [1:0] prev;
+		input dir;
+		incdec_sat = 
+			{dir, prev} == 3'b000 ? 2'b00 :
+			{dir, prev} == 3'b001 ? 2'b00 :
+			{dir, prev} == 3'b010 ? 2'b01 :
+			{dir, prev} == 3'b011 ? 2'b10 :		
+			{dir, prev} == 3'b100 ? 2'b01 :
+			{dir, prev} == 3'b101 ? 2'b10 :
+			{dir, prev} == 3'b110 ? 2'b11 :
+					        2'b11 ;
+	endfunction;	
+
 	always@(posedge clk) begin
 		em_IR       <= de_IR;
 		em_PC       <= de_PC;
@@ -196,12 +235,16 @@ module core(
 		em_ADDR     <= e_ADDR;
 		em_JoB_now  <= e_JoB;
 		em_JoB_ADDR <= e_JoB_ADDR;
+		if(isBtype(de_IR)) begin
+			BH <= {e_takeB, BH[BP_HIST_BITS-1:1]};
+			BHT[de_BHTindex] <= incdec_sat(BHT[de_BHTindex], e_takeB);
+		end
 	end
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	reg[31:0] em_IR, em_PC, em_rs2, em_RES, em_ADDR, em_JoB_now, em_JoB_ADDR;
-
+	reg[31:0] em_IR, em_PC, em_rs2, em_RES, em_ADDR, em_JoB_ADDR;
+	reg	  em_JoB_now;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	wire [2:0] m_funct3 = em_IR[14:12];
@@ -295,90 +338,92 @@ module core(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	`ifdef BENCH_BP
+	`ifdef BENCH_PB
 
-                integer nbBranch = 0;
-                integer nbPredictHit = 0;
-                integer nbJAL  = 0;
-                integer nbJALR = 0;
+		integer nbBranch = 0;
+		integer nbPredictHit = 0;
+		integer nbJAL  = 0;
+		integer nbJALR = 0;  
 
-                always @(posedge clk) begin
-                        if(resetn) begin
-                                if(isBtype(de_IR)) begin
-                                        nbBranch <= nbBranch + 1;
-                                        if(e_takeB == de_predict) begin
-                                                nbPredictHit <= nbPredictHit + 1;
-                                        end
-                                end
-                                if(isJAL(de_IR)) begin
-                                        nbJAL <= nbJAL + 1;
-                                end
-                                if(isJALR(de_IR)) begin
-                                        nbJALR <= nbJALR + 1;
-                                end
-                        end
-                end
-        `endif
+		always @(posedge clk) begin
+			if(resetn) begin
+				if(isBtype(de_IR)) begin
+					nbBranch <= nbBranch + 1;
+					if(e_takeB == de_predict) begin
+						nbPredictHit <= nbPredictHit + 1;
+					end
+				end
+				if(isJAL(de_IR)) begin
+					nbJAL <= nbJAL + 1;
+				end
+				if(isJALR(de_IR)) begin
+					nbJALR <= nbJALR + 1;
+				end
+			end
+		end
+	`endif	
 
-        `ifdef BENCH_BP
-                /* verilator lint_off WIDTH */
-                always @(posedge clk) begin
-                        if(halt) begin
-                                $display("Simulated processor's report");
-                                $display("----------------------------");
-                                $display("Branch hits= %3.3f\%%",
-                                           nbPredictHit*100.0/nbBranch   );
-                                $display("CPI        = %3.3f",(cycle*1.0)/(instret*1.0));
-                                $display("Instr. mix = (Branch:%3.3f\%% JAL:%3.3f\%% JALR:%3.3f\%%)",
-                                          nbBranch*100.0/instret,
-                                             nbJAL*100.0/instret,
-                                            nbJALR*100.0/instret);
-                                $finish();
-                        end
-                end
-                /* verilator lint_on WIDTH */
-        `elsif BENCH
-           always @(posedge clk) begin
-                   if(halt) $finish();
-           end
-        `endif
+	`ifdef BENCH_PB
+		/* verilator lint_off WIDTH */
+		always @(posedge clk) begin
+			if(halt) begin
+				$display("Simulated processor's report");
+				$display("----------------------------");
+				$display("Branch hits= %3.3f\%%",
+					   nbPredictHit*100.0/nbBranch	 );
+				$display("CPI        = %3.3f",(cycle*1.0)/(instret*1.0));
+				$display("Instr. mix = (Branch:%3.3f\%% JAL:%3.3f\%% JALR:%3.3f\%%)",
+					  nbBranch*100.0/instret,
+					     nbJAL*100.0/instret, 
+					    nbJALR*100.0/instret);
+				$finish();
+			end
+		end
+		/* verilator lint_on WIDTH */
+	`elsif BENCH
+	   always @(posedge clk) begin
+		   if(halt) $finish(); 
+	   end
+	`endif
 
 endmodule
 
-module SOC( input CLK, input RESET );
+module SOC( input CLK, input RESET, output [5:0] LEDS );
 
-	wire resetn, clk;
+        wire resetn, clk;
 
-	wire [31:0] IO_mem_addr, IO_mem_rdata, IO_mem_wdata;
-	wire IO_mem_wr;
+        wire [31:0] IO_mem_addr, IO_mem_rdata, IO_mem_wdata;
+        wire IO_mem_wr;
 
-	core CPU(
-		.clk(clk),
-		.resetn(resetn),
-		.IO_mem_addr(IO_mem_addr),
-		.IO_mem_rdata(IO_mem_rdata),
-		.IO_mem_wdata(IO_mem_wdata),
-		.IO_mem_wr(IO_mem_wr)
-	);
+        core CPU(
+                .clk(clk),
+                .resetn(resetn),
+                .IO_mem_addr(IO_mem_addr),
+                .IO_mem_rdata(IO_mem_rdata),
+                .IO_mem_wdata(IO_mem_wdata),
+                .IO_mem_wr(IO_mem_wr)
+        );
 
-	wire [13:0] IO_wordaddr = IO_mem_addr[15:2];
-	wire uart_valid = IO_mem_wr & IO_wordaddr[1];
+        assign LEDS = IO_mem_wdata[5:0];
 
-	`ifdef BENCH
-		always@(posedge clk) begin
-			if(uart_valid) begin
-				$write("%c", IO_mem_wdata[7:0]);
-				$fflush(32'h8000_0001);
-			end
-		end
-	`endif
+        wire [13:0] IO_wordaddr = IO_mem_addr[15:2];
+        wire uart_valid = IO_mem_wr & IO_wordaddr[1];
 
-	Clockworks CW(
-		.CLK(CLK),
-		.RESET(RESET),
-		.clk(clk),
-		.resetn(resetn)
-	);
+        `ifdef BENCH
+                always@(posedge clk) begin
+                        if(uart_valid) begin
+                                $write("%c", IO_mem_wdata[7:0]);
+                                $fflush(32'h8000_0001);
+                        end
+                end
+        `endif
+
+        Clockworks CW(
+                .CLK(CLK),
+                .RESET(RESET),
+                .clk(clk),
+                .resetn(resetn)
+        );
 
 endmodule
 
