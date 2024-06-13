@@ -11,24 +11,31 @@ module alu(
        	wire [2:0] d_result = (inst[6:0] == 7'b1101111 | inst[6:0] == 7'b0010111) ? 3'b000 : inst[14:12];
 
 	wire t_EQ = ~(|r_add_sub);
-	wire t_LTU;
+	wire t_LTU;// = (in_a < in_b);
 	wire t_LT = (in_a[31] ^ in_b[31]) ? in_a[31] : t_LTU;
 
 	wire [31:0] r_OR = in_a | in_b;
-	wire [31:0] r_AND;
-        wire [31:0] r_XOR;
+	wire [31:0] r_AND= in_a & in_b;
+        wire [31:0] r_XOR= in_a & in_b;
 	wire [31:0] r_add_sub;
 
 	wire minus = ((inst[6:0] == 7'b0110011) & (inst[30] | (~inst[14] &  inst[13]))) | inst[6:0] == 7'b1100011;
-	cla_adder #(32) s0(
+	cla_adder32b s0(
 		.a(in_a),
 	        .b(in_b),
-	        .c_in(minus),
-		.o_xor(r_XOR),
-		.o_and(r_AND),
+	        .cin(minus),
 	        .s(r_add_sub),
-	        .c_out(t_LTU)
+	        .cout(t_LTU)
 	);
+        //wire te_LTU;
+        /*add_sub s0(
+                .in_a(in_a),
+                .in_b(in_b),
+                .op(minus),
+                .res(r_add_sub),
+                .cout(te_LTU)
+        );*/
+
 
 	wire [31:0] a_flipped;
 	flip32 fl0 (in_a, a_flipped);
@@ -37,7 +44,7 @@ module alu(
 
 	/* verilator lint_off WIDTH */
 	wire [31:0] right_shift = $signed({inst[30] & in_a[31] ,in_shifter}) >>> in_b[4:0];
-	/* verilator lint_off WIDTH */
+	/* verilator lint_on WIDTH */
 
 	wire [31:0] left_shift;
 	flip32 fl1 (right_shift, left_shift);
@@ -68,41 +75,52 @@ module alu(
 
 endmodule
 
-module cla_adder #(
-    parameter N=32
-) ( 
-	input  [N-1:0]  a,
-	input  [N-1:0]  b,
-	input           c_in,
-	output [N-1:0]  o_xor,
-	output [N-1:0]  o_and,
-	output [N-1:0]  s,
-	output          c_out
+module cla_adder32b(
+        input [31:0] a,
+        input [31:0] b,
+        input cin,
+        output [31:0] s,
+        output cout
+);
+        wire [3:0] P, G, c;
+
+	wire [31:0] B = b ^ {32{cin}};
+
+	adder8b a0 (a[0+: 8], B[0+: 8], cin , P[0], G[0], s[0+: 8], c[0]);
+        adder8b a1 (a[8+: 8], B[8+: 8], c[0], P[1], G[1], s[8+: 8], c[1]);
+        adder8b a2 (a[16+:8], B[16+:8], c[1], P[2], G[2], s[16+:8], c[2]);
+        adder8b a3 (a[24+:8], B[24+:8], c[2], P[3], G[3], s[24+:8], c[3]);
+
+        assign cout = ~c[3];
+endmodule
+
+module adder8b(
+        input [7:0] a,
+        input [7:0] b,
+        input    cin,
+        output P,
+        output G,
+        output [7:0] s,
+        output cout
 );
 
-	wire [N-1:0] p, g;
-	wire [N:0]   c;
+        wire [7:0] xor_w = a^b;
+        wire [7:0] and_w = a&b;
+        wire [7:0] or_w  = a|b;
 
-	assign p = a ^ b;
-	assign g = a & b;
+        /* verilator lint_off UNOPTFLAT */
+        wire [7:0] g = {and_w[7:1] | (g[6:0] & or_w[7:1]) , and_w[0]};
+        wire [7:0] p = {or_w [7:1] & p[6:0]               , or_w[0] };
+        wire [8:0] c = {g[7:0] | (p[7:0] & c[7:0]), cin};
+        /* verilator lint_off UNOPTFLAT */
 
-
-	genvar i;
-	generate
-		for (i = 0; i <= N; i++) begin
-			if (i == 0)
-			    assign c[i] = c_in;
-			else
-			    assign c[i] = (c[i-1] & p[i-1]) | g[i-1];
-		end
-	endgenerate
-
-	assign s     = c[N-1:0] + a + b;
-	assign c_out = c[N];
-	assign o_xor = p;
-	assign o_and = g;
-
+        assign s = xor_w ^ c[7:0];
+        assign P = p[7];
+        assign G = g[7];
+        assign cout = c[8];
 endmodule
+
+
 
 module flip32(x, out);
 	input [31:0] x;

@@ -4,10 +4,11 @@
  * Step 5: register forwarding 1/2: D reads and writes RF in same cycle
  *     done with combinatorial RF.
  */
- 
+//`define BENCH
+`define NANO9K
+
 `default_nettype none
 `include "clockworks.v"
-`include "emitter_uart.v"
 
 //`define VERBOSE
 
@@ -22,7 +23,14 @@ module Processor (
     output        IO_mem_wr     // IO write flag
 );
 
-`include "riscv_disassembly.v"
+        `ifdef BENCH
+                parameter dsz=16384, isz=16384;
+        `elsif NANO9K
+                parameter dsz=4096, isz=4096;
+        `else
+                parameter dsz=8192, isz=8192;
+        `endif
+
 
 /******************************************************************************/
 
@@ -150,7 +158,7 @@ module Processor (
    wire [31:0] 	  jumpOrBranchAddress;
    wire 	  jumpOrBranch;
 
-   reg [31:0] PROGROM[0:16383]; // 16384 4-bytes words  
+   reg [31:0] PROGROM[0:isz-1]; // 16384 4-bytes words  
                                 // 64 Kb of program ROM 
    initial begin
       $readmemh("PROGROM.hex",PROGROM);
@@ -367,7 +375,7 @@ module Processor (
 
    wire [3:0] M_wmask = {4{isStore(EM_instr) & M_isRAM}} & M_STORE_wmask;
    
-   reg [31:0] DATARAM [0:16383]; // 16384 4-bytes words 
+   reg [31:0] DATARAM [0:dsz-1]; // 16384 4-bytes words 
                                  // 64 Kb of data RAM in total
    wire [13:0] M_word_addr = EM_addr[15:2];
    
@@ -467,125 +475,48 @@ module Processor (
    end
 `endif
 
-`ifdef VERBOSE
-   always @(posedge clk) begin
-      if(resetn) begin
-	 $write("[W] PC=%h ", MW_PC);
-	 $write("     ");
-	 riscv_disasm(MW_instr,MW_PC);
-	 if(wbEnable) $write("    x%0d <- 0x%0h",rdId(MW_instr),wbData);
-	 $write("\n");
-
-	 $write("[M] PC=%h ", EM_PC);
-	 $write("     ");	 
-	 riscv_disasm(EM_instr,EM_PC);
-	 $write("\n");
-
-	 $write("[E] PC=%h ", DE_PC);
-	 $write("     ");	 
-	 riscv_disasm(DE_instr,DE_PC);
-	 if(DE_instr != NOP) begin	 	 
-	    $write("  rs1=0x%h  rs2=0x%h  ",DE_rs1, DE_rs2);
-	 end
-	 $write("\n");
-
-	 $write("[D] PC=%h ", FD_PC);
-	 $write("[%s%s] ",rs1Hazard?"*":" ",rs2Hazard?"*":" ");	 
-	 riscv_disasm(FD_nop ? NOP : FD_instr,FD_PC);
-	 $write("\n");
-
-	 $write("[F] PC=%h ", F_PC); 
-	 if(jumpOrBranch) $write(" PC <- 0x%0h",jumpOrBranchAddress);
-	 $write("\n");
-	 
-	 $display("");
-      end
-   end
-`endif
-
 /******************************************************************************/
    
 endmodule
 
+module SOC( input CLK, input RESET, output [5:0] LEDS );
 
-module SOC (
-    input 	     CLK, // system clock 
-    input 	     RESET,// reset button
-    output reg [4:0] LEDS, // system LEDs
-    input 	     RXD, // UART receive
-    output 	     TXD  // UART transmit
-);
+        wire resetn, clk;
 
-   wire clk;
-   wire resetn;
-   
-   wire [31:0] IO_mem_addr;
-   wire [31:0] IO_mem_rdata;
-   wire [31:0] IO_mem_wdata;
-   wire        IO_mem_wr;
+        wire [31:0] IO_mem_addr, IO_mem_rdata, IO_mem_wdata;
+        wire IO_mem_wr;
 
-   Processor CPU(
-      .clk(clk),
-      .resetn(resetn),
-      .IO_mem_addr(IO_mem_addr),
-      .IO_mem_rdata(IO_mem_rdata),
-      .IO_mem_wdata(IO_mem_wdata),
-      .IO_mem_wr(IO_mem_wr)
-   );
+        Processor CPU(
+                .clk(clk),
+                .resetn(resetn),
+                .IO_mem_addr(IO_mem_addr),
+                .IO_mem_rdata(IO_mem_rdata),
+                .IO_mem_wdata(IO_mem_wdata),
+                .IO_mem_wr(IO_mem_wr)
+        );
 
-   wire [13:0] IO_wordaddr = IO_mem_addr[15:2];
-   
-   // Memory-mapped IO in IO page, 1-hot addressing in word address.   
-   localparam IO_LEDS_bit      = 0;  // W five leds
-   localparam IO_UART_DAT_bit  = 1;  // W data to send (8 bits) 
-   localparam IO_UART_CNTL_bit = 2;  // R status. bit 9: busy sending
-   
-   always @(posedge clk) begin
-      if(IO_mem_wr & IO_wordaddr[IO_LEDS_bit]) begin
-	 LEDS <= IO_mem_wdata[4:0];
-      end
-   end
+        assign LEDS = IO_mem_wdata[5:0];
 
-   wire uart_valid = IO_mem_wr & IO_wordaddr[IO_UART_DAT_bit];
-   wire uart_ready;
+        wire [13:0] IO_wordaddr = IO_mem_addr[15:2];
+        wire uart_valid = IO_mem_wr & IO_wordaddr[1];
 
-   corescore_emitter_uart #(
-      .clk_freq_hz(`CPU_FREQ*1000000),
-        .baud_rate(1000000)
-   ) UART(
-      .i_clk(clk),
-      .i_rst(!resetn),
-      .i_data(IO_mem_wdata[7:0]),
-      .i_valid(uart_valid),
-      .o_ready(uart_ready),
-      .o_uart_tx(TXD)      			       
-   );
-   
-   assign IO_mem_rdata = 
-		    IO_wordaddr[IO_UART_CNTL_bit] ? { 22'b0, !uart_ready, 9'b0}
-	                                          : 32'b0;
+        `ifdef BENCH
+                always@(posedge clk) begin
+                        if(uart_valid) begin
+                                $write("%c", IO_mem_wdata[7:0]);
+                                $fflush(32'h8000_0001);
+                        end
+                end
+        `endif
 
-`ifdef BENCH
-   always @(posedge clk) begin
-      if(uart_valid) begin
-`ifdef VERBOSE	 
-	 $display("UART: %c", IO_mem_wdata[7:0]);
-`else	 
-	 $write("%c", IO_mem_wdata[7:0] );
-	 $fflush(32'h8000_0001);
-`endif	 
-      end
-   end
-`endif   
-   
-   // Gearbox and reset circuitry.
-   Clockworks CW(
-     .CLK(CLK),
-     .RESET(RESET),
-     .clk(clk),
-     .resetn(resetn)
-   );
+        Clockworks CW(
+                .CLK(CLK),
+                .RESET(RESET),
+                .clk(clk),
+                .resetn(resetn)
+        );
 
 endmodule
 
- 
+
+
