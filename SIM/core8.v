@@ -90,8 +90,8 @@ module core(
 		/* verilator lint_on WIDTH */
 	endfunction
 
-	localparam BP_HIST_BITS  =6;	
-	localparam BHT_ADDR_BITS =9;
+	localparam BP_HIST_BITS  =3;	
+	localparam BHT_ADDR_BITS =6;
 	localparam BHT_SIZE=1<<BHT_ADDR_BITS;
 
        	reg [1:0] BHT [BHT_SIZE-1:0];
@@ -337,54 +337,55 @@ module core(
 	wire [31:0] JoB_ADDR = e_JoB_ADDR;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        `ifdef BENCH_PB
 
-	`ifdef BENCH_PB
+                integer nbBranch = 0;
+                integer nbPredictHit = 0;
+                integer nbJAL  = 0;
+                integer nbJALR = 0;
 
-		integer nbBranch = 0;
-		integer nbPredictHit = 0;
-		integer nbJAL  = 0;
-		integer nbJALR = 0;  
+                always @(posedge clk) begin
+                        if(resetn) begin
+                                if(isBtype(de_IR)) begin
+                                        nbBranch <= nbBranch + 1;
+                                        if(e_takeB == de_predict) begin
+                                                nbPredictHit <= nbPredictHit + 1;
+                                        end
+                                end
+                                if(isJAL(de_IR)) begin
+                                        nbJAL <= nbJAL + 1;
+                                end
+                                if(isJALR(de_IR)) begin
+                                        nbJALR <= nbJALR + 1;
+                                end
+                        end
+                end
+        `endif
 
-		always @(posedge clk) begin
-			if(resetn) begin
-				if(isBtype(de_IR)) begin
-					nbBranch <= nbBranch + 1;
-					if(e_takeB == de_predict) begin
-						nbPredictHit <= nbPredictHit + 1;
-					end
-				end
-				if(isJAL(de_IR)) begin
-					nbJAL <= nbJAL + 1;
-				end
-				if(isJALR(de_IR)) begin
-					nbJALR <= nbJALR + 1;
-				end
-			end
-		end
-	`endif	
-
-	`ifdef BENCH_PB
-		/* verilator lint_off WIDTH */
-		always @(posedge clk) begin
-			if(halt) begin
-				$display("Simulated processor's report");
-				$display("----------------------------");
-				$display("Branch hits= %3.3f\%%",
-					   nbPredictHit*100.0/nbBranch	 );
-				$display("CPI        = %3.3f",(cycle*1.0)/(instret*1.0));
-				$display("Instr. mix = (Branch:%3.3f\%% JAL:%3.3f\%% JALR:%3.3f\%%)",
-					  nbBranch*100.0/instret,
-					     nbJAL*100.0/instret, 
-					    nbJALR*100.0/instret);
-				$finish();
-			end
-		end
-		/* verilator lint_on WIDTH */
-	`elsif BENCH
-	   always @(posedge clk) begin
-		   if(halt) $finish(); 
-	   end
-	`endif
+        `ifdef BENCH_PB
+                /* verilator lint_off WIDTH */
+                always @(posedge clk) begin
+                        if(halt) begin
+                                $display("Simulated processor's report");
+                                $display("----------------------------");
+                                $display("Branch hits= %3.3f\%%", nbPredictHit*100.0/nbBranch);
+                                $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
+                                $display("Instr. mix = (Branch:%3.3f\%% JAL:%3.3f\%% JALR:%3.3f\%%)",
+                                          nbBranch*100.0/instret,
+                                             nbJAL*100.0/instret,
+                                            nbJALR*100.0/instret);
+                                $display("Numbers of = (Branch: %d, JAL: %d, JALR: %d)", nbBranch, nbJAL, nbJALR);
+                                $display("Size of BHT = %d", BHT_ADDR_BITS);
+                                $display("Size of BPH = %d" , BP_HIST_BITS);
+                                $finish();
+                        end
+                end
+                /* verilator lint_on WIDTH */
+        `elsif BENCH
+           always @(posedge clk) begin
+                   if(halt) $finish();
+           end
+        `endif
 
 endmodule
 

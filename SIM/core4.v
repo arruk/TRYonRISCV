@@ -333,6 +333,7 @@ module core(
                                           nbBranch*100.0/instret,
                                              nbJAL*100.0/instret,
                                             nbJALR*100.0/instret);
+
                                 $finish();
                         end
                 end

@@ -1,10 +1,10 @@
 //`define BENCH
-//`define BENCH_PB
-`define NANO9K
+`define BENCH_PB
+//`define NANO9K
 
 `default_nettype none
 `include "clockworks.v"
-`include "alu2.v"
+`include "alu.v"
 
 module core(
 	input         clk,
@@ -88,7 +88,7 @@ module core(
 		BHT_index = PC[BHT_ADDR_BITS+1:2];
 	endfunction
 
-	localparam BHT_ADDR_BITS=7;
+	localparam BHT_ADDR_BITS=4;
 	localparam BHT_SIZE=1<<BHT_ADDR_BITS;
        	reg BHT [BHT_SIZE-1:0];
 
@@ -349,13 +349,14 @@ module core(
 			if(halt) begin
 				$display("Simulated processor's report");
 				$display("----------------------------");
-				$display("Branch hits= %3.3f\%%",
-					   nbPredictHit*100.0/nbBranch	 );
-				$display("CPI        = %3.3f",(cycle*1.0)/(instret*1.0));
+				$display("Branch hits= %3.3f\%%", nbPredictHit*100.0/nbBranch);
+				$display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
 				$display("Instr. mix = (Branch:%3.3f\%% JAL:%3.3f\%% JALR:%3.3f\%%)",
 					  nbBranch*100.0/instret,
 					     nbJAL*100.0/instret, 
 					    nbJALR*100.0/instret);
+				$display("Numbers of = (Branch: %d, JAL: %d, JALR: %d)", nbBranch, nbJAL, nbJALR);
+				$display("Size of BHT = %d", BHT_ADDR_BITS);
 				$finish();
 			end
 		end

@@ -1,0 +1,26 @@
+build: testbench for petituyau
+
+
+
+2K performance run parameters for coremark.
+CoreMark Size    : 666
+Total ticks      : 268587267
+*** Ticks        : 268587267
+*** Coremark/MHz : 1.116
+*** CPI (2)      : 1.204
+Memory location  : STACK
+seedcrc          : 0xe9f5
+[0]crclist       : 0xe714
+[0]crcmatrix     : 0x1fd7
+[0]crcstate      : 0x8e3a
+[0]crcfinal      : 0x5275
+Correct operation validated. See README.md for run and reporting rules.
+Simulated processor's report
+----------------------------
+Branch hits= 74.473%
+Numbers of = (Cycles:            268633624, Instret:            222960743)
+Instr. mix = (Branch:27.911% JAL:1.938% JALR:1.589%)
+Numbers of = (Branch:    62229782, JAL:     4320535, JALR:     3542147)
+Size of BHT =           6
+Size of BPH =           3
+- core8.v:380: Verilog $finish
