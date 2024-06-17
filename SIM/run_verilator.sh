@@ -137,10 +137,10 @@ else
 		if [ $NO -gt 4 ]
 		then
 			cat ${INFO_DIR}/temp | grep -e CPI -e MIPS -e cycles -e instret -e Branch -e JAL -e JALR -e BHT -e BPH \
-					     | grep -E -o [0-9]+[.]?[0-9]*  | sed '1,2d' | sed '1i\'$IMPL'' | rs -T >> ${INFO_DIR}/"$IMPL"/"$IMPL"_dhry.txt
+					     | grep -E -o [0-9]+[.]?[0-9]*  | sed '1,2d' | sed '1i\'$IMPL'' | rs -T #>> ${INFO_DIR}/"$IMPL"/"$IMPL"_dhry.txt
 			
-			cat ${INFO_DIR}/temp | grep -e CPI -e MIPS -e cycles -e instret | grep -Eo [0-9]+[.]?[0-9]* \
-					     | sed '1,2d' | sed '1i\'$BIN'' | rs -T >> ${INFO_DIR}/dhrystones.txt	
+			#cat ${INFO_DIR}/temp | grep -e CPI -e MIPS -e cycles -e instret | grep -Eo [0-9]+[.]?[0-9]* \
+			# 		     | sed '1,2d' | sed '1i\'$BIN'' | rs -T >> ${INFO_DIR}/dhrystones.txt	
 			
 		else	
 			cat ${INFO_DIR}/temp | grep -e CPI -e MIPS -e cycles -e instret | grep -Eo [0-9]+[.]?[0-9]* \
