@@ -510,8 +510,8 @@ int main() {
     bench_run = 0;
     graphics_width = 120;
     graphics_height = 60;
-    //render(spheres, nb_spheres, lights, nb_lights);
-    //IO_OUT(IO_LEDS,15);
+    render(spheres, nb_spheres, lights, nb_lights);
+    IO_OUT(IO_LEDS,15);
     graphics_terminate();
     
     return 0;

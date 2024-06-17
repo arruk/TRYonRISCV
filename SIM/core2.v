@@ -3,8 +3,8 @@
 
 `default_nettype none
 `include "clockworks.v"
-`include "alu_modified.v"
-//`include "alu.v"
+//`include "alu_modified.v"
+`include "alu.v"
 
 module core(
 	input         clk,
