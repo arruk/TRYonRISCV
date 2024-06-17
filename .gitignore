@@ -20,4 +20,4 @@
 SIM/firmware.txt
 FIRMWARE/TOOLS/firmware_words
 SIM/obj_dir/*
-/SIM/obj_dir/VSOC.cpp
+INFO/BENCH/temp
