@@ -3,6 +3,7 @@ INFO_DIR="../INFO/BENCH"
 BENCH=$(cut -d. -f 1 firmware.txt)
 echo $BENCH
 IMPL=$(echo $1 | cut -d. -f 1 )
+IMPL_T=$IMPL
 NO=$(echo "$1" | grep -Eo [0-9]+)
 
 main() {
@@ -17,25 +18,27 @@ main() {
 		obj_dir/VSOC 
 	elif [ "$2" = "a" ]
 	then	
-		branch_info
-		echo $BIN
 		
 		cp ${PREC}/RAYSTONES/DATARAM.hex ./ && cp ${PREC}/RAYSTONES/PROGROM.hex ./
 		echo "raystones.pipeline.hex" > firmware.txt
 		obj_dir/VSOC > ${INFO_DIR}/temp
 
+		branch_info
 		rayst_parse
+		
 
 		cp ${PREC}/DHRYSTONES/DATARAM.hex ./ && cp ${PREC}/DHRYSTONES/PROGROM.hex ./
 		echo "dhrystones.pipeline.hex" > firmware.txt
 		obj_dir/VSOC > ${INFO_DIR}/temp
 
+		branch_info
 		dhry_parse
 
 		cp ${PREC}/COREMARK/DATARAM.hex ./ && cp ${PREC}/COREMARK/PROGROM.hex ./
 		echo "coremark.pipeline.hex" > firmware.txt
 		obj_dir/VSOC > ${INFO_DIR}/temp
 
+		branch_info
 		cmark_parse
 
 	else
@@ -84,35 +87,37 @@ rayst_parse(){
 	if [ $NO -gt 4 ]
 	then
 		cat ${INFO_DIR}/temp | grep -e CPI -e RAYSTONES -e Branch -e JAL -e JALR -e BHT -e BPH -e Cycles -e Instret \
-				     | grep -Eo [0-9]+[.]?[0-9]* | sed '1,2d' | sed '1i\'$IMPL'' | rs -T #>> ${INFO_DIR}/"$IMPL"/"$IMPL"_ray.txt
-		IMPL=$BIN
+				     | grep -Eo [0-9]+[.]?[0-9]* | sed '1,2d' | sed '1i\'$IMPL'' | paste -sd, >> ${INFO_DIR}/"$IMPL"/raystones.csv
+		IMPL_T=$BIN
 	fi
 	cat ${INFO_DIR}/temp | grep -e CPI -e RAYSTONES | grep -Eo [0-9]+[.]?[0-9]* \
-			     | sed '1,2d' | sed '1i\'$IMPL'' | rs -T #>> ${INFO_DIR}/raystones.txt
+			     | sed '1,2d' | sed '1i\'$IMPL_T'' | paste -sd, >> ${INFO_DIR}/raystones.csv
+	IMPL_T=$IMPL
 }
 
 dhry_parse(){
 	if [ $NO -gt 4 ]
 	then
 		cat ${INFO_DIR}/temp | grep -e CPI -e MIPS -e cycles -e instret -e Branch -e JAL -e JALR -e BHT -e BPH \
-				     | grep -E -o [0-9]+[.]?[0-9]*  | sed '1,2d' | sed '1i\'$IMPL'' | rs -T #>> ${INFO_DIR}/"$IMPL"/"$IMPL"_dhry.txt
-		IMPL=$BIN
+				     | grep -E -o [0-9]+[.]?[0-9]*  | sed '1,2d' | sed '1i\'$IMPL'' | paste -sd, >> ${INFO_DIR}/"$IMPL"/dhrystones.csv
+		IMPL_T=$BIN
 
 	fi
 	cat ${INFO_DIR}/temp | grep -e CPI -e MIPS -e cycles -e instret | grep -Eo [0-9]+[.]?[0-9]* \
-			     | sed '1,2d' | sed '1i\'$IMPL'' | rs -T #>> ${INFO_DIR}/dhrystones.txt
+			     | sed '1,2d' | sed '1i\'$IMPL_T'' | paste -sd, >> ${INFO_DIR}/dhrystones.csv
+	IMPL_T=$IMPL
 }
 
 cmark_parse(){
 	if [ $NO -gt 4 ]
 	then
 		cat ${INFO_DIR}/temp | grep -e CPI -e Coremark/MHz -e Branch -e JAL -e JALR -e BHT -e BPH -e Cycles -e Instret \
-				     | grep -Eo [0-9]+[.]?[0-9]* | sed '2d' | sed '1i\'$IMPL'' | rs -T #>> ${INFO_DIR}/"$IMPL"/"$IMPL"_cmark.txt
-		IMPL=$BIN
+				     | grep -Eo [0-9]+[.]?[0-9]* | sed '2d' | sed '1i\'$IMPL'' | paste -sd, >> ${INFO_DIR}/"$IMPL"/coremark.csv
+		IMPL_T=$BIN
 	fi
 	cat ${INFO_DIR}/temp | grep -e CPI -e Coremark/MHz | grep -Eo [0-9]+[.]?[0-9]* \
-			     | sed '2d' | sed '1i\'$IMPL'' | rs -T #>> ${INFO_DIR}/coremark.txt
-	
+			     | sed '2d' | sed '1i\'$IMPL_T'' | paste -sd, >> ${INFO_DIR}/coremark.csv
+	IMPL_T=$IMPL	
 }
 
 

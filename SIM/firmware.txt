@@ -1,1 +1,1 @@
-dhrystones.pipeline.hex
+coremark.pipeline.hex
