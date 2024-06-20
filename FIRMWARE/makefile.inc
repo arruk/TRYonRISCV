@@ -7,7 +7,9 @@
 #####################################################################
 # Base directory of the firmware
 
-FIRMWARE_DIR=/home/arruk/riscv/FIRMWARE
+FIRMWARE_DIR=/home/$USER/Workspace/TRYonRISCV/FIRMWARE
+ARCH=rv32i
+ABI=ilp32
 
 DEVICES_ASM=$(subst -D,-defsym ,$(DEVICES))
 
@@ -26,7 +28,7 @@ uname_m := $(shell uname -m)
 TOOLCHAIN_GCC_VER=8.3.0
 RVTOOLCHAIN_BIN_PREFIX=riscv64-unknown-elf
 
-RVTOOLCHAIN_DIR=/opt/riscv_toolchain/riscv64_unknownelf
+RVTOOLCHAIN_DIR=/home/$USER/Workspace/learn-fpga/FemtoRV/FIRMWARE/TOOLCHAIN/riscv64-unknown-elf-gcc-8.3.0-2020.04.0-x86_64-linux-ubuntu14
 RVTOOLCHAIN_BIN_DIR=$(RVTOOLCHAIN_DIR)/bin
 
 RVTOOLCHAIN_LIB_DIR=$(RVTOOLCHAIN_DIR)/$(RVTOOLCHAIN_BIN_PREFIX)/lib/$(ARCH)/$(ABI)
