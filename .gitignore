@@ -17,7 +17,9 @@
 *.blif
 *.list
 *.fs
-SIM/firmware.txt
 FIRMWARE/TOOLS/firmware_words
+SIM/firmware.txt
+SIM/DATARAM.hex
+SIM/PROGROM.hex
 SIM/obj_dir/*
 INFO/BENCH/temp

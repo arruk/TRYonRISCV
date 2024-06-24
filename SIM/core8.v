@@ -90,8 +90,8 @@ module core(
 		/* verilator lint_on WIDTH */
 	endfunction
 
-	localparam BP_HIST_BITS  =3;	
-	localparam BHT_ADDR_BITS =6;
+	localparam BP_HIST_BITS  =18;	
+	localparam BHT_ADDR_BITS =21;
 	localparam BHT_SIZE=1<<BHT_ADDR_BITS;
 
        	reg [1:0] BHT [BHT_SIZE-1:0];

@@ -1,10 +1,14 @@
-`define BENCH
+//`define BENCH
 //`define NANO9K
 
 `default_nettype none
 `include "clockworks.v"
-//`include "alu_modified.v"
-`include "alu.v"
+
+`ifdef ALU
+	`include "alu2.v"
+`else
+	`include "alu.v"
+`endif
 
 module core(
 	input         clk,
@@ -16,12 +20,18 @@ module core(
 );
 
         `ifdef BENCH
-                parameter dsz=16384, isz=16384;
+                parameter dsz=8192, isz=8192;
+                //parameter dsz=16384, isz=16384;
         `elsif NANO9K
                 parameter dsz=4096, isz=4096;
-        `else
+	`elsif PRIMER
+                parameter dsz=12288, isz=12288;
+	// 12288, 10240	
+	`else
                 parameter dsz=8192, isz=8192;
         `endif
+
+// 12226
 	
 	reg [31:0] RAM [0:dsz-1];
 	reg [31:0] ROM [0:isz-1];
@@ -95,7 +105,7 @@ module core(
 
 	always@(posedge clk) begin
 		if(!f_stall) begin
-			fd_IR <= ROM[f_PC[15:2]];
+			fd_IR <= ROM[f_PC[15:2]]; 
 			fd_PC <= f_PC;
 			f_PC  <= f_PC+4;
 		end
@@ -217,7 +227,7 @@ module core(
 
 	wire [3:0] m_WMASK = {4{isStype(em_IR) & M_isRAM}} & m_store_WMASK;
 
-	wire [13:0] m_word_ADDR = em_ADDR[15:2];
+	wire [13:0] m_word_ADDR = em_ADDR[15:2];  // HERE
 
 	always@(posedge clk) begin
 		mw_Mdata <= RAM[m_word_ADDR];

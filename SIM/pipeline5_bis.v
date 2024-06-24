@@ -5,7 +5,7 @@
  *     done with combinatorial RF.
  */
 //`define BENCH
-`define NANO9K
+//`define NANO9K
 
 `default_nettype none
 `include "clockworks.v"
@@ -27,7 +27,9 @@ module Processor (
                 parameter dsz=16384, isz=16384;
         `elsif NANO9K
                 parameter dsz=4096, isz=4096;
-        `else
+	`elsif PRIMER
+                parameter dsz=10240, isz=10240;
+	`else
                 parameter dsz=8192, isz=8192;
         `endif
 

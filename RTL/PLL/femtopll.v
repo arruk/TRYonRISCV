@@ -2,8 +2,7 @@
  *  The PLL, that generates the internal clock (high freq) from the 
  * external one (lower freq).
  *  Trying to make something that is portable between different boards
- *  For now, ICEStick, ULX3S, ECP5 evaluation boards, FOMU supported.
- *  WIP: IceFeather
+ *  For now, tangnano9k and sipeedprimer20k supported.
  */ 
 
 `ifdef BENCH_OR_LINT
@@ -25,7 +24,7 @@ endmodule
  `ifdef NANO9K 
   `include "pll_nano9k.v"
  `elsif PRIMER 
-  `include "pll_primer.v" 
+  `include "pll_primer20k.v" 
  `endif
 `endif
 
