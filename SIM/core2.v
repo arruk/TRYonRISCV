@@ -25,8 +25,7 @@ module core(
         `elsif NANO9K
                 parameter dsz=4096, isz=4096;
 	`elsif PRIMER
-                parameter dsz=12288, isz=12288;
-	// 12288, 10240	
+                parameter dsz=8192, isz=8192;
 	`else
                 parameter dsz=8192, isz=8192;
         `endif

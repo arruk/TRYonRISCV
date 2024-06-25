@@ -1,9 +1,10 @@
-`define BENCH
-`define BENCH_BP
+//`define BENCH
+//`define BENCH_BP
 
 `default_nettype none
 `include "clockworks.v"
-`include "alu.v"
+`include "alu2.v"
+//`include "alu.v"
 
 module core(
 	input         clk,
@@ -13,9 +14,17 @@ module core(
 	output [31:0] IO_mem_wdata, // data written to IO
 	output        IO_mem_wr     // IO write flag
 );
+        `ifdef BENCH
+                parameter dsz=8192, isz=8192;
+                //parameter dsz=16384, isz=16384;
+        `elsif NANO9K
+                parameter dsz=4096, isz=4096;
+        `elsif PRIMER
+                parameter dsz=8192, isz=8192;
+        `else
+                parameter dsz=8192, isz=8192;
+        `endif
 
-	parameter dsz=16384, isz=16384;
-	
 	reg [31:0] RAM [0:dsz-1];
 	reg [31:0] ROM [0:isz-1];
 
@@ -346,40 +355,43 @@ module core(
 
 endmodule
 
-module SOC( input CLK, input RESET );
+module SOC( input CLK, input RESET, output [5:0] LEDS );
 
-	wire resetn, clk;
+        wire resetn, clk;
 
-	wire [31:0] IO_mem_addr, IO_mem_rdata, IO_mem_wdata;
-	wire IO_mem_wr;
+        wire [31:0] IO_mem_addr, IO_mem_rdata, IO_mem_wdata;
+        wire IO_mem_wr;
 
-	core CPU(
-		.clk(clk),
-		.resetn(resetn),
-		.IO_mem_addr(IO_mem_addr),
-		.IO_mem_rdata(IO_mem_rdata),
-		.IO_mem_wdata(IO_mem_wdata),
-		.IO_mem_wr(IO_mem_wr)
-	);
+        core CPU(
+                .clk(clk),
+                .resetn(resetn),
+                .IO_mem_addr(IO_mem_addr),
+                .IO_mem_rdata(IO_mem_rdata),
+                .IO_mem_wdata(IO_mem_wdata),
+                .IO_mem_wr(IO_mem_wr)
+        );
 
-	wire [13:0] IO_wordaddr = IO_mem_addr[15:2];
-	wire uart_valid = IO_mem_wr & IO_wordaddr[1];
+        assign LEDS = IO_mem_wdata[5:0];
 
-	`ifdef BENCH
-		always@(posedge clk) begin
-			if(uart_valid) begin
-				$write("%c", IO_mem_wdata[7:0]);
-				$fflush(32'h8000_0001);
-			end
-		end
-	`endif
+        wire [13:0] IO_wordaddr = IO_mem_addr[15:2];
+        wire uart_valid = IO_mem_wr & IO_wordaddr[1];
 
-	Clockworks CW(
-		.CLK(CLK),
-		.RESET(RESET),
-		.clk(clk),
-		.resetn(resetn)
-	);
+        `ifdef BENCH
+                always@(posedge clk) begin
+                        if(uart_valid) begin
+                                $write("%c", IO_mem_wdata[7:0]);
+                                $fflush(32'h8000_0001);
+                        end
+                end
+        `endif
+
+        Clockworks CW(
+                .CLK(CLK),
+                .RESET(RESET),
+                .clk(clk),
+                .resetn(resetn)
+        );
 
 endmodule
+
 

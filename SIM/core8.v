@@ -1,10 +1,11 @@
 //`define BENCH
-`define BENCH_PB
+//`define BENCH_PB
 //`define NANO9K
 
 `default_nettype none
 `include "clockworks.v"
-`include "alu.v"
+`include "alu2.v"
+//`include "alu.v"
 
 module core(
 	input         clk,

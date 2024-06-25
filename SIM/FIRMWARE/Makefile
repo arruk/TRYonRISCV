@@ -23,7 +23,7 @@ LIBOBJECTS=putchar.o wait.o print.o memcpy.o errno.o perf.o
 	mkdir -p ../obj_dir
 	cp $@ ../obj_dir/DATARAM.hex
 
-%.pipeline.hex: %.small.PROGROM.hex %.DATARAM.hex
+%.pipeline.hex: %.PROGROM.hex %.DATARAM.hex
 	echo $@ > ../firmware.txt
 
 #tentativa: so alterar o tamanho do arquivo

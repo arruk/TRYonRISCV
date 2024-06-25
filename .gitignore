@@ -17,6 +17,7 @@
 *.blif
 *.list
 *.fs
+*.txt
 FIRMWARE/TOOLS/firmware_words
 SIM/firmware.txt
 SIM/DATARAM.hex
