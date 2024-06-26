@@ -1,10 +1,13 @@
 //`define BENCH
 //`define BENCH_BP
 
-`default_nettype none
 `include "clockworks.v"
-`include "alu2.v"
-//`include "alu.v"
+
+`ifdef ALU
+	`include "alu2.v"
+`else
+	`include "alu.v"
+`endif
 
 module core(
 	input         clk,
@@ -15,8 +18,8 @@ module core(
 	output        IO_mem_wr     // IO write flag
 );
         `ifdef BENCH
-                parameter dsz=8192, isz=8192;
-                //parameter dsz=16384, isz=16384;
+                //parameter dsz=8192, isz=8192;
+                parameter dsz=16384, isz=16384;
         `elsif NANO9K
                 parameter dsz=4096, isz=4096;
         `elsif PRIMER
@@ -304,7 +307,7 @@ module core(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	`ifdef BENCH_BP
+	`ifdef BENCH
 
                 integer nbBranch = 0;
                 integer nbPredictHit = 0;
@@ -327,9 +330,7 @@ module core(
                                 end
                         end
                 end
-        `endif
 
-        `ifdef BENCH_BP
                 /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
                         if(halt) begin
@@ -347,11 +348,12 @@ module core(
                         end
                 end
                 /* verilator lint_on WIDTH */
-        `elsif BENCH
+       	`endif
+       	/*`elsif BENCH
            always @(posedge clk) begin
                    if(halt) $finish();
            end
-        `endif
+        `endif*/
 
 endmodule
 

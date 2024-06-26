@@ -1,10 +1,10 @@
-//`define BENCH
-`define BENCH_PB
-//`define NANO9K
-
-`default_nettype none
 `include "clockworks.v"
-`include "alu.v"
+
+`ifdef ALU
+	`include "alu.v"
+`else
+	`include "alu.v"
+`endif
 
 module core(
 	input         clk,
@@ -88,7 +88,7 @@ module core(
 		BHT_index = PC[BHT_ADDR_BITS+1:2];
 	endfunction
 
-	localparam BHT_ADDR_BITS=4;
+	parameter BHT_ADDR_BITS=5;
 	localparam BHT_SIZE=1<<BHT_ADDR_BITS;
        	reg [1:0] BHT [BHT_SIZE-1:0];
 
@@ -332,7 +332,7 @@ module core(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	`ifdef BENCH_PB
+	`ifdef BENCH
 
                 integer nbBranch = 0;
                 integer nbPredictHit = 0;
@@ -355,9 +355,6 @@ module core(
                                 end
                         end
                 end
-        `endif
-
-        `ifdef BENCH_PB
                 /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
                         if(halt) begin
@@ -375,10 +372,6 @@ module core(
                         end
                 end
                 /* verilator lint_on WIDTH */
-        `elsif BENCH
-           always @(posedge clk) begin
-                   if(halt) $finish();
-           end
         `endif
 
 
@@ -386,12 +379,14 @@ endmodule
 
 module SOC( input CLK, input RESET, output [5:0] LEDS );
 
+	parameter sz = 4;
+
         wire resetn, clk;
 
         wire [31:0] IO_mem_addr, IO_mem_rdata, IO_mem_wdata;
         wire IO_mem_wr;
 
-        core CPU(
+        core #(.BHT_ADDR_BITS(sz))CPU(
                 .clk(clk),
                 .resetn(resetn),
                 .IO_mem_addr(IO_mem_addr),

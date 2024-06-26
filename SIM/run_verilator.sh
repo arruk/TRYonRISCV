@@ -5,11 +5,12 @@ echo $BENCH
 IMPL=$(echo $1 | cut -d. -f 1 )
 IMPL_T=$IMPL
 NO=$(echo "$1" | grep -Eo [0-9]+)
+SZ=4
 
 main() {
 
 	(cd obj_dir; rm -f *.cpp *.o *.a VSOC)
-	verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
+	verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -Gsz=$SZ -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
 		  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c $1
 	
 	(cd obj_dir; make -f VSOC.mk)
@@ -24,8 +25,7 @@ main() {
 		obj_dir/VSOC > ${INFO_DIR}/temp
 
 		branch_info
-		rayst_parse
-		
+		rayst_parse	
 
 		cp ${PREC}/DHRYSTONES/DATARAM.hex ./ && cp ${PREC}/DHRYSTONES/PROGROM.hex ./
 		echo "dhrystones.pipeline.hex" > firmware.txt
@@ -120,5 +120,17 @@ cmark_parse(){
 	IMPL_T=$IMPL	
 }
 
+if [ "$2" = "a" ]
+then
+	for i in {5..16}
+	do
+		SZ=$i
+		main "$@"
+		echo "FINISHED WITH $SZ bits\n"
+	done
+else
+	SZ=6
+	main "$@"
+fi
 
-main "$@"; exit
+exit

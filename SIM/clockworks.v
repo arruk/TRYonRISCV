@@ -1,81 +1,15 @@
-
-/*
- * Clockworks includes
- *   - gearbox to divide clock frequency, used
- *     to let you observe how the design behaves
- *     one cycle at a time.
- *   - PLL to generate faster clock
- *   - reset mechanism that resets the design
- *     during the first microseconds because
- *     reading in Ice40 BRAM during the first 
- *     few microseconds returns garbage !
- *     (made me bang my head against the wall). 
- * 
- * Parameters
- *     SLOW number of bits of gearbox. Clock divider
- *       is (1 << SLOW)
- * 
- * Macros
- *     NEGATIVE_RESET if board's RESET pin goes low on reset
- *     ICE_STICK if board is an IceStick.
- */    
- 
 `include "../RTL/PLL/femtopll.v"
 
 module Clockworks 
 (
-   input  CLK, // clock pin of the board
+   input  CLK,   // clock pin of the board
    input  RESET, // reset pin of the board
    output clk,   // (optionally divided) clock for the design.
                  // divided if SLOW is different from zero.
    output resetn // (optionally timed) negative reset for the design
 );               
-   parameter SLOW=0;
 
    generate
-
-/****************************************************
-
- Slow speed mode.
- - Create a clock divider to let observe what happens.
- - Nothing special to do for reset
- 
- ****************************************************/
-      if(SLOW != 0) begin
-	 // Factor is 1 << slow_bit.
-	 // Since simulation is approx. 16 times slower than
-	 // actual device we use different factor for bosh.
-`ifdef BENCH
-   localparam slow_bit=SLOW-4;
-`else
-   localparam slow_bit=SLOW;
-`endif
-	 reg [slow_bit:0] slow_CLK = 0;
-	 always @(posedge CLK) begin
-	    slow_CLK <= slow_CLK + 1;
-	 end
-	 assign clk = slow_CLK[slow_bit];
-
-`ifdef NEGATIVE_RESET
-	 assign resetn = RESET;
-`else
-	 assign resetn = !RESET;
-`endif
-
-
-/****************************************************
-
- High speed mode.
- - Nothing special to do for the clock
- - A timer that resets the design during the first
-   few microseconds, because reading in Ice40 BRAM 
-   during the first few microseconds returns garbage !
-   (made me bang my head against the wall).
- 
- ****************************************************/
-	 
-      end else begin 
-	
 `ifdef CPU_FREQ	
         femtoPLL #(
           .freq(`CPU_FREQ)
@@ -109,7 +43,6 @@ module Clockworks
 	    end
 	 end
 `endif   
-      end
    endgenerate
 
 endmodule
