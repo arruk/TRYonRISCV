@@ -1,3 +1,4 @@
+`include "uart_tx.v"
 `include "clockworks.v"
 
 `ifdef ALU
@@ -377,16 +378,14 @@ module core(
 
 endmodule
 
-module SOC( input CLK, input RESET, output [5:0] LEDS );
-
-	parameter sz = 4;
+module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
 
         wire resetn, clk;
 
         wire [31:0] IO_mem_addr, IO_mem_rdata, IO_mem_wdata;
         wire IO_mem_wr;
 
-        core #(.BHT_ADDR_BITS(sz))CPU(
+        core CPU(
                 .clk(clk),
                 .resetn(resetn),
                 .IO_mem_addr(IO_mem_addr),
@@ -399,6 +398,20 @@ module SOC( input CLK, input RESET, output [5:0] LEDS );
 
         wire [13:0] IO_wordaddr = IO_mem_addr[15:2];
         wire uart_valid = IO_mem_wr & IO_wordaddr[1];
+        wire uart_ready;
+
+        corescore_emitter_uart #(
+                .clk_freq_hz(10000000),
+                .baud_rate(1000000)
+        ) UART(
+                .i_clk(clk),
+                .i_rst(!resetn),
+                .i_data(IO_mem_wdata[7:0]),
+                .i_valid(uart_valid),
+                .o_ready(uart_ready),
+                .o_uart_tx(UART_TX)
+        );
+        assign IO_mem_rdata = IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
 
         `ifdef BENCH
                 always@(posedge clk) begin

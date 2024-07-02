@@ -3,6 +3,7 @@
 
 `default_nettype none
 `include "clockworks.v"
+`include "uart_tx.v"
 
 `ifdef ALU
 	`include "alu2.v"
@@ -20,8 +21,8 @@ module core(
 );
 
         `ifdef BENCH
-                parameter dsz=8192, isz=8192;
-                //parameter dsz=16384, isz=16384;
+                //parameter dsz=8192, isz=8192;
+                parameter dsz=16384, isz=16384;
         `elsif NANO9K
                 parameter dsz=4096, isz=4096;
 	`elsif PRIMER
@@ -299,7 +300,7 @@ module core(
 
 endmodule
 
-module SOC( input CLK, input RESET, output [5:0] LEDS );
+module SOC( input CLK, input RESET, output [5:0] LEDS , output UART_TX);
 
 	wire resetn, clk;
 
@@ -315,10 +316,25 @@ module SOC( input CLK, input RESET, output [5:0] LEDS );
 		.IO_mem_wr(IO_mem_wr)
 	);
 
-	assign LEDS = IO_mem_wdata[5:0];
+	assign LEDS = IO_mem_wdata[5:0] & IO_mem_addr[5:0];
 
 	wire [13:0] IO_wordaddr = IO_mem_addr[15:2];
 	wire uart_valid = IO_mem_wr & IO_wordaddr[1];
+	wire uart_ready;
+
+        corescore_emitter_uart #(
+                .clk_freq_hz(10000000),
+                .baud_rate(1000000)
+        ) UART(
+                .i_clk(clk),
+                .i_rst(!resetn),
+                .i_data(IO_mem_wdata[7:0]),
+                .i_valid(uart_valid),
+                .o_ready(uart_ready),
+                .o_uart_tx(UART_TX)
+        );
+	
+	assign IO_mem_rdata = IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
 
 	`ifdef BENCH
 		always@(posedge clk) begin

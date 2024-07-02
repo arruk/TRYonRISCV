@@ -4,7 +4,7 @@ RVCFLAGS=-I. -O2 -fno-pic -march=$(ARCH) -mabi=$(ABI) -fno-stack-protector -w -W
 
 RAM_SIZE=6144
 
-LIBOBJECTS=putchar.o wait.o print.o memcpy.o errno.o perf.o
+LIBOBJECTS=putchar.o wait.o print.o memcpy.o errno.o perf.o change.o
 
 # DUAL MEMORY (64 kb program ROM, 64 kb data RAM)
 %.pipeline.elf: %.o start_pipeline.o $(LIBOBJECTS) $(RV_BINARIES)

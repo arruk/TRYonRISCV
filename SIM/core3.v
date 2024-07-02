@@ -1,8 +1,6 @@
-`define BENC
-
-`default_nettype none
+`include "uart_tx.v"
 `include "clockworks.v"
-`include "alu.v"
+`include "alu2.v"
 
 module core(
 	input         clk,
@@ -13,7 +11,8 @@ module core(
 	output        IO_mem_wr     // IO write flag
 );
 
-	parameter dsz=16384, isz=16384;
+	//parameter dsz=16384, isz=16384;
+	parameter dsz=8192, isz=8192;
 	
 	reg [31:0] RAM [0:dsz-1];
 	reg [31:0] ROM [0:isz-1];
@@ -288,40 +287,55 @@ module core(
 
 endmodule
 
-module SOC( input CLK, input RESET );
+module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
 
-	wire resetn, clk;
+        wire resetn, clk;
 
-	wire [31:0] IO_mem_addr, IO_mem_rdata, IO_mem_wdata;
-	wire IO_mem_wr;
+        wire [31:0] IO_mem_addr, IO_mem_rdata, IO_mem_wdata;
+        wire IO_mem_wr;
 
-	core CPU(
-		.clk(clk),
-		.resetn(resetn),
-		.IO_mem_addr(IO_mem_addr),
-		.IO_mem_rdata(IO_mem_rdata),
-		.IO_mem_wdata(IO_mem_wdata),
-		.IO_mem_wr(IO_mem_wr)
-	);
+        core CPU(
+                .clk(clk),
+                .resetn(resetn),
+                .IO_mem_addr(IO_mem_addr),
+                .IO_mem_rdata(IO_mem_rdata),
+                .IO_mem_wdata(IO_mem_wdata),
+                .IO_mem_wr(IO_mem_wr)
+        );
 
-	wire [13:0] IO_wordaddr = IO_mem_addr[15:2];
-	wire uart_valid = IO_mem_wr & IO_wordaddr[1];
+        assign LEDS = IO_mem_wdata[5:0];
 
-	`ifdef BENCH
-		always@(posedge clk) begin
-			if(uart_valid) begin
-				$write("%c", IO_mem_wdata[7:0]);
-				$fflush(32'h8000_0001);
-			end
-		end
-	`endif
+        wire [13:0] IO_wordaddr = IO_mem_addr[15:2];
+        wire uart_valid = IO_mem_wr & IO_wordaddr[1];
+        wire uart_ready;
 
-	Clockworks CW(
-		.CLK(CLK),
-		.RESET(RESET),
-		.clk(clk),
-		.resetn(resetn)
-	);
+        corescore_emitter_uart #(
+                .clk_freq_hz(10000000),
+                .baud_rate(1000000)
+        ) UART(
+                .i_clk(clk),
+                .i_rst(!resetn),
+                .i_data(IO_mem_wdata[7:0]),
+                .i_valid(uart_valid),
+                .o_ready(uart_ready),
+                .o_uart_tx(UART_TX)
+        );
+        assign IO_mem_rdata = IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
+
+        `ifdef BENCH
+                always@(posedge clk) begin
+                        if(uart_valid) begin
+                                $write("%c", IO_mem_wdata[7:0]);
+                                $fflush(32'h8000_0001);
+                        end
+                end
+        `endif
+
+        Clockworks CW(
+                .CLK(CLK),
+                .RESET(RESET),
+                .clk(clk),
+                .resetn(resetn)
+        );
 
 endmodule
-

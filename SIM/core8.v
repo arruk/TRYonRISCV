@@ -393,7 +393,7 @@ module SOC( input CLK, input RESET, output [5:0] LEDS );
         wire [31:0] IO_mem_addr, IO_mem_rdata, IO_mem_wdata;
         wire IO_mem_wr;
 
-        core #(.BHT_ADDR_BITS(sz))CPU(
+        core #(.BHT_ADDR_BITS(16))CPU(
                 .clk(clk),
                 .resetn(resetn),
                 .IO_mem_addr(IO_mem_addr),

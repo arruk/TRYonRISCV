@@ -10,8 +10,10 @@ SZ=4
 main() {
 
 	(cd obj_dir; rm -f *.cpp *.o *.a VSOC)
-	verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -Gsz=$SZ -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
+	verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
 		  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c $1
+	#verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -Gsz=$SZ -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
+	#	  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c $1
 	
 	(cd obj_dir; make -f VSOC.mk)
 	if [ "$2" = "v" ]
@@ -129,7 +131,7 @@ then
 		echo "FINISHED WITH $SZ bits\n"
 	done
 else
-	SZ=6
+	SZ=14
 	main "$@"
 fi
 
