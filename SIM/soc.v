@@ -16,8 +16,8 @@ module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
         `else
                 localparam dm=8192, im=8192;
         `endif
-        wire [15:0] pc;
-	wire [31:0] mem_inst;
+        wire [15:0] imem_addr;
+	wire [31:0] imem_data;
         wire [31:0] mem_data;     // data read from memory
         wire [ 3:0] mem_wmask;      // mask for write in memory
         wire [31:0] mem_addr;  // address to write/read
@@ -25,21 +25,21 @@ module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
 
         torv32 #(
 		.BYPASS(1),
-		.BRANCH_PRED(4'd0),
+		.BRANCH_PRED(4'd3),
 		.BHT_ADDR_BITS(16)
 	) CPU (     
-     		.clk(clk),
-                .resetn(resetn),
-                .pc(pc),
-                .mem_inst(mem_inst),
-                .mem_data(mem_data),
-                .mem_wmask(mem_wmask),
-                .mem_addr(mem_addr),
-                .mem_wdata(mem_wdata),
-                .IO_mem_addr(IO_mem_addr),
-                .IO_mem_rdata(IO_mem_rdata),
-                .IO_mem_wdata(IO_mem_wdata),
-                .IO_mem_wr(IO_mem_wr)
+     		.clk          (clk),
+                .resetn       (resetn),
+                .imem_addr    (imem_addr),
+                .imem_data    (imem_data),
+                .mem_data     (mem_data),
+                .mem_wmask    (mem_wmask),
+                .mem_addr     (mem_addr),
+                .mem_wdata    (mem_wdata),
+                .IO_mem_addr  (IO_mem_addr),
+                .IO_mem_rdata (IO_mem_rdata),
+                .IO_mem_wdata (IO_mem_wdata),
+                .IO_mem_wr    (IO_mem_wr)
         );
 
 	mem #(
@@ -47,32 +47,33 @@ module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
 		.RAM_SIZE(dm)
 	) DATA (
 		.clk(clk),
-		.pc(pc),
-        	.mem_inst(mem_inst),
-                .mem_data(mem_data),
-                .mem_wmask(mem_wmask),
-                .mem_addr(mem_addr),
-                .mem_wdata(mem_wdata)
+		.imem_addr (imem_addr),
+        	.imem_data (imem_data),
+                .mem_data  (mem_data),
+                .mem_wmask (mem_wmask),
+                .mem_addr  (mem_addr),
+                .mem_wdata (mem_wdata)
 	);
 
         assign LEDS = IO_mem_wdata[5:0];
 
+        assign IO_mem_rdata = IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
         wire [13:0] IO_wordaddr = IO_mem_addr[15:2];
         wire uart_valid = IO_mem_wr & IO_wordaddr[1];
         wire uart_ready;
 
 	corescore_emitter_uart #(
-		.clk_freq_hz(10000000),
-		.baud_rate(1000000)
+		.clk_freq_hz (10000000),
+		.baud_rate   (1000000)
 	) UART(
-		.i_clk(clk),
-		.i_rst(!resetn),
-		.i_data(IO_mem_wdata[7:0]),
-		.i_valid(uart_valid),
-		.o_ready(uart_ready),
-		.o_uart_tx(UART_TX)      			       
+		.i_clk     (clk),
+		.i_rst     (!resetn),
+		.i_data    (IO_mem_wdata[7:0]),
+		.i_valid   (uart_valid),
+		.o_ready   (uart_ready),
+		.o_uart_tx (UART_TX)      			       
 	);
-        assign IO_mem_rdata = IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
+
 
         `ifdef BENCH
 		reg ch;
@@ -96,13 +97,13 @@ endmodule
 module mem (
 	input 	          clk,
 
-        input  [15:0] pc,
-        output [31:0] mem_inst,
+        input  [15:0] imem_addr,
+        output [31:0] imem_data,
 	
-        output [31:0] mem_data,     // data read from memory
-        input  [ 3:0] mem_wmask,      // mask for write in memory
-        input  [31:0] mem_addr,  // address to write/read
-        input  [31:0] mem_wdata // data to write
+        output [31:0] mem_data,
+        input  [ 3:0] mem_wmask,
+        input  [31:0] mem_addr,
+        input  [31:0] mem_wdata
 );
 
         parameter ROM_SIZE = 16384;
@@ -116,7 +117,7 @@ module mem (
 		$readmemh("DATARAM.hex", RAM);
         end
 	
-	assign mem_inst = ROM[pc[15:2]];
+	assign imem_data = ROM[imem_addr[15:2]];
 
         always@(posedge clk) begin
                 if(mem_wmask[0]) RAM[mem_addr][ 7:0 ] <= mem_wdata[ 7:0 ];

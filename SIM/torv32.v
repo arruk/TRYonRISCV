@@ -5,20 +5,22 @@
 `endif
 
 module torv32 #(
-	parameter BYPASS = 0,
-	parameter [3:0] BRANCH_PRED = 4'b0,
-        parameter BHT_ADDR_BITS=4
+
+	parameter       BYPASS        = 0,
+	parameter [3:0] BRANCH_PRED   = 4'b0,
+        parameter       BHT_ADDR_BITS = 4
+
 )(
 	input         clk,
         input 	      resetn,
 
-	output [15:0] pc,
-	input  [31:0] mem_inst,
+	output [15:0] imem_addr,    // addres to fetch an instruction
+	input  [31:0] imem_data,    // instruction fetched
 
 	input  [31:0] mem_data,     // data read from memory
-	output [ 3:0] mem_wmask,      // mask for write in memory
-	output [31:0] mem_addr,  // address to write/read
-	output [31:0] mem_wdata, // data to write
+	output [ 3:0] mem_wmask,    // mask for write in memory
+	output [31:0] mem_addr,     // address to write/read
+	output [31:0] mem_wdata,    // data to write
 
 	output [31:0] IO_mem_addr,  // IO mem address
 	input  [31:0] IO_mem_rdata, // data read from IO
@@ -29,28 +31,168 @@ module torv32 #(
 	wire rs1_HAZ;
         wire rs2_HAZ;
         wire data_HAZ;
+	wire e_m_fwd_rs1;
+        wire e_w_fwd_rs1;
+        wire e_m_fwd_rs2;
+        wire e_w_fwd_rs2;
+        wire [31:0] e_rs1;
+        wire [31:0] e_rs2;
 
-	generate if(BYPASS) begin
+	generate 
+		if(BYPASS) begin
+		
+			assign rs1_HAZ = reads_rs1(fd_IR) & (rs1ID(fd_IR) == rdID(de_IR));
+
+			assign rs2_HAZ = reads_rs2(fd_IR) & (rs2ID(fd_IR) == rdID(de_IR));
+
+			assign data_HAZ = !fd_NOP & (isLoad(de_IR) | isCSRRS(de_IR)) & (rs1_HAZ | rs2_HAZ);
+		
+			assign e_m_fwd_rs1 = (rdID(em_IR)!=0) & (writes_rd(em_IR)) & (rdID(em_IR) == rs1ID(de_IR));
+			assign e_w_fwd_rs1 = (rdID(mw_IR)!=0) & (writes_rd(mw_IR)) & (rdID(mw_IR) == rs1ID(de_IR));
+		
+			assign e_m_fwd_rs2 = (rdID(em_IR)!=0) & (writes_rd(em_IR)) & (rdID(em_IR) == rs2ID(de_IR));
+			assign e_w_fwd_rs2 = (rdID(mw_IR)!=0) & (writes_rd(mw_IR)) & (rdID(mw_IR) == rs2ID(de_IR));
+			
+			assign e_rs1 = e_m_fwd_rs1 ? em_RES  :
+						    e_w_fwd_rs1 ? wb_DATA :
+								  de_rs1  ;
+
+			assign e_rs2 = e_m_fwd_rs2 ? em_RES  :
+					    e_w_fwd_rs2 ? wb_DATA :
+								  de_rs2  ;
+					
+		end else begin
+		
+			assign rs1_HAZ = !fd_NOP & reads_rs1(fd_IR) & rs1ID(fd_IR)!=0 &    (
+					(writes_rd(de_IR) & (rs1ID(fd_IR) == rdID(de_IR))) |
+					(writes_rd(em_IR) & (rs1ID(fd_IR) == rdID(em_IR))) );
+
+			assign rs2_HAZ = !fd_NOP & reads_rs2(fd_IR) & rs2ID(fd_IR)!=0 &    (
+					(writes_rd(de_IR) & (rs2ID(fd_IR) == rdID(de_IR))) |
+					(writes_rd(em_IR) & (rs2ID(fd_IR) == rdID(em_IR))) );
+
+			assign data_HAZ = rs1_HAZ | rs2_HAZ;
+
+			assign e_rs1 = de_rs1;
+			assign e_rs2 = de_rs2;
+
+		end 
+	endgenerate
+
+	localparam BP_HIST_BITS  = (BRANCH_PRED == 4'd3) ? 7 : 14;
+        localparam BHT_SIZE=1<<BHT_ADDR_BITS;
+
+        reg [1:0]               BHT [BHT_SIZE-1:0]; // BRANCH HISTORY TALBE
+	reg [BP_HIST_BITS-1 :0] BH;                 // BRANCH HISTORY
+	reg [BHT_ADDR_BITS-1:0] de_BHT_index;
+	reg                     de_predict;	
+	wire                    d_predict;
+	wire                    d_JoB_now;
+	wire [31:0]             d_JoB_ADDR;
+	wire [31:0]             f_PC;
+	wire                    e_JoB;
+	wire [31:0]             e_ADDin2;	
+
+	generate 
+		if(BRANCH_PRED == 4'b0000) begin
+			assign f_PC = em_JoB ? em_JoB_ADDR : PC;
+
+        	        assign e_JoB = isJAL(de_IR) | isJALR(de_IR) | (isBtype(de_IR) & e_takeB);
+	                assign e_ADDin2 = e_IMM;
+
+                end else if(BRANCH_PRED == 4'b0001) begin
+		
+        		assign f_PC = d_JoB_now  ? d_JoB_ADDR  :
+                                      em_JoB     ? em_JoB_ADDR :
+                                                            PC ;
+
+			assign d_predict  = fd_IR[31];
+			assign d_JoB_now  = !fd_NOP & (isJAL(fd_IR) | (isBtype(fd_IR) & d_predict));
+			assign d_JoB_ADDR = fd_PC + (isJAL(fd_IR) ? Jimm(fd_IR) : Bimm(fd_IR));
+			always@(posedge clk)
+				if(!d_stall) de_predict <= d_predict;
 	
-		assign rs1_HAZ = reads_rs1(fd_IR) & (rs1ID(fd_IR) == rdID(de_IR));
+			assign e_JoB = isJALR(de_IR) | (isBtype(de_IR) & (e_takeB^de_predict));
+	                assign e_ADDin2 = (isBtype(de_IR) & de_predict)   ? 32'd4 : e_IMM;
 
-		assign rs2_HAZ = reads_rs2(fd_IR) & (rs2ID(fd_IR) == rdID(de_IR));
+		end else if(BRANCH_PRED == 4'b0010) begin 
+		
+			assign f_PC = d_JoB_now  ? d_JoB_ADDR  :
+                                      em_JoB     ? em_JoB_ADDR :
+                                                            PC ;
 
-		assign data_HAZ = !fd_NOP & (isLoad(de_IR) | isCSRRS(de_IR)) & (rs1_HAZ | rs2_HAZ);
-	
-	end else begin
-	
-		assign rs1_HAZ = !fd_NOP & reads_rs1(fd_IR) & rs1ID(fd_IR)!=0 &    (
-				(writes_rd(de_IR) & (rs1ID(fd_IR) == rdID(de_IR))) |
-				(writes_rd(em_IR) & (rs1ID(fd_IR) == rdID(em_IR))) );
+			assign d_predict  = BHT[BHT_index(fd_PC)][1];
+			assign d_JoB_now  = !fd_NOP & (isJAL(fd_IR) | (isBtype(fd_IR) & d_predict));
+			assign d_JoB_ADDR = fd_PC + (isJAL(fd_IR) ? Jimm(fd_IR) : Bimm(fd_IR));
+			always@(posedge clk)
+				if(!d_stall) begin
+					de_predict   <= d_predict;
+					de_BHT_index <= BHT_index(fd_PC);
+				end
+        	
+			assign e_JoB = isJALR(de_IR) | (isBtype(de_IR) & (e_takeB^de_predict));
+	                assign e_ADDin2 = (isBtype(de_IR) & de_predict)   ? 32'd4 : e_IMM;
 
-		assign rs2_HAZ = !fd_NOP & reads_rs2(fd_IR) & rs2ID(fd_IR)!=0 &    (
-				(writes_rd(de_IR) & (rs2ID(fd_IR) == rdID(de_IR))) |
-				(writes_rd(em_IR) & (rs2ID(fd_IR) == rdID(em_IR))) );
+                	always@(posedge clk) begin
+                	        if(isBtype(de_IR))
+        	                        BHT[de_BHT_index] <= incdec_sat(BHT[de_BHT_index], e_takeB);
+	                end
 
-		assign data_HAZ = rs1_HAZ | rs2_HAZ;
-	
-	end endgenerate
+
+		end else if(BRANCH_PRED == 4'b0011) begin
+
+			assign f_PC = d_JoB_now  ? d_JoB_ADDR  :
+                                      em_JoB     ? em_JoB_ADDR :
+                                                            PC ;
+
+			assign d_predict  = BHT[BHT_index_gselect(fd_PC)][1];
+			assign d_JoB_now  = !fd_NOP & (isJAL(fd_IR) | (isBtype(fd_IR) & d_predict));
+			assign d_JoB_ADDR = fd_PC + (isJAL(fd_IR) ? Jimm(fd_IR) : Bimm(fd_IR));
+			always@(posedge clk)
+				if(!d_stall) begin
+					de_predict   <= d_predict;
+					de_BHT_index <= BHT_index_gselect(fd_PC);
+				end
+			
+			assign e_JoB = isJALR(de_IR) | (isBtype(de_IR) & (e_takeB^de_predict));
+			assign e_ADDin2 = (isBtype(de_IR) & de_predict)   ? 32'd4 : e_IMM;
+
+			always@(posedge clk) begin
+				if(isBtype(de_IR)) begin
+					BH <= {e_takeB, BH[BP_HIST_BITS-1:1]};
+					BHT[de_BHT_index] <= incdec_sat(BHT[de_BHT_index], e_takeB);
+				end
+			end
+
+		end else if(BRANCH_PRED == 4'b0100) begin
+
+			assign f_PC = d_JoB_now  ? d_JoB_ADDR  :
+                                      em_JoB     ? em_JoB_ADDR :
+                                                            PC ;
+
+			assign d_predict  = BHT[BHT_index_gshare(fd_PC)][1];
+			assign d_JoB_now  = !fd_NOP & (isJAL(fd_IR) | (isBtype(fd_IR) & d_predict));
+			assign d_JoB_ADDR = fd_PC + (isJAL(fd_IR) ? Jimm(fd_IR) : Bimm(fd_IR));
+			always@(posedge clk)
+				if(!d_stall) begin
+					de_predict   <= d_predict;
+					de_BHT_index <= BHT_index_gshare(fd_PC);
+				end
+			
+			assign e_JoB = isJALR(de_IR) | (isBtype(de_IR) & (e_takeB^de_predict));
+			assign e_ADDin2 = (isBtype(de_IR) & de_predict)   ? 32'd4 : e_IMM;
+
+			always@(posedge clk) begin
+				if(isBtype(de_IR)) begin
+					BH <= {e_takeB, BH[BP_HIST_BITS-1:1]};
+					BHT[de_BHT_index] <= incdec_sat(BHT[de_BHT_index], e_takeB);
+				end
+			end
+
+		end  
+	endgenerate
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	wire halt = resetn & isEBREAK(de_IR);	
 
@@ -63,26 +205,11 @@ module torv32 #(
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	reg [31:0] PC;
-	reg [31:0] f_PC;
-	assign pc = f_PC[15:0];
-
-	always @* begin
-		if(BRANCH_PRED == 4'd0)begin
-			f_PC = em_JoB ? em_JoB_ADDR : PC;
-		end else if( |BRANCH_PRED) begin
-			case({d_JoB_now, em_JoB})
-				2'b00: f_PC = PC;
-				2'b01: f_PC = em_JoB_ADDR;
-				2'b10: f_PC = d_JoB_ADDR;
-				2'b11: f_PC = d_JoB_ADDR;
-			endcase
-		end
-
-	end
+	assign imem_addr = f_PC[15:0];
 
 	always@(posedge clk) begin
 		if(!f_stall) begin
-			fd_IR <= mem_inst;
+			fd_IR <= imem_data;
 			fd_PC <= f_PC;
 			PC    <= f_PC +4;
 		end
@@ -99,79 +226,6 @@ module torv32 #(
         reg fd_NOP;
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        function [BHT_ADDR_BITS-1:0] BHT_index;
-                input [31:0] PC;
-                BHT_index = PC[BHT_ADDR_BITS+1:2];
-        endfunction
-
-        function [BHT_ADDR_BITS-1:0] BHT_index_gselect;
-                input [31:0] PC;
-                BHT_index_gselect = {PC[BHT_ADDR_BITS+1:2], BH[BP_HIST_BITS-1:0]};
-        endfunction
-
-        function [BHT_ADDR_BITS-1:0] BHT_index_gshare;
-                input [31:0] PC;
-                /* verilator lint_off WIDTH */
-                BHT_index_gshare = PC[15:2] ^ BH;
-                /* verilator lint_on WIDTH */
-        endfunction
-
-
-	localparam BP_HIST_BITS  = BRANCH_PRED == 4'd3 ? 7 : 14;
-        localparam BHT_SIZE=1<<BHT_ADDR_BITS;
-
-        reg [1:0] BHT [BHT_SIZE-1:0];
-	reg [BP_HIST_BITS-1:0] BH;
-
-	reg [BHT_ADDR_BITS-1:0] de_BHT_index;
-	reg  de_predict;
-	wire d_predict;
-	wire d_JoB_now;
-	wire [31:0]d_JoB_ADDR;
-
-	generate if(BRANCH_PRED == 4'b0001) begin
-	
-		assign d_predict  = fd_IR[31];
-        	assign d_JoB_now  = !fd_NOP & (isJAL(fd_IR) | (isBtype(fd_IR) & d_predict));
-        	assign d_JoB_ADDR = fd_PC + (isJAL(fd_IR) ? Jimm(fd_IR) : Bimm(fd_IR));
-		always@(posedge clk)
-			if(!d_stall) de_predict <= d_predict;
-	
-	end else if(BRANCH_PRED == 4'b0010) begin 
-	
-		assign d_predict  = BHT[BHT_index(fd_PC)][1];
-        	assign d_JoB_now  = !fd_NOP & (isJAL(fd_IR) | (isBtype(fd_IR) & d_predict));
-        	assign d_JoB_ADDR = fd_PC + (isJAL(fd_IR) ? Jimm(fd_IR) : Bimm(fd_IR));
-		always@(posedge clk)
-			if(!d_stall) begin
-				de_predict   <= d_predict;
-				de_BHT_index <= BHT_index(fd_PC);
-			end
-
-	end else if(BRANCH_PRED == 4'b0011) begin
-
-                assign d_predict  = BHT[BHT_index_gselect(fd_PC)][1];
-                assign d_JoB_now  = !fd_NOP & (isJAL(fd_IR) | (isBtype(fd_IR) & d_predict));
-                assign d_JoB_ADDR = fd_PC + (isJAL(fd_IR) ? Jimm(fd_IR) : Bimm(fd_IR));
-                always@(posedge clk)
-                        if(!d_stall) begin
-                                de_predict   <= d_predict;
-                                de_BHT_index <= BHT_index_gselect(fd_PC);
-                        end
-
-        end else if(BRANCH_PRED == 4'b0100) begin
-
-                assign d_predict  = BHT[BHT_index_gshare(fd_PC)][1];
-                assign d_JoB_now  = !fd_NOP & (isJAL(fd_IR) | (isBtype(fd_IR) & d_predict));
-                assign d_JoB_ADDR = fd_PC + (isJAL(fd_IR) ? Jimm(fd_IR) : Bimm(fd_IR));
-                always@(posedge clk)
-                        if(!d_stall) begin
-                                de_predict   <= d_predict;
-                                de_BHT_index <= BHT_index_gshare(fd_PC);
-                        end
-
-        end  endgenerate
 
 	localparam NOP = 32'b0000000_00000_00000_000_00000_0110011;
 	
@@ -202,87 +256,8 @@ module torv32 #(
 	wire [31:0] de_rs1 = reg_file[de_IR[19:15]];
        	wire [31:0] de_rs2 = reg_file[de_IR[24:20]];
 
-	reg e_m_fwd_rs1;
-        reg e_w_fwd_rs1;
-        reg e_m_fwd_rs2;
-        reg e_w_fwd_rs2;
-        reg [31:0] e_rs1;
-        reg [31:0] e_rs2;
-
-	always @* begin
-		if (BYPASS) begin
-                	e_m_fwd_rs1 = (rdID(em_IR)!=0) & (writes_rd(em_IR)) & (rdID(em_IR) == rs1ID(de_IR));
-        	        e_w_fwd_rs1 = (rdID(mw_IR)!=0) & (writes_rd(mw_IR)) & (rdID(mw_IR) == rs1ID(de_IR));
-	
-        	        e_m_fwd_rs2 = (rdID(em_IR)!=0) & (writes_rd(em_IR)) & (rdID(em_IR) == rs2ID(de_IR));
-	                e_w_fwd_rs2 = (rdID(mw_IR)!=0) & (writes_rd(mw_IR)) & (rdID(mw_IR) == rs2ID(de_IR));
-			
-			case({e_m_fwd_rs1, e_w_fwd_rs1})
-				2'b00: e_rs1 = de_rs1;
-				2'b01: e_rs1 = wb_DATA;
-				2'b10: e_rs1 = em_RES;
-				2'b11: e_rs1 = em_RES;
-			endcase 
-			
-			case({e_m_fwd_rs2, e_w_fwd_rs2})
-				2'b00: e_rs2 = de_rs2;
-				2'b01: e_rs2 = wb_DATA;
-				2'b10: e_rs2 = em_RES;
-				2'b11: e_rs2 = em_RES;
-			endcase 
-		end else begin
-			e_rs1 = de_rs1;
-			e_rs2 = de_rs2;
-		end
-	end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        function [1:0] incdec_sat;
-                input [1:0] prev;
-                input dir;
-                incdec_sat =
-                        {dir, prev} == 3'b000 ? 2'b00 :
-                        {dir, prev} == 3'b001 ? 2'b00 :
-                        {dir, prev} == 3'b010 ? 2'b01 :
-                        {dir, prev} == 3'b011 ? 2'b10 :
-                        {dir, prev} == 3'b100 ? 2'b01 :
-                        {dir, prev} == 3'b101 ? 2'b10 :
-                        {dir, prev} == 3'b110 ? 2'b11 :
-                                                2'b11 ;
-        endfunction;
-
-
-	wire e_JoB;
-	wire [31:0] e_ADDin2;	
-
-	generate if(BRANCH_PRED == 4'b1) begin
-		assign e_JoB = isJALR(de_IR) | (isBtype(de_IR) & (e_takeB^de_predict));
-		assign e_ADDin2 = (isBtype(de_IR) & de_predict)   ? 32'd4 : e_IMM;
-	end else if (BRANCH_PRED == 4'd2) begin
-                assign e_JoB = isJALR(de_IR) | (isBtype(de_IR) & (e_takeB^de_predict));
-                assign e_ADDin2 = (isBtype(de_IR) & de_predict)   ? 32'd4 : e_IMM;
-
-		always@(posedge clk) begin
-        	        if(isBtype(de_IR))
-	                        BHT[de_BHT_index] <= incdec_sat(BHT[de_BHT_index], e_takeB);
-		end
-
-	end else if (BRANCH_PRED == 4'd3 || BRANCH_PRED == 4'd4) begin
-                assign e_JoB = isJALR(de_IR) | (isBtype(de_IR) & (e_takeB^de_predict));
-                assign e_ADDin2 = (isBtype(de_IR) & de_predict)   ? 32'd4 : e_IMM;
-
-                always@(posedge clk) begin
-			if(isBtype(de_IR)) begin
-				BH <= {e_takeB, BH[BP_HIST_BITS-1:1]};
-                                BHT[de_BHT_index] <= incdec_sat(BHT[de_BHT_index], e_takeB);
-			end
-                end
-
-        end  else begin
-		assign e_JoB = isJAL(de_IR) | isJALR(de_IR) | (isBtype(de_IR) & e_takeB);
-		assign e_ADDin2 = e_IMM;
-	end endgenerate
 
 	wire [31:0] e_IMM;
 
@@ -441,15 +416,45 @@ module torv32 #(
 	function writes_rd; input [31:0] I; writes_rd = !isStype(I) & !isBtype(I)           ; endfunction
 	function reads_rs1; input [31:0] I; reads_rs1 = !(isJAL(I) | isAUIPC(I) | isLUI(I)) ; endfunction
 	function reads_rs2; input [31:0] I; reads_rs2 = isRtype(I) | isBtype(I) | isStype(I); endfunction
+        
+	function [BHT_ADDR_BITS-1:0] BHT_index;
+                input [31:0] PC;
+                BHT_index = PC[BHT_ADDR_BITS+1:2];
+        endfunction
 
+        function [BHT_ADDR_BITS-1:0] BHT_index_gselect;
+                input [31:0] PC;
+                BHT_index_gselect = {PC[BHT_ADDR_BITS+1:2], BH[BP_HIST_BITS-1:0]};
+        endfunction
+
+        function [BHT_ADDR_BITS-1:0] BHT_index_gshare;
+                input [31:0] PC;
+                /* verilator lint_off WIDTH */
+                BHT_index_gshare = PC[15:2] ^ BH;
+                /* verilator lint_on WIDTH */
+        endfunction
+
+	function [1:0] incdec_sat;
+                input [1:0] prev;
+                input dir;
+                incdec_sat =
+                        {dir, prev} == 3'b000 ? 2'b00 :
+                        {dir, prev} == 3'b001 ? 2'b00 :
+                        {dir, prev} == 3'b010 ? 2'b01 :
+                        {dir, prev} == 3'b011 ? 2'b10 :
+                        {dir, prev} == 3'b100 ? 2'b01 :
+                        {dir, prev} == 3'b101 ? 2'b10 :
+                        {dir, prev} == 3'b110 ? 2'b11 :
+                                                2'b11 ;
+        endfunction;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/*`ifdef BENCH
+	`ifdef BENCH
 	   always @(posedge clk) begin
 		   if(halt) $finish(); 
 	   end
-	`endif*/
-        `ifdef BENCH
+	`endif
+        `ifdef BENC
 
                 integer nbBranch = 0;
                 integer nbPredictHit = 0;
