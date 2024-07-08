@@ -1,6 +1,7 @@
 `include "clockworks.v"
 `include "uart_tx.v"
-`include "torv32.v"
+//`include "torv32.v"
+`include "core2.v"
 
 module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
 
@@ -24,15 +25,15 @@ module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
         wire [31:0] mem_wdata; // data to write
 
         torv32 #(
-		.BYPASS(1),
-		.BRANCH_PRED(4'd3),
-		.BHT_ADDR_BITS(16)
+//		.BYPASS(0),
+//		.BRANCH_PRED(4'd0),
+//		.BHT_ADDR_BITS(1)
 	) CPU (     
      		.clk          (clk),
                 .resetn       (resetn),
                 .imem_addr    (imem_addr),
                 .imem_data    (imem_data),
-                .mem_data     (mem_data),
+                .mem_data    (mem_data),
                 .mem_wmask    (mem_wmask),
                 .mem_addr     (mem_addr),
                 .mem_wdata    (mem_wdata),
