@@ -1,7 +1,14 @@
 `include "clockworks.v"
 `include "uart_tx.v"
 //`include "torv32.v"
-`include "core2.v"
+//`include "core2.v"
+//`include "core4.v"
+`include "newbypass.v"
+//`include "newbypass_f.v"
+//`include "newbypass2.v"
+//`include "newbypass_f2.v"
+//`include "newbypass3.v"
+//`include "newbypass4.v"
 
 module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
 

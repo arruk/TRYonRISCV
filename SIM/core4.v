@@ -1,7 +1,4 @@
-//`define BENCH
-//`define BENCH_BP
-`include "uart_tx.v"
-`include "clockworks.v"
+`default_nettype none
 
 `ifdef ALU
 	`include "alu2.v"
@@ -9,34 +6,23 @@
 	`include "alu.v"
 `endif
 
-module core(
+module torv32(
 	input         clk,
         input 	      resetn,
+
+        output [15:0] imem_addr,    // addres to fetch an instruction
+        input  [31:0] imem_data,    // instruction fetched
+
+        input  [31:0] mem_data,     // data read from memory
+        output [ 3:0] mem_wmask,    // mask for write in memory
+        output [31:0] mem_addr,     // address to write/read
+        output [31:0] mem_wdata,    // data to write
+
 	output [31:0] IO_mem_addr,  // IO mem address
 	input  [31:0] IO_mem_rdata, // data read from IO
 	output [31:0] IO_mem_wdata, // data written to IO
 	output        IO_mem_wr     // IO write flag
 );
-        `ifdef BENCH
-                //parameter dsz=8192, isz=8192;
-                parameter dsz=16384, isz=16384;
-        `elsif NANO9K
-                parameter dsz=4096, isz=4096;
-        `elsif PRIMER
-                parameter dsz=8192, isz=8192;
-        `else
-                parameter dsz=8192, isz=8192;
-        `endif
-
-	reg [31:0] RAM [0:dsz-1];
-	reg [31:0] ROM [0:isz-1];
-
-	initial begin
-        	$readmemh("PROGROM.hex", ROM);
-        	$readmemh("DATARAM.hex", RAM);
-    	end
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	function [4:0] rs1ID ; input [31:0] I; rs1ID  = I[19:15]; endfunction
 	function [4:0] rs2ID ; input [31:0] I; rs2ID  = I[24:20]; endfunction
@@ -96,7 +82,7 @@ module core(
 
 	always@(posedge clk) begin
 		if(!f_stall) begin
-			fd_IR <= ROM[f_PC[15:2]];
+			fd_IR <= imem_data;
 			fd_PC <= f_PC;
 			PC  <= f_PC+4;
 		end
@@ -108,6 +94,8 @@ module core(
 		end
 	
 	end
+
+	assign imem_addr = f_PC[15:0];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -231,6 +219,8 @@ module core(
 				   m_isH ? (em_ADDR[1] ? 4'b1100 : 4'b0011)                :
 				   4'b1111;
 
+	wire [3:0] m_WMASK = {4{isStype(em_IR) & M_isRAM}} & m_store_WMASK;
+	wire [13:0] m_word_ADDR = em_ADDR[15:2];
 	wire M_isIO  = em_ADDR[22];
 	wire M_isRAM = !M_isIO;
 
@@ -238,17 +228,9 @@ module core(
 	assign IO_mem_wr    = isStype(em_IR) & M_isIO;
 	assign IO_mem_wdata = em_rs2;
 
-	wire [3:0] m_WMASK = {4{isStype(em_IR) & M_isRAM}} & m_store_WMASK;
-
-	wire [13:0] m_word_ADDR = em_ADDR[15:2];
-
-	always@(posedge clk) begin
-		mw_Mdata <= RAM[m_word_ADDR];
-		if(m_WMASK[0]) RAM[m_word_ADDR][ 7:0 ] <= m_store_DATA[ 7:0 ];
-		if(m_WMASK[1]) RAM[m_word_ADDR][15:8 ] <= m_store_DATA[15:8 ];
-		if(m_WMASK[2]) RAM[m_word_ADDR][23:16] <= m_store_DATA[23:16];
-		if(m_WMASK[3]) RAM[m_word_ADDR][31:24] <= m_store_DATA[31:24];
-	end
+        assign mem_wmask = m_WMASK;
+        assign mem_addr = {11'b0,m_word_ADDR};
+        assign mem_wdata = m_store_DATA;
 
 	always@(posedge clk) begin
 		mw_IR     <= em_IR;
@@ -256,6 +238,7 @@ module core(
 		mw_RES    <= em_RES;
 		mw_IO_RES <= IO_mem_rdata;
 		mw_ADDR   <= em_ADDR;
+		mw_Mdata  <= mem_data;
 
 		case({em_IR[27], em_IR[21]}) // CSR ID
 			2'b00: mw_CSR_RES <= cycle[31:0];
@@ -355,7 +338,7 @@ module core(
 
 endmodule
 
-module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
+/*module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
 
         wire resetn, clk;
 
@@ -406,4 +389,4 @@ module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
                 .resetn(resetn)
         );
 
-endmodule
+endmodule*/

@@ -26,20 +26,15 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	
-
-	wire rs1_HAZ = !fd_NOP & reads_rs1(fd_IR) & rs1ID(fd_IR)!=0 &    (
-		       	(writes_rd(de_IR) & (rs1ID(fd_IR) == rdID(de_IR))) |
-		        (writes_rd(em_IR) & (rs1ID(fd_IR) == rdID(em_IR))) ); 
-	
-	wire rs2_HAZ = !fd_NOP & reads_rs2(fd_IR) & rs2ID(fd_IR)!=0 &    (
-		       	(writes_rd(de_IR) & (rs2ID(fd_IR) == rdID(de_IR))) |
-		        (writes_rd(em_IR) & (rs2ID(fd_IR) == rdID(em_IR))) ); 
-	
 	wire halt = resetn & isEBREAK(de_IR);	
 
-	wire data_HAZ = rs1_HAZ | rs2_HAZ;
+        wire rs1_HAZ = reads_rs1(fd_IR) & (rs1ID(fd_IR) == rdID(de_IR));
 
+        wire rs2_HAZ = reads_rs2(fd_IR) & (rs2ID(fd_IR) == rdID(de_IR));
+
+	wire data_HAZ = !fd_NOP & (isLoad(de_IR) | isCSRRS(de_IR)) &  (rs1_HAZ | rs2_HAZ); 
+//	wire data_HAZ = !fd_NOP & (isLoad(de_IR) | isCSRRS(de_IR)) & ((writes_rd1(fd_IR)) | (rs1_HAZ | rs2_HAZ)); 
+	
 	wire f_stall = data_HAZ | halt;
 	wire d_stall = data_HAZ | halt;
 
@@ -67,6 +62,9 @@ module torv32(
 		end
 	
 	end
+
+	wire JoB = e_JoB;
+	wire [31:0] JoB_ADDR = e_JoB_ADDR;
 
 	assign imem_addr = f_PC[15:0];
 
@@ -108,6 +106,17 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	wire e_data_HAZ = !fd_NOP & (isLoad(em_IR) | isCSRRS(em_IR)) & writes_rd1(de_IR);
+
+	wire e_m_fwd_rs1 = (rdID(em_IR)!=0) & (writes_rd1(em_IR)) & (rdID(em_IR) == rs1ID(de_IR)) & em_queue;
+	wire e_m_fwd_rs2 = (rdID(em_IR)!=0) & (writes_rd1(em_IR)) & (rdID(em_IR) == rs2ID(de_IR)) & em_queue;
+
+	wire [31:0] e_rs1 = e_m_fwd_rs1 ? em_RES:
+					  de_rs1;
+	wire [31:0] e_rs2 = e_m_fwd_rs2 ? em_RES:
+					  de_rs2;
+
+
 	wire [31:0] e_IMM;
 
 	imm_mux m0(
@@ -115,8 +124,8 @@ module torv32(
 		.imm(e_IMM)
 	);
 
-	wire [31:0] e_ALUin1 = (isJAL(de_IR) | isJALR(de_IR) | isAUIPC(de_IR)) ? de_PC : de_rs1;
-	wire [31:0] e_ALUin2 = (isRtype(de_IR) | isBtype(de_IR))? de_rs2 :
+	wire [31:0] e_ALUin1 = (isJAL(de_IR) | isJALR(de_IR) | isAUIPC(de_IR)) ? de_PC : e_rs1;
+	wire [31:0] e_ALUin2 = (isRtype(de_IR) | isBtype(de_IR))? e_rs2 :
 	       		       (isRimm(de_IR)  | isAUIPC(de_IR))? e_IMM  :
 			       					  32'd4  ;	
 	wire [31:0] e_ALUout;
@@ -131,7 +140,7 @@ module torv32(
 	);
 	wire [31:0] e_RES = isLUI(de_IR) ? e_IMM : e_ALUout;
 
-	wire [31:0] e_ADDin1 = (isJAL(de_IR) | isBtype(de_IR)) ? de_PC : de_rs1;
+	wire [31:0] e_ADDin1 = (isJAL(de_IR) | isBtype(de_IR)) ? de_PC : e_rs1;
 	wire [31:0] e_ADDR_RES = e_ADDin1 + e_IMM;
 	wire [31:0] e_ADDR = {e_ADDR_RES[31:1], e_ADDR_RES[0] & (~isJALR(de_IR))}; 
 
@@ -139,17 +148,40 @@ module torv32(
 	wire [31:0] e_JoB_ADDR = e_ADDR;
 
 	always@(posedge clk) begin
-		em_IR   <= de_IR;
-		em_PC   <= de_PC;
-		em_rs2  <= de_rs2;
-		em_RES  <= e_RES;
-		em_ADDR <= e_ADDR;
+		em_IR    <= de_IR;
+		em_PC    <= de_PC;
+		em_rs2   <= e_rs2;
+		em_RES   <= e_RES;
+		em_ADDR  <= e_ADDR;
+		em_queue <= e_data_HAZ         			    ? 1'b1 :
+			    !(writes_rd1(de_IR) & (rdID(de_IR)!=0)) ? 1'b0 :
+			    		                           em_queue;
+
+		case(csrId(de_IR))
+                        2'b00: em_CSR_RES <= cycle[31:0];
+                        2'b10: em_CSR_RES <= cycle[63:32];
+                        2'b01: em_CSR_RES <= instret[31:0];
+                        2'b11: em_CSR_RES <= instret[63:32];
+                endcase
+
+                if(!resetn) begin
+                        instret  <= 0;
+			em_queue <= 0;
+                end else if(em_IR != NOP) begin
+                        instret <= instret + 1;
+                end
+                cycle <= !resetn ? 0 : cycle + 1;
+
 	end
 	
+	reg [63:0] cycle;
+	reg [63:0] instret;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	reg[31:0] em_IR, em_PC, em_rs2, em_RES, em_ADDR;
-
+	
+	reg[31:0] em_IR, em_PC, em_rs2, em_RES, em_ADDR, em_CSR_RES;
+	reg em_queue;
+	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	wire [2:0] m_funct3 = funct3(em_IR);
@@ -181,64 +213,28 @@ module torv32(
         assign mem_wmask = m_WMASK;
         assign mem_addr = {11'b0,m_word_ADDR};
         assign mem_wdata = m_store_DATA;
+       
+        wire e_sign_e = !m_funct3[2];
+        wire e_isIO   = em_ADDR[22];
 
-	always@(posedge clk) begin
-		mw_IR     <= em_IR;
-		mw_PC     <= em_PC;
-		mw_RES    <= em_RES;
-		mw_IO_RES <= IO_mem_rdata;
-		mw_ADDR   <= em_ADDR;
-		mw_Mdata  <= mem_data;
+        wire [15:0] e_loadH = em_ADDR[1] ? mem_data[31:16] : mem_data[15:0];
+        wire [ 7:0] e_loadB = em_ADDR[0] ? e_loadH[15:8 ] : e_loadH[7: 0];
+        wire e_load_sign    = e_sign_e & (m_isB ? e_loadB[7] : e_loadH[15]);
 
-		case(csrId(em_IR)) 
-			2'b00: mw_CSR_RES <= cycle[31:0];
-			2'b10: mw_CSR_RES <= cycle[63:32];
-			2'b01: mw_CSR_RES <= instret[31:0];
-			2'b11: mw_CSR_RES <= instret[63:32];	 
-		endcase 
-
-		if(!resetn) begin
-			instret <= 0;
-		end else if(mw_IR != NOP) begin
-			instret <= instret + 1;
-		end
-		cycle <= !resetn ? 0 : cycle + 1;
-	end
-
-	reg [63:0] cycle;
-	reg [63:0] instret;
+        wire [31:0] e_mem_RES = m_isB ? {{24{e_load_sign}}, e_loadB} :
+                                m_isH ? {{16{e_load_sign}}, e_loadH} :
+                                                            mem_data ;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	reg [31:0] mw_IR, mw_PC, mw_RES, mw_IO_RES, mw_ADDR, mw_Mdata, mw_CSR_RES;
+	assign wb_DATA = isLoad(em_IR)  ? (em_ADDR[22] ? IO_mem_rdata : e_mem_RES):
+			 isCSRRS(em_IR) ?                               em_CSR_RES:
+			 em_queue       ?                                   em_RES:
+					                                     e_RES;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	wire [2:0] w_funct3 = funct3(mw_IR);
+	assign wb_enable = ((isLoad(em_IR) | isCSRRS(em_IR)) & (rdID(em_IR)!=0)) | (writes_rd1(de_IR) & (rdID(de_IR)!=0)) | (em_queue);
 
-	wire w_isB = (w_funct3[1:0] == 2'b00);
-	wire w_isH = (w_funct3[1:0] == 2'b01);
-	wire w_sign_e = !w_funct3[2];
-	wire W_isIO   = mw_ADDR[22];
-
-	wire [15:0] w_loadH = mw_ADDR[1] ? mw_Mdata[31:16] : mw_Mdata[15:0];
-	wire [ 7:0] w_loadB = mw_ADDR[0] ? w_loadH[15:8 ] : w_loadH[7: 0];
-	wire w_load_sign    = w_sign_e & (w_isB ? w_loadB[7] : w_loadH[15]);
-
-	wire [31:0] w_mem_RES = w_isB ? {{24{w_load_sign}}, w_loadB} :
-				w_isH ? {{16{w_load_sign}}, w_loadH} :
-							    mw_Mdata ;
-
-	assign wb_DATA = isLoad(mw_IR) ? (W_isIO ? mw_IO_RES : w_mem_RES):
-			 isCSRRS(mw_IR)? mw_CSR_RES:
-					 mw_RES    ;
-
-	assign wb_enable = writes_rd(mw_IR) & (rdID(mw_IR)!=0);
-
-	assign wb_rdID = rdID(mw_IR);
-
-	wire JoB = e_JoB;
-	wire [31:0] JoB_ADDR = e_JoB_ADDR;
+	assign wb_rdID = (isLoad(em_IR) | isCSRRS(em_IR)) | em_queue ? rdID(em_IR) : rdID(de_IR) ;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -262,16 +258,17 @@ module torv32(
 	function isJALR  ; input [31:0] I; isJALR   =(I[6:0]==7'b1100111); endfunction
 	function isSYSTEM; input [31:0] I; isSYSTEM =(I[6:0]==7'b1110011); endfunction
 
-	function writes_rd; input [31:0] I; writes_rd = !isStype(I) & !isBtype(I)           ; endfunction
-	function reads_rs1; input [31:0] I; reads_rs1 = !(isJAL(I) | isAUIPC(I) | isLUI(I)) ; endfunction
-	function reads_rs2; input [31:0] I; reads_rs2 = isRtype(I) | isBtype(I) | isStype(I); endfunction
+	function writes_rd;  input [31:0] I; writes_rd = !isStype(I) & !isBtype(I) ; endfunction
+	function writes_rd1; input [31:0] I; writes_rd1 = !isStype(I) & !isBtype(I) & !isLoad(I) & !isCSRRS(I) ; endfunction
+	function reads_rs1;  input [31:0] I; reads_rs1 = !(isJAL(I) | isAUIPC(I) | isLUI(I)) ; endfunction
+	function reads_rs2;  input [31:0] I; reads_rs2 = isRtype(I) | isBtype(I) | isStype(I); endfunction
 
 	function isEBREAK; input [31:0] I; isEBREAK = (isSYSTEM(I) && funct3(I) == 3'b000); endfunction
 	function isCSRRS; input [31:0] I; isCSRRS = (isSYSTEM(I) && funct3(I) == 3'b010); endfunction
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*	`ifdef BENCH
+	/*`ifdef BENCH
 	   always @(posedge clk) begin
 		   if(halt) $finish(); 
 	   end
