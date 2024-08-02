@@ -2,16 +2,19 @@ PREC="PRECOMPILED"
 INFO_DIR="../INFO/BENCH"
 BENCH=$(cut -d. -f 1 firmware.txt)
 echo $BENCH
-IMPL=$(echo $1 | cut -d. -f 1 )
+IMPL=$(echo $1 | cut -d. -f 1)
 IMPL_T=$IMPL
+CORE=$(echo $1 | cut -d. -f 1 | tr 'a-z' 'A-Z' )
 NO=$(echo "$1" | grep -Eo [0-9]+)
 SZ=4
+
+
 
 main() {
 
 	(cd obj_dir; rm -f *.cpp *.o *.a VSOC)
-	verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
-		  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c $1
+	verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -D$CORE -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
+		  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c soc.v
 	#verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -Gsz=$SZ -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
 	#	  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c $1
 	
@@ -24,24 +27,24 @@ main() {
 		
 		cp ${PREC}/RAYSTONES/DATARAM.hex ./ && cp ${PREC}/RAYSTONES/PROGROM.hex ./
 		echo "raystones.pipeline.hex" > firmware.txt
-		obj_dir/VSOC > ${INFO_DIR}/temp
+		obj_dir/VSOC #> ${INFO_DIR}/temp
 
-		branch_info
-		rayst_parse	
+		#branch_info
+		#rayst_parse	
 
 		cp ${PREC}/DHRYSTONES/DATARAM.hex ./ && cp ${PREC}/DHRYSTONES/PROGROM.hex ./
 		echo "dhrystones.pipeline.hex" > firmware.txt
-		obj_dir/VSOC > ${INFO_DIR}/temp
+		obj_dir/VSOC #> ${INFO_DIR}/temp
 
-		branch_info
-		dhry_parse
+		#branch_info
+		#dhry_parse
 
 		cp ${PREC}/COREMARK/DATARAM.hex ./ && cp ${PREC}/COREMARK/PROGROM.hex ./
 		echo "coremark.pipeline.hex" > firmware.txt
-		obj_dir/VSOC > ${INFO_DIR}/temp
+		obj_dir/VSOC #> ${INFO_DIR}/temp
 
-		branch_info
-		cmark_parse
+		#branch_info
+		#cmark_parse
 
 	else
 		# DIRECIONA A SAIDA PARA UM ARQUIVO TEMPORARIO

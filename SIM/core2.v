@@ -10,6 +10,7 @@ module torv32(
 	input         clk,
         input 	      resetn,
 
+	output        imem_en,      // enable to fetch an instruction
         output [15:0] imem_addr,    // addres to fetch an instruction
         input  [31:0] imem_data,    // instruction fetched
 
@@ -47,12 +48,12 @@ module torv32(
 	wire d_flush = e_JoB;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	
+
 	reg [31:0] f_PC;
+	wire [31:0] fd_IR = imem_data;
 
 	always@(posedge clk) begin
 		if(!f_stall) begin
-			fd_IR <= imem_data; 
 			fd_PC <= f_PC;
 			f_PC  <= f_PC+4;
 		end
@@ -67,12 +68,13 @@ module torv32(
 		end
 	
 	end
-
+	
+	assign imem_en   = !f_stall;
 	assign imem_addr = f_PC[15:0];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	reg [31:0] fd_IR, fd_PC;
+	reg [31:0] fd_PC;
         reg fd_NOP;
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -182,13 +184,14 @@ module torv32(
         assign mem_addr = {11'b0,m_word_ADDR};
         assign mem_wdata = m_store_DATA;
 
+	wire [31:0] mw_Mdata = mem_data;
+
 	always@(posedge clk) begin
 		mw_IR     <= em_IR;
 		mw_PC     <= em_PC;
 		mw_RES    <= em_RES;
 		mw_IO_RES <= IO_mem_rdata;
 		mw_ADDR   <= em_ADDR;
-		mw_Mdata  <= mem_data;
 
 		case(csrId(em_IR)) 
 			2'b00: mw_CSR_RES <= cycle[31:0];
@@ -210,7 +213,7 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	reg [31:0] mw_IR, mw_PC, mw_RES, mw_IO_RES, mw_ADDR, mw_Mdata, mw_CSR_RES;
+	reg [31:0] mw_IR, mw_PC, mw_RES, mw_IO_RES, mw_ADDR, mw_CSR_RES;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
