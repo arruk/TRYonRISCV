@@ -10,21 +10,21 @@ module Clockworks
 );               
 
    generate
-`ifdef CPU_FREQ	
+/*`ifdef CPU_FREQ	
         femtoPLL #(
           .freq(`CPU_FREQ)
         ) pll(
            .pclk(CLK),
            .clk(clk)
 	);
-`else
+`else*/
         assign clk=CLK;
-`endif
+//`endif
 
 	reg [15:0] reset_cnt = 0;
 	assign resetn = &reset_cnt;
 
-`ifdef NEGATIVE_RESET
+/*`ifdef NEGATIVE_RESET
 	 always @(posedge clk,negedge RESET) begin
 	    if(!RESET) begin
 	       reset_cnt <= 0;
@@ -32,7 +32,7 @@ module Clockworks
 	       reset_cnt <= reset_cnt + !resetn;
 	    end
 	 end
-`else   
+`else   */
 	 always @(posedge clk,posedge RESET) begin
 	    if(RESET) begin
 	       reset_cnt <= 0;
@@ -42,7 +42,7 @@ module Clockworks
 	       /* verilator lint_on WIDTH */	       
 	    end
 	 end
-`endif   
+//`endif   
    endgenerate
 
 endmodule
