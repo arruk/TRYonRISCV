@@ -50,12 +50,6 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	reg [63:0] cycle;
-	reg [63:0] instret;
-
-	always@(posedge clk) begin
-		cycle <= !resetn ? 0 : cycle + 1;
-	end
 
 	wire halt = resetn & isEBREAK(de_IR);	
 	
@@ -230,11 +224,12 @@ module torv32(
 	assign IO_mem_wr    = isStype(em_IR) & M_isIO;
 	assign IO_mem_wdata = em_rs2;
 
-        assign mem_wmask = m_WMASK;
-        assign mem_addr = {11'b0,m_word_ADDR};
+	assign mem_wmask = m_WMASK;
+        assign mem_addr = {9'b0,em_ADDR[22:0]};
+        //assign mem_addr = {11'b0,m_word_ADDR};
         assign mem_wdata = m_store_DATA;
 
-	wire [31:0] mw_Mdata = mem_data;
+        wire [31:0] mw_Mdata = mem_data;
 
 	always@(posedge clk) begin
 		mw_IR     <= em_IR;
@@ -255,7 +250,11 @@ module torv32(
 		end else if(mw_IR != NOP) begin
 			instret <= instret + 1;
 		end
+		cycle <= !resetn ? 0 : cycle + 1;
 	end
+
+	reg [63:0] cycle;
+	reg [63:0] instret;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -291,7 +290,7 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	`ifdef BENCH
+/*	`ifdef BENCH
 
                 integer nbBranch = 0;
                 integer nbPredictHit = 0;
@@ -315,7 +314,6 @@ module torv32(
                         end
                 end
 
-                /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
                         if(halt) begin
                                 $display("Simulated processor's report");
@@ -331,13 +329,53 @@ module torv32(
                                 $finish();
                         end
                 end
-                /* verilator lint_on WIDTH */
-       	`endif
+       	`endif*/
        	/*`elsif BENCH
            always @(posedge clk) begin
                    if(halt) $finish();
            end
         `endif*/
+        `ifdef BENCH
+
+                integer nbBranch = 0;
+                integer nbPredictHit = 0;
+                integer nbJAL  = 0;
+                integer nbJALR = 0;
+
+                always @(posedge clk) begin
+                        if(resetn) begin
+                                if(isBtype(de_IR)) begin
+                                        nbBranch <= nbBranch + 1;
+                                        if(e_takeB == de_predict) begin
+                                                nbPredictHit <= nbPredictHit + 1;
+                                        end
+                                end
+                                if(isJAL(de_IR)) begin
+                                        nbJAL <= nbJAL + 1;
+                                end
+                                if(isJALR(de_IR)) begin
+                                        nbJALR <= nbJALR + 1;
+                                end
+                        end
+                end
+                /* verilator lint_off WIDTH */
+                always @(posedge clk) begin
+                        if(halt) begin
+                                $display("Simulated processor's report");
+                                $display("----------------------------");
+                                $display("Branch hits= %3.3f\%%", nbPredictHit*100.0/nbBranch);
+                                $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
+                                $display("Instr. mix = (Branch:%3.3f\%% JAL:%3.3f\%% JALR:%3.3f\%%)",
+                                          nbBranch*100.0/instret,
+                                             nbJAL*100.0/instret,
+                                            nbJALR*100.0/instret);
+                                $display("Numbers of = (Branch: %d, JAL: %d, JALR: %d)", nbBranch, nbJAL, nbJALR);
+                                $display("Size of BHT = %d", 4);
+                                $finish();
+                        end
+                end
+                /* verilator lint_on WIDTH */
+        `endif
 
 endmodule
 

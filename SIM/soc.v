@@ -7,14 +7,15 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
         assign LEDS = IO_mem_wdata[5:0];
 
 	wire 	    imem_en;
-        wire [16:0] imem_addr;
+        wire [15:0] imem_addr;
 	wire [31:0] imem_data;
         wire [31:0] mem_data;  // data read from memory
         wire [ 3:0] mem_wmask; // mask for write in memory
         wire [31:0] mem_addr;  // address to write/read
         wire [31:0] mem_wdata; // data to write
 
-	wire segment;
+	parameter BHT = 5;
+	parameter ADJ = 0;
 
         torv32 CPU (     
      		.clk          (clk),
@@ -29,8 +30,7 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
                 .IO_mem_addr  (IO_mem_addr),
                 .IO_mem_rdata (IO_mem_rdata),
                 .IO_mem_wdata (IO_mem_wdata),
-                .IO_mem_wr    (IO_mem_wr),
-		.segment      (segment)
+                .IO_mem_wr    (IO_mem_wr)
         );
 
 	mem #(
@@ -44,8 +44,7 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
                 .mem_data  (mem_data),
                 .mem_wmask (mem_wmask),
 		.mem_addr  (mem_addr),
-                .mem_wdata (mem_wdata),
-		.segment   (segment)
+                .mem_wdata (mem_wdata)
 	);
 
 
@@ -70,18 +69,7 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
 		.o_uart_tx (UART_TX)      			       
 	);
 
-/*	reg c=0;
-	always@(posedge clk) begin
-		if(segment && ~c)begin
-		       RESET <= 1;
-		       c     <= 1;
-	       end else if(c) begin
-	       	       RESET <= 0;
-	       end
-	end*/
-
         wire resetn, clk;
-
 	reg RESET = 0;
 
         Clockworks CW(
@@ -92,7 +80,7 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
         );
 
 	`ifdef BENCH
-                localparam dm=16384*2, im=16384*2;
+                localparam dm=16384, im=16384;
 
                 always@(posedge clk) begin
                         if(uart_valid) begin
@@ -146,7 +134,7 @@ endmodule
 endmodule*/
 
 `ifdef CORE2 
-        `include "core2_wmulti.v"
+        `include "core2.v"
 `elsif CORE3 
         `include "core3.v"
 `elsif CORE4

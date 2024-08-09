@@ -1,5 +1,5 @@
-`include "uart_tx.v"
-`include "clockworks.v"
+//`include "uart_tx.v"
+//`include "clockworks.v"
 
 `ifdef ALU
 	`include "alu.v"
@@ -7,15 +7,26 @@
 	`include "alu.v"
 `endif
 
-module core(
+module torv32(
 	input         clk,
         input 	      resetn,
+
+        output        imem_en,      // enable to fetch an instruction
+        output [15:0] imem_addr,    // addres to fetch an instruction
+        input  [31:0] imem_data,    // instruction fetched
+
+        input  [31:0] mem_data,     // data read from memory
+        output [ 3:0] mem_wmask,    // mask for write in memory
+        output [31:0] mem_addr,     // address to write/read
+        output [31:0] mem_wdata,    // data to write
+
 	output [31:0] IO_mem_addr,  // IO mem address
 	input  [31:0] IO_mem_rdata, // data read from IO
 	output [31:0] IO_mem_wdata, // data written to IO
 	output        IO_mem_wr     // IO write flag
 );
-        `ifdef BENCH
+
+/*	`ifdef BENCH
                 parameter dsz=16384, isz=16384;
         `elsif NANO9K
                 parameter dsz=4096, isz=4096;
@@ -30,6 +41,7 @@ module core(
         	$readmemh("PROGROM.hex", ROM);
         	$readmemh("DATARAM.hex", RAM);
     	end
+*/
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -58,17 +70,9 @@ module core(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	reg [63:0] cycle;
-	reg [63:0] instret;
-
-	always@(posedge clk) begin
-		cycle <= !resetn ? 0 : cycle + 1;
-	end
-
 	wire halt = resetn & isEBREAK(de_IR);	
 	
 	localparam NOP = 32'b0000000_00000_00000_000_00000_0110011;
-
 	
 	wire rs1_HAZ = reads_rs1(fd_IR) & (rs1ID(fd_IR) == rdID(de_IR)); 
 	
@@ -101,9 +105,11 @@ module core(
 	       		   em_JoB_now ? em_JoB_ADDR :
 		                                 PC ;
 
+        wire [31:0] fd_IR = imem_data;
+
 	always@(posedge clk) begin
 		if(!f_stall) begin
-			fd_IR <= ROM[f_PC[15:2]];
+			//fd_IR <= ROM[f_PC[15:2]];
 			fd_PC <= f_PC;
 			PC  <= f_PC+4;
 		end
@@ -115,6 +121,9 @@ module core(
 		end
 	
 	end
+
+        assign imem_en   = !f_stall;
+        assign imem_addr = f_PC[15:0];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -259,6 +268,8 @@ module core(
 				   m_isH ? (em_ADDR[1] ? 4'b1100 : 4'b0011)                :
 				   4'b1111;
 
+	wire [3:0] m_WMASK = {4{isStype(em_IR) & M_isRAM}} & m_store_WMASK;
+	wire [13:0] m_word_ADDR = em_ADDR[15:2];
 	wire M_isIO  = em_ADDR[22];
 	wire M_isRAM = !M_isIO;
 
@@ -266,17 +277,20 @@ module core(
 	assign IO_mem_wr    = isStype(em_IR) & M_isIO;
 	assign IO_mem_wdata = em_rs2;
 
-	wire [3:0] m_WMASK = {4{isStype(em_IR) & M_isRAM}} & m_store_WMASK;
+        assign mem_wmask = m_WMASK;
+        assign mem_addr = {9'b0,em_ADDR[22:0]};
+        //assign mem_addr = {11'b0,m_word_ADDR};
+        assign mem_wdata = m_store_DATA;
 
-	wire [13:0] m_word_ADDR = em_ADDR[15:2];
+        wire [31:0] mw_Mdata = mem_data;	
 
-	always@(posedge clk) begin
+	/*always@(posedge clk) begin
 		mw_Mdata <= RAM[m_word_ADDR];
 		if(m_WMASK[0]) RAM[m_word_ADDR][ 7:0 ] <= m_store_DATA[ 7:0 ];
 		if(m_WMASK[1]) RAM[m_word_ADDR][15:8 ] <= m_store_DATA[15:8 ];
 		if(m_WMASK[2]) RAM[m_word_ADDR][23:16] <= m_store_DATA[23:16];
 		if(m_WMASK[3]) RAM[m_word_ADDR][31:24] <= m_store_DATA[31:24];
-	end
+	end*/
 
 	always@(posedge clk) begin
 		mw_IR     <= em_IR;
@@ -297,11 +311,15 @@ module core(
 		end else if(mw_IR != NOP) begin
 			instret <= instret + 1;
 		end
+		cycle <= !resetn ? 0 : cycle + 1;		
 	end
+
+        reg [63:0] cycle;
+        reg [63:0] instret;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	reg [31:0] mw_IR, mw_PC, mw_RES, mw_IO_RES, mw_ADDR, mw_Mdata, mw_CSR_RES;
+	reg [31:0] mw_IR, mw_PC, mw_RES, mw_IO_RES, mw_ADDR, mw_CSR_RES;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -378,6 +396,7 @@ module core(
 
 endmodule
 
+/*
 module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
 
         wire resetn, clk;
@@ -429,5 +448,5 @@ module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
                 .resetn(resetn)
         );
 
-endmodule
+endmodule*/
 

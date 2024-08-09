@@ -1,10 +1,26 @@
-`include "uart_tx.v"
-`include "clockworks.v"
-`include "alu2.v"
+//`include "uart_tx.v"
+//`include "clockworks.v"
+`default_nettype none
 
-module core(
+`ifdef ALU
+        `include "alu2.v"
+`else
+        `include "alu.v"
+`endif
+
+module torv32(
 	input         clk,
         input 	      resetn,
+
+        output        imem_en,
+        output [15:0] imem_addr,    // addres to fetch an instruction
+        input  [31:0] imem_data,    // instruction fetched
+
+        input  [31:0] mem_data,     // data read from memory
+        output [ 3:0] mem_wmask,    // mask for write in memory
+        output [31:0] mem_addr,     // address to write/read
+        output [31:0] mem_wdata,    // data to write
+	
 	output [31:0] IO_mem_addr,  // IO mem address
 	input  [31:0] IO_mem_rdata, // data read from IO
 	output [31:0] IO_mem_wdata, // data written to IO
@@ -12,7 +28,7 @@ module core(
 );
 
 	//parameter dsz=16384, isz=16384;
-	parameter dsz=8192, isz=8192;
+/*	parameter dsz=8192, isz=8192;
 	
 	reg [31:0] RAM [0:dsz-1];
 	reg [31:0] ROM [0:isz-1];
@@ -20,7 +36,7 @@ module core(
 	initial begin
         	$readmemh("PROGROM.hex", ROM);
         	$readmemh("DATARAM.hex", RAM);
-    	end
+    	end*/
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -74,9 +90,11 @@ module core(
 	
 	reg [31:0] f_PC;
 
+	wire [31:0] fd_IR = imem_data;
+
 	always@(posedge clk) begin
 		if(!f_stall) begin
-			fd_IR <= ROM[f_PC[15:2]];
+			//fd_IR <= ROM[f_PC[15:2]];
 			fd_PC <= f_PC;
 			f_PC  <= f_PC+4;
 		end
@@ -92,9 +110,12 @@ module core(
 	
 	end
 
+        assign imem_en   = !f_stall;
+        assign imem_addr = f_PC[15:0];
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	reg [31:0] fd_IR, fd_PC;
+	reg [31:0] fd_PC;
         reg fd_NOP;
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -205,6 +226,8 @@ module core(
 				   m_isH ? (em_ADDR[1] ? 4'b1100 : 4'b0011)                :
 				   4'b1111;
 
+	wire [3:0] m_WMASK = {4{isStype(em_IR) & M_isRAM}} & m_store_WMASK;
+	wire [13:0] m_word_ADDR = em_ADDR[15:2];
 	wire M_isIO  = em_ADDR[22];
 	wire M_isRAM = !M_isIO;
 
@@ -212,17 +235,20 @@ module core(
 	assign IO_mem_wr    = isStype(em_IR) & M_isIO;
 	assign IO_mem_wdata = em_rs2;
 
-	wire [3:0] m_WMASK = {4{isStype(em_IR) & M_isRAM}} & m_store_WMASK;
+        assign mem_wmask = m_WMASK;
+        assign mem_addr = {9'b0,em_ADDR[22:0]};
+        //assign mem_addr = {11'b0,m_word_ADDR};
+        assign mem_wdata = m_store_DATA;
 
-	wire [13:0] m_word_ADDR = em_ADDR[15:2];
+        wire [31:0] mw_Mdata = mem_data;
 
-	always@(posedge clk) begin
+/*	always@(posedge clk) begin
 		mw_Mdata <= RAM[m_word_ADDR];
 		if(m_WMASK[0]) RAM[m_word_ADDR][ 7:0 ] <= m_store_DATA[ 7:0 ];
 		if(m_WMASK[1]) RAM[m_word_ADDR][15:8 ] <= m_store_DATA[15:8 ];
 		if(m_WMASK[2]) RAM[m_word_ADDR][23:16] <= m_store_DATA[23:16];
 		if(m_WMASK[3]) RAM[m_word_ADDR][31:24] <= m_store_DATA[31:24];
-	end
+	end*/
 
 	always@(posedge clk) begin
 		mw_IR     <= em_IR;
@@ -247,7 +273,7 @@ module core(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	reg [31:0] mw_IR, mw_PC, mw_RES, mw_IO_RES, mw_ADDR, mw_Mdata, mw_CSR_RES;
+	reg [31:0] mw_IR, mw_PC, mw_RES, mw_IO_RES, mw_ADDR, mw_CSR_RES;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -279,15 +305,51 @@ module core(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	`ifdef BENCH
-	   always @(posedge clk) begin
-		   if(halt) $finish(); 
-	   end
-	`endif
+        `ifdef BENCH
+
+                integer nbBranch = 0;
+                integer nbPredictHit = 0;
+                integer nbJAL  = 0;
+                integer nbJALR = 0;
+
+                always @(posedge clk) begin
+                        if(resetn) begin
+                                if(isBtype(de_IR)) begin
+                                        nbBranch <= nbBranch + 1;
+                                        if(e_takeB == 1'b0) begin
+                                                nbPredictHit <= nbPredictHit + 1;
+                                        end
+                                end
+                                if(isJAL(de_IR)) begin
+                                        nbJAL <= nbJAL + 1;
+                                end
+                                if(isJALR(de_IR)) begin
+                                        nbJALR <= nbJALR + 1;
+                                end
+                        end
+                end
+                /* verilator lint_off WIDTH */
+                always @(posedge clk) begin
+                        if(halt) begin
+                                $display("Simulated processor's report");
+                                $display("----------------------------");
+                                $display("Branch hits= %3.3f\%%", nbPredictHit*100.0/nbBranch);
+                                $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
+                                $display("Instr. mix = (Branch:%3.3f\%% JAL:%3.3f\%% JALR:%3.3f\%%)",
+                                          nbBranch*100.0/instret,
+                                             nbJAL*100.0/instret,
+                                            nbJALR*100.0/instret);
+                                $display("Numbers of = (Branch: %d, JAL: %d, JALR: %d)", nbBranch, nbJAL, nbJALR);
+                                $display("Size of BHT = %d", 4);
+                                $finish();
+                        end
+                end
+                /* verilator lint_on WIDTH */
+        `endif
 
 endmodule
 
-module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
+/*module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
 
         wire resetn, clk;
 
@@ -338,4 +400,4 @@ module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
                 .resetn(resetn)
         );
 
-endmodule
+endmodule*/

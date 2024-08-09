@@ -21,7 +21,7 @@ sendo "programa_alvo" o programa a ser executado no processador. Feito isso e vo
 arquivos .hex que estão formatados da maneira que o leitor de arquivos do Verilog consegue entender. Por fim, para executar o programa é
 necessário usar o script run_verilator.sh, que possui algumas opções:
 	
-	./run_verilator (implementacao_alvo).v (opção).
+	.run_verilator (implementacao_alvo).v (opção).
 
 Para simular de maneira a apenas exibir a saída padrão use opção = "v" e para executar todos os Benchmarks use opção = "a". Caso o programa alvo seja algum Benchmark(CoreMark, Dhrystones ou Raystones) as informações de CPI e desempenho serão adicionadas a uma nova linha no arquivo do respectivo Benchmark no diretorio [INFO/BENCH](INFO/BENCH).
 
@@ -53,7 +53,7 @@ Porém, neste caso o dado do registrador em questão fica pronto antes de ser ut
 
  - O processador mais básisco, sem nenhum módulo, apenas lida com os Hazards de Controle e Dados através de Stalls e Flushes.
  - O módulo BYPASS permite o uso de adiantamento dos dados evitando Stalls no estágio Execute.
- - O módulo BRANCH_PRED=1 trás o uso da técnica FTBNT(Forward Taken, Backwards Not Taken), além disso, todos os módulos de branch prediction também já lidam com JAL, eliminando um dos hazards de controle.
+ - O módulo BRANCH_PRED=1 trás o uso da técnica BTFNT(Backwards Taken, Forwards Not Taken), além disso, todos os módulos de branch prediction também já lidam com JAL, eliminando um dos hazards de controle.
  - O módulo BRANCH_PRED=2 usa um método dinâmico com uma tabela do histórico de desvios, tendo cada posição dois bits de armazenamento configurados por um somador saturado.
  - O módulo BRANCH_PRED=3 melhora a busca na tabela anterior através de indexação pela estratégia GSELECT.
  - O módulo BRANCH_PRED=4 apenas muda a indexação para GSHARE.

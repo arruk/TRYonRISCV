@@ -2,21 +2,19 @@ module mem (
         input             clk,
 
         input             imem_en,
-        input      [16:0] imem_addr,
+        input      [15:0] imem_addr,
         output reg [31:0] imem_data,
 
         output reg [31:0] mem_data,
         input      [ 3:0] mem_wmask,
         input      [31:0] mem_addr,
-        input      [31:0] mem_wdata,
+        input      [31:0] mem_wdata
 
-	input             segment
 );
 
-	wire seg = segment;
 
-	wire [14:0] mem_addr_seg  = {seg,mem_addr [15:2]};  //+ 32'd16384;
-	wire [14:0] imem_addr_seg = {seg,imem_addr[15:2]}; //+ 17'd65536;
+	wire [13:0] mem_addr_seg  = mem_addr [15:2]; //{seg,mem_addr [15:2]};  //+ 32'd16384;
+	wire [13:0] imem_addr_seg = imem_addr[15:2]; //{seg,imem_addr[15:2]}; //+ 17'd65536;
 
 	parameter ROM_SIZE = 16384;
 	parameter RAM_SIZE = 16384;
@@ -28,7 +26,7 @@ module mem (
                 $readmemh("PROGROM.hex", ROM);
                 $readmemh("DATARAM.hex", RAM);		
 	end
-	/* verilator lint_on WIDTH */
+	
 	always@(posedge clk) begin
 		if(mem_wmask[0]) RAM[mem_addr_seg][0] <= mem_wdata[ 7:0 ];
 		if(mem_wmask[1]) RAM[mem_addr_seg][1] <= mem_wdata[15:8 ];
@@ -41,5 +39,5 @@ module mem (
                 if(imem_en)
                         imem_data <= ROM[imem_addr_seg];
         end
-	/* verilator lint_on WIDTH */
+
 endmodule 

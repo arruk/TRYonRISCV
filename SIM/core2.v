@@ -181,7 +181,8 @@ module torv32(
 	assign IO_mem_wdata = em_rs2;
 
         assign mem_wmask = m_WMASK;
-        assign mem_addr = {11'b0,m_word_ADDR};
+        assign mem_addr = {9'b0,em_ADDR[22:0]};
+        //assign mem_addr = {11'b0,m_word_ADDR};
         assign mem_wdata = m_store_DATA;
 
 	wire [31:0] mw_Mdata = mem_data;
