@@ -284,7 +284,7 @@ module torv32(
 		mw_IO_RES <= IO_mem_rdata;
 		mw_ADDR   <= em_ADDR;
 
-		cas({em_IR[27], em_IR[21]}) // CSR ID
+		case({em_IR[27], em_IR[21]}) // CSR ID
 			2'b00: mw_CSR_RES <= cycle[31:0];
 			2'b10: mw_CSR_RES <= cycle[63:32];
 			2'b01: mw_CSR_RES <= instret[31:0];
