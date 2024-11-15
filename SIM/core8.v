@@ -11,7 +11,7 @@ module torv32(
         input 	      resetn,
 
         output        imem_en,      // enable to fetch an instruction
-        output [15:0] imem_addr,    // addres to fetch an instruction
+        output [31:0] imem_addr,    // addres to fetch an instruction
         input  [31:0] imem_data,    // instruction fetched
 
         input  [31:0] mem_data,     // data read from memory
@@ -92,14 +92,15 @@ module torv32(
 	function [BHT_ADDR_BITS-1:0] BHT_index;
 		input [31:0] PC;
 		/* verilator lint_off WIDTH */
-		BHT_index = PC[15:2] ^ BH;
+		BHT_index = PC[BHT_ADDR_BITS+1:2] ^ (BH << (BHT_ADDR_BITS-BP_HIST_BITS));
+		//BHT_index = {PC[BP_HIST_BITS+:(BHT_ADDR_BITS-BP_HIST_BITS)],PC[2+:BP_HIST_BITS] ^ (BH)};
 		/* verilator lint_on WIDTH */
 	endfunction
 
 	//gshare with 14 bits of global branch hist and 14 bits of pc address
-	localparam BP_HIST_BITS = 14;	
-	parameter BHT_ADDR_BITS = 5 ;
-	localparam BHT_SIZE=1<<BHT_ADDR_BITS;
+	parameter  BP_HIST_BITS  = 14;	
+	parameter  BHT_ADDR_BITS = 14;
+	localparam BHT_SIZE      = 1<<BHT_ADDR_BITS;
 
        	reg [1:0] BHT [BHT_SIZE-1:0];
 	reg [BP_HIST_BITS-1:0] BH;
@@ -122,13 +123,14 @@ module torv32(
 		fd_NOP <= d_flush | !resetn;
 
 		if(!resetn) begin
-			PC  <=0;
+			//PC  <=32'h20000;
+			PC  <=32'h00000;
 		end
 	
 	end
 
         assign imem_en   = !f_stall;
-        assign imem_addr = f_PC[15:0];
+        assign imem_addr = f_PC;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -362,6 +364,7 @@ module torv32(
 
 	`ifdef BENCH
 
+		integer n_fstalls = 0;
                 integer nbBranch = 0;
                 integer nbPredictHit = 0;
                 integer nbJAL  = 0;
@@ -369,6 +372,9 @@ module torv32(
 
                 always @(posedge clk) begin
                         if(resetn) begin
+				if(f_stall) begin
+					n_fstalls <= n_fstalls + 1;	
+				end
                                 if(isBtype(de_IR)) begin
                                         nbBranch <= nbBranch + 1;
                                         if(e_takeB == de_predict) begin
@@ -395,6 +401,7 @@ module torv32(
                                              nbJAL*100.0/instret,
                                             nbJALR*100.0/instret);
                                 $display("Numbers of = (Branch: %d, JAL: %d, JALR: %d)", nbBranch, nbJAL, nbJALR);
+                                $display("Numbers of stalls in F stage = %d", n_fstalls);
                                 $display("Size of BHT = %d", BHT_ADDR_BITS);
                                 $display("Size of BPH = %d" , BP_HIST_BITS);
                                 $finish();

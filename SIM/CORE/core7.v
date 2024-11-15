@@ -97,15 +97,23 @@ module torv32(
 
 	//parameter ADJ = 0;
 
-	function [BHT_ADDR_BITS-1:0] BHT_index;
+        function [BHT_ADDR_BITS-1:0] BHT_index;
+        input [31:0] PC;
+        /* verilator lint_off WIDTH */
+                BHT_index = {(BH << (BHT_ADDR_BITS - BP_HIST_BITS)), PC[BHT_ADDR_BITS+1:2] };
+        /* verilator lint_on WIDTH */
+        endfunction
+
+
+/*	function [BHT_ADDR_BITS-1:0] BHT_index;
 		input [31:0] PC;
-		BHT_index [BHT_ADDR_BITS-1:0] = {PC[7:2], BH[2:0]};
+		BHT_index [BHT_ADDR_BITS-1:0] = {PC[10:2], BH[6:0]};
 		//BHT_index = {PC[BHT_ADDR_BITS+1:2], BH[BP_HIST_BITS-1:0]};
-	endfunction
+	endfunction*/
 
 	// gselect with 7 bits of global branch hist and 7 bits of PC address
-	localparam BP_HIST_BITS  = 7;	
-	parameter BHT_ADDR_BITS  = 9;
+	localparam BP_HIST_BITS  = 9;	
+	parameter BHT_ADDR_BITS  = 12;
 	localparam BHT_SIZE=1<<BHT_ADDR_BITS;
 
        	reg [1:0] BHT [BHT_SIZE-1:0];
@@ -145,7 +153,10 @@ module torv32(
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	//wire [BHT_ADDR_BITS-1:0] BHT_index = {fd_PC[10:2], BH[6:0]};
+
 	wire d_predict = BHT[BHT_index(fd_PC)][1];
+//	wire d_predict = BHT[BHT_index()][1];
 
 	wire d_JoB_now = !fd_NOP & (isJAL(fd_IR) | (isBtype(fd_IR) & d_predict));
 
@@ -255,7 +266,7 @@ module torv32(
 		em_JoB_now  <= e_JoB;
 		em_JoB_ADDR <= e_JoB_ADDR;
 		if(isBtype(de_IR)) begin
-			BH <= {e_takeB, BH[BP_HIST_BITS-1:1]};
+			BH <= {e_takeB, BH[BP_HIST_BITS-2:0]};
 			BHT[de_BHTindex] <= incdec_sat(BHT[de_BHTindex], e_takeB);
 		end
 	end

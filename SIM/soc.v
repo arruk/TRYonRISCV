@@ -1,54 +1,169 @@
 `include "clockworks.v"
 `include "uart_tx.v"
-`include "mem.sv"
+`include "pico_mul.v"
+`include "pico_div.v"
+
+`define TORVS
+`ifdef TORVS
+	`include "mem_dual.sv"
+`else
+	`include "mem.sv"
+`endif
 
 module SOC( input CLK, output [5:0] LEDS, output UART_TX);
 
-        assign LEDS = IO_mem_wdata[5:0];
 
-	wire 	    imem_en;
-        wire [15:0] imem_addr;
-	wire [31:0] imem_data;
-        wire [31:0] mem_data;  // data read from memory
-        wire [ 3:0] mem_wmask; // mask for write in memory
-        wire [31:0] mem_addr;  // address to write/read
-        wire [31:0] mem_wdata; // data to write
 
-	parameter BHT = 5;
-	parameter ADJ = 0;
+	`ifdef MULDIV
+	`endif
 
-        torv32 CPU (     
+
+	parameter BHT = 10;
+	parameter N   = 8;
+	parameter M   = 0;
+
+        torv32 
+	/*#(
+		.BP_HIST_BITS(9),
+		.BHT_ADDR_BITS(BHT)	
+	)*/ 
+	CPU (     
      		.clk          (clk),
                 .resetn       (resetn),
+
+	`ifdef TORVS
+                .a_imem_en  (a_imem_en  ), //
+                .a_imem_addr(a_imem_addr),  //
+                .a_imem_data(a_imem_data), // DUAL PORT INSTRUCTION
+                .b_imem_en  (b_imem_en  ),  //       MEMORY
+                .b_imem_addr(b_imem_addr), //
+                .b_imem_data(b_imem_data),  //
+
+                .a_mem_data (a_mem_data ),  //
+                .a_mem_wmask(a_mem_wmask), //
+                .a_mem_addr (a_mem_addr ),  //
+                .a_mem_wdata(a_mem_wdata), // DUAL PORT DATA
+                .b_mem_data (b_mem_data ),  //    MEMORY
+                .b_mem_wmask(b_mem_wmask), //
+                .b_mem_addr (b_mem_addr ),  //
+                .b_mem_wdata(b_mem_wdata),  //
+		
+		.a_IO_mem_addr  (a_IO_mem_addr),
+                .a_IO_mem_rdata (a_IO_mem_rdata),
+                .a_IO_mem_wdata (a_IO_mem_wdata),
+                .a_IO_mem_wr    (a_IO_mem_wr),
+
+		.b_IO_mem_addr  (b_IO_mem_addr),
+                .b_IO_mem_rdata (b_IO_mem_rdata),
+                .b_IO_mem_wdata (b_IO_mem_wdata),
+                .b_IO_mem_wr    (b_IO_mem_wr)
+
+	
+	`else		
 		.imem_en      (imem_en),
                 .imem_addr    (imem_addr),
                 .imem_data    (imem_data),
+
                 .mem_data     (mem_data),
                 .mem_wmask    (mem_wmask),
                 .mem_addr     (mem_addr),
                 .mem_wdata    (mem_wdata),
-                .IO_mem_addr  (IO_mem_addr),
+
+		.IO_mem_addr  (IO_mem_addr),
                 .IO_mem_rdata (IO_mem_rdata),
                 .IO_mem_wdata (IO_mem_wdata),
                 .IO_mem_wr    (IO_mem_wr)
+
+	
+	`endif
+
+
+	`ifdef MULDIV
+		,
+                .pcpi_valid(pcpi_valid),
+                .pcpi_insn(pcpi_insn),
+                .pcpi_rs1(pcpi_rs1),
+                .pcpi_rs2(pcpi_rs2),
+                .pcpi_wr(pcpi_wr),
+                .pcpi_rd(pcpi_rd),
+                .pcpi_wait(pcpi_wait),
+                .pcpi_ready(pcpi_ready)
+
+	`endif
+		
         );
 
-	mem #(
-		.ROM_SIZE(im),
-		.RAM_SIZE(dm)
-	) DATA (
-		.clk(clk),
-		.imem_en   (imem_en),
-		.imem_addr (imem_addr),
-        	.imem_data (imem_data),
-                .mem_data  (mem_data),
-                .mem_wmask (mem_wmask),
-		.mem_addr  (mem_addr),
-                .mem_wdata (mem_wdata)
+	`ifdef MULDIV
+
+	wire 	    pcpi_valid;
+	wire [31:0] pcpi_insn ;
+	wire [31:0] pcpi_rs1  ;
+	wire [31:0] pcpi_rs2  ;
+
+	wire 	    pcpi_wr   ;
+	wire [31:0] pcpi_rd   ;
+	wire 	    pcpi_wait ;
+	wire 	    pcpi_ready;
+
+	wire 	    pcpi_mul_wr   ;
+	wire [31:0] pcpi_mul_rd   ;
+	wire 	    pcpi_mul_wait ;
+	wire 	    pcpi_mul_ready;
+
+	wire 	    pcpi_div_wr   ;
+	wire [31:0] pcpi_div_rd   ;
+	wire 	    pcpi_div_wait ;
+	wire 	    pcpi_div_ready;
+
+        picorv32_pcpi_fast_mul pcpi_mul (
+                .clk       (clk            ),
+                .resetn    (resetn         ),
+                .pcpi_valid(pcpi_valid     ),
+                .pcpi_insn (pcpi_insn      ),
+                .pcpi_rs1  (pcpi_rs1       ),
+                .pcpi_rs2  (pcpi_rs2       ),
+                .pcpi_wr   (pcpi_mul_wr    ),
+                .pcpi_rd   (pcpi_mul_rd    ),
+                .pcpi_wait (pcpi_mul_wait  ),
+                .pcpi_ready(pcpi_mul_ready )
+        );
+
+	picorv32_pcpi_div pcpi_div (
+		.clk       (clk            ),
+		.resetn    (resetn         ),
+		.pcpi_valid(pcpi_valid     ),
+		.pcpi_insn (pcpi_insn      ),
+		.pcpi_rs1  (pcpi_rs1       ),
+		.pcpi_rs2  (pcpi_rs2       ),
+		.pcpi_wr   (pcpi_div_wr    ),
+		.pcpi_rd   (pcpi_div_rd    ),
+		.pcpi_wait (pcpi_div_wait  ),
+		.pcpi_ready(pcpi_div_ready )
 	);
 
+	assign pcpi_rd    = pcpi_insn[14] ? pcpi_div_rd :
+					    pcpi_mul_rd ;
+	assign pcpi_wr    = pcpi_insn[14] ? pcpi_div_wr :
+					    pcpi_mul_wr ;
+	assign pcpi_wait  = pcpi_insn[14] ? pcpi_div_wait :
+					    pcpi_mul_wait ;
+	assign pcpi_ready = pcpi_insn[14] ? pcpi_div_ready :
+					    pcpi_mul_ready ;
+	`endif
 
-        wire IO_mem_wr;
+
+	`ifndef TORVS 
+
+	wire 	    imem_en  ;
+        wire [31:0] imem_addr;
+	wire [31:0] imem_data;
+
+        wire [31:0] mem_data ;  
+        wire [ 3:0] mem_wmask; 
+	wire [31:0] mem_addr ;  
+        wire [31:0] mem_wdata;
+
+        wire        IO_mem_wr;
         wire [31:0] IO_mem_addr;
         wire [31:0] IO_mem_wdata;
         wire [31:0] IO_mem_rdata = IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
@@ -57,6 +172,94 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
         wire uart_valid = IO_mem_wr & IO_wordaddr[1];
         wire uart_ready;
 
+	wire halt = IO_mem_wr & IO_wordaddr[3];
+
+        assign LEDS = IO_mem_wdata[5:0];
+	
+	mem #(
+		.RAM_SIZE(dm)
+	) DATA (
+		.clk(clk),
+		.imem_en   (imem_en  ),
+		.imem_addr (imem_addr),
+        	.imem_data (imem_data),
+                .mem_data  (mem_data ),
+                .mem_wmask (mem_wmask),
+		.mem_addr  (mem_addr ),
+                .mem_wdata (mem_wdata)
+	);
+
+	`else
+
+        wire        a_imem_en  ;
+        wire [31:0] a_imem_addr;
+        wire [31:0] a_imem_data;
+
+        wire        b_imem_en  ;
+        wire [31:0] b_imem_addr;
+        wire [31:0] b_imem_data;
+
+        wire [31:0] a_mem_data ;
+        wire [ 3:0] a_mem_wmask;
+        wire [31:0] a_mem_addr ;
+        wire [31:0] a_mem_wdata;
+
+        wire [31:0] b_mem_data ;
+        wire [ 3:0] b_mem_wmask;
+        wire [31:0] b_mem_addr ;
+        wire [31:0] b_mem_wdata;
+
+	wire a_IO_mem_wr;
+        wire [31:0] a_IO_mem_addr;
+        wire [31:0] a_IO_mem_wdata;
+        wire [31:0] a_IO_mem_rdata = a_IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
+        wire [13:0] a_IO_wordaddr  = a_IO_mem_addr[15:2];
+
+	wire b_IO_mem_wr;
+        wire [31:0] b_IO_mem_addr;
+        wire [31:0] b_IO_mem_wdata;
+        wire [31:0] b_IO_mem_rdata = b_IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
+        wire [13:0] b_IO_wordaddr  = b_IO_mem_addr[15:2];
+
+	wire a_uart_valid = a_IO_mem_wr & a_IO_wordaddr[1];
+	wire b_uart_valid = b_IO_mem_wr & b_IO_wordaddr[1];
+	
+	wire uart_valid = a_uart_valid | b_uart_valid;
+        wire uart_ready;
+        
+	wire [31:0] IO_mem_wdata = a_IO_mem_wdata;
+	
+	wire halt = a_IO_mem_wr & a_IO_wordaddr[3] | b_IO_mem_wr & b_IO_wordaddr[3];
+        
+	assign LEDS = a_IO_mem_wdata[5:0];
+	
+	mem #(
+                .ROM_SIZE(im),
+                .RAM_SIZE(dm)
+        ) MI (
+                .clk        (clk),
+
+                .a_imem_en  (a_imem_en  ), //
+                .a_imem_addr(a_imem_addr),  //
+                .a_imem_data(a_imem_data), // DUAL PORT INSTRUCTION
+                .b_imem_en  (b_imem_en  ),  //       MEMORY
+                .b_imem_addr(b_imem_addr), //
+                .b_imem_data(b_imem_data),  //
+
+                .a_mem_data (a_mem_data ),  //
+                .a_mem_wmask(a_mem_wmask), //
+                .a_mem_addr (a_mem_addr ),  //
+                .a_mem_wdata(a_mem_wdata), // DUAL PORT DATA
+                .b_mem_data (b_mem_data ),  //    MEMORY
+                .b_mem_wmask(b_mem_wmask), //
+                .b_mem_addr (b_mem_addr ),  //
+                .b_mem_wdata(b_mem_wdata)  //
+        );
+
+	`endif
+
+
+	
 	corescore_emitter_uart #(
 		.clk_freq_hz (10000000),
 		.baud_rate   (1000000)
@@ -80,16 +283,56 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
         );
 
 	`ifdef BENCH
-                localparam dm=16384, im=16384;
+                `ifdef TORVS
+			//localparam dm=32768, im=32768;
+			localparam dm=16384, im=16384;
+			always@(posedge clk) begin
+				if(a_uart_valid & !b_uart_valid) begin
+					$write("%c", a_IO_mem_wdata[7:0]);
+					$fflush(32'h8000_0001);
+				end
+				if(!a_uart_valid & b_uart_valid) begin
+					$write("%c", b_IO_mem_wdata[7:0]);
+					$fflush(32'h8000_0001);
+				end
+				if(a_uart_valid & b_uart_valid) begin
+					$write("%c%c", a_IO_mem_wdata[7:0],b_IO_mem_wdata[7:0]);
+					$fflush(32'h8000_0001);
+				end
 
-                always@(posedge clk) begin
-                        if(uart_valid) begin
-                                $write("%c", IO_mem_wdata[7:0]);
-                                $fflush(32'h8000_0001);
-                        end
-                end
+				if(halt) begin
+				//	$finish();
+				end
+
+				/*if(~IO_mem_wr && (|mem_wmask)) begin
+					$write("address: 0x%x\n", mem_addr);
+				end*/
+			end
+		`else	
+			localparam dm=65536, im=32768;
+			always@(posedge clk) begin
+				if(uart_valid) begin
+					$write("%c", IO_mem_wdata[7:0]);
+					$fflush(32'h8000_0001);
+				end
+
+				if(halt) begin
+					$finish();
+				end
+
+				/*if(~IO_mem_wr && (|mem_wmask)) begin
+					$write("address: 0x%x\n", mem_addr);
+				end*/
+			end
+
+		`endif
         `else
-                localparam dm=8192, im=8192;
+		`ifdef TORVS
+                	localparam dm=2*8192, im=2*8192;
+		`else	
+                	localparam dm=8192, im=8192;
+		`endif
+
         `endif
 
 endmodule
@@ -133,7 +376,9 @@ endmodule
 
 endmodule*/
 
-`ifdef CORE2 
+`ifdef CORE 
+	`include "core.sv"
+`elsif CORE2 
         `include "core2.v"
 `elsif CORE3 
         `include "core3.v"

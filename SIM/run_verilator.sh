@@ -1,5 +1,6 @@
 PREC="PRECOMPILED"
-INFO_DIR="../INFO/BENCH"
+#INFO_DIR="../INFO/BENCH"
+INFO_DIR="../INFO/BEN"
 BENCH=$(cut -d. -f 1 firmware.txt)
 echo $BENCH
 IMPL=$(echo $1 | cut -d. -f 1)
@@ -7,41 +8,47 @@ IMPL_T=$IMPL
 CORE=$(echo $1 | cut -d. -f 1 | tr 'a-z' 'A-Z' )
 NO=$(echo "$1" | grep -Eo [0-9]+)
 SZ=4
-ADJ=0
+N=0
+M=0
 
 
 main() {
 
 	(cd obj_dir; rm -f *.cpp *.o *.a VSOC)
-	verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -D$CORE -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
-		  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c soc.v
-	#verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -D$CORE -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
-	#	  -GADJ=$ADJ -GBHT=$SZ --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c soc.v
 	#verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -Gsz=$SZ -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
 	#	  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c $1
 	
-	(cd obj_dir; make -f VSOC.mk)
+	#(cd obj_dir; make -f VSOC.mk)
 	if [ "$2" = "v" ]
 	then
+		verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -D$CORE -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal 									     --trace --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c soc.v
+	
+		(cd obj_dir; make -f VSOC.mk)
+		
 		obj_dir/VSOC 
 	elif [ "$2" = "a" ]
 	then	
 		
-		cp ${PREC}/RAYSTONES/DATARAM.hex ./ && cp ${PREC}/RAYSTONES/PROGROM.hex ./
+		verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -D$CORE -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
+			  -GBHT=$SZ --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c soc.v
+
+		(cd obj_dir; make -f VSOC.mk)
+		
+		cp ${PREC}/RAYSTONES/RAM.hex ./ #&& cp ${PREC}/RAYSTONES/PROGROM.hex ./ && rm -f RAM.hex && cat PROGROM.hex DATARAM.hex > RAM.hex
 		echo "raystones.pipeline.hex" > firmware.txt
 		obj_dir/VSOC > ${INFO_DIR}/temp
 
 		branch_info
 		rayst_parse	
 
-		cp ${PREC}/DHRYSTONES/DATARAM.hex ./ && cp ${PREC}/DHRYSTONES/PROGROM.hex ./
+		cp ${PREC}/DHRYSTONES/RAM.hex ./ #&& cp ${PREC}/DHRYSTONES/PROGROM.hex ./ && rm -f RAM.hex && cat PROGROM.hex DATARAM.hex > RAM.hex
 		echo "dhrystones.pipeline.hex" > firmware.txt
 		obj_dir/VSOC > ${INFO_DIR}/temp
 
 		branch_info
 		dhry_parse
 
-		cp ${PREC}/COREMARK/DATARAM.hex ./ && cp ${PREC}/COREMARK/PROGROM.hex ./
+		cp ${PREC}/COREMARK/RAM.hex ./ #&& cp ${PREC}/COREMARK/PROGROM.hex ./ && rm -f RAM.hex && cat PROGROM.hex DATARAM.hex > RAM.hex
 		echo "coremark.pipeline.hex" > firmware.txt
 		obj_dir/VSOC > ${INFO_DIR}/temp
 
@@ -127,12 +134,12 @@ cmark_parse(){
 	IMPL_T=$IMPL	
 }
 
-if [ "$2" = "b" ]
+if [ "$2" = "a" ]
 then
-	for i in {0..6}
+	for i in {5..16}
 	do
-		SZ=16
-		ADJ=$i
+		SZ=$i
+		#N=$i
 		main "$@"
 		echo "FINISHED WITH $SZ bits\n"
 	done
