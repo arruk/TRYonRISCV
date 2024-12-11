@@ -1,37 +1,14 @@
-`include "clockworks.v"
-`include "uart_tx.v"
-`include "pico_mul.v"
-`include "pico_div.v"
-
-`define TORVS
-`ifdef TORVS
-	`include "mem_dual.sv"
-`else
-	`include "mem.sv"
-`endif
+//`define TORVS
+//`define COPROC
 
 module SOC( input CLK, output [5:0] LEDS, output UART_TX);
 
+	`ifdef TORVS
 
-
-	`ifdef MULDIV
-	`endif
-
-
-	parameter BHT = 10;
-	parameter N   = 8;
-	parameter M   = 0;
-
-        torv32 
-	/*#(
-		.BP_HIST_BITS(9),
-		.BHT_ADDR_BITS(BHT)	
-	)*/ 
-	CPU (     
+        torv32 CPU (     
      		.clk          (clk),
                 .resetn       (resetn),
 
-	`ifdef TORVS
                 .a_imem_en  (a_imem_en  ), //
                 .a_imem_addr(a_imem_addr),  //
                 .a_imem_data(a_imem_data), // DUAL PORT INSTRUCTION
@@ -57,9 +34,46 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
                 .b_IO_mem_rdata (b_IO_mem_rdata),
                 .b_IO_mem_wdata (b_IO_mem_wdata),
                 .b_IO_mem_wr    (b_IO_mem_wr)
+        );
 
-	
-	`else		
+
+	`elsif COPROC
+
+	torv32 CPU (     
+     		.clk          (clk),
+                .resetn       (resetn),
+
+		.imem_en      (imem_en),
+                .imem_addr    (imem_addr),
+                .imem_data    (imem_data),
+
+                .mem_data     (mem_data),
+                .mem_wmask    (mem_wmask),
+                .mem_addr     (mem_addr),
+                .mem_wdata    (mem_wdata),
+
+		.IO_mem_addr  (IO_mem_addr),
+                .IO_mem_rdata (IO_mem_rdata),
+                .IO_mem_wdata (IO_mem_wdata),
+                .IO_mem_wr    (IO_mem_wr),
+
+                .pcpi_valid(pcpi_valid),
+                .pcpi_insn(pcpi_insn),
+                .pcpi_rs1(pcpi_rs1),
+                .pcpi_rs2(pcpi_rs2),
+                .pcpi_wr(pcpi_wr),
+                .pcpi_rd(pcpi_rd),
+                .pcpi_wait(pcpi_wait),
+                .pcpi_ready(pcpi_ready)
+
+        );
+
+	`else
+
+	torv32 CPU (     
+     		.clk          (clk),
+                .resetn       (resetn),
+
 		.imem_en      (imem_en),
                 .imem_addr    (imem_addr),
                 .imem_data    (imem_data),
@@ -74,46 +88,25 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
                 .IO_mem_wdata (IO_mem_wdata),
                 .IO_mem_wr    (IO_mem_wr)
 
-	
-	`endif
-
-
-	`ifdef MULDIV
-		,
-                .pcpi_valid(pcpi_valid),
-                .pcpi_insn(pcpi_insn),
-                .pcpi_rs1(pcpi_rs1),
-                .pcpi_rs2(pcpi_rs2),
-                .pcpi_wr(pcpi_wr),
-                .pcpi_rd(pcpi_rd),
-                .pcpi_wait(pcpi_wait),
-                .pcpi_ready(pcpi_ready)
-
-	`endif
-		
         );
 
-	`ifdef MULDIV
+	`endif
+
+
+
+	`ifdef COPROC
 
 	wire 	    pcpi_valid;
-	wire [31:0] pcpi_insn ;
-	wire [31:0] pcpi_rs1  ;
-	wire [31:0] pcpi_rs2  ;
+	wire [31:0] pcpi_insn, pcpi_rs1, pcpi_rs2  ;
 
-	wire 	    pcpi_wr   ;
 	wire [31:0] pcpi_rd   ;
-	wire 	    pcpi_wait ;
-	wire 	    pcpi_ready;
+	wire 	    pcpi_wr, pcpi_wait, pcpi_ready;
 
-	wire 	    pcpi_mul_wr   ;
 	wire [31:0] pcpi_mul_rd   ;
-	wire 	    pcpi_mul_wait ;
-	wire 	    pcpi_mul_ready;
+	wire 	    pcpi_mul_wr, pcpi_mul_wait, pcpi_mul_ready;
 
-	wire 	    pcpi_div_wr   ;
 	wire [31:0] pcpi_div_rd   ;
-	wire 	    pcpi_div_wait ;
-	wire 	    pcpi_div_ready;
+	wire 	    pcpi_div_wr, pcpi_div_wait, pcpi_div_ready;
 
         picorv32_pcpi_fast_mul pcpi_mul (
                 .clk       (clk            ),
@@ -224,7 +217,7 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
 	wire a_uart_valid = a_IO_mem_wr & a_IO_wordaddr[1];
 	wire b_uart_valid = b_IO_mem_wr & b_IO_wordaddr[1];
 	
-	wire uart_valid = a_uart_valid | b_uart_valid;
+	wire uart_valid = a_uart_valid ;//| b_uart_valid;
         wire uart_ready;
         
 	wire [31:0] IO_mem_wdata = a_IO_mem_wdata;
@@ -286,30 +279,20 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
                 `ifdef TORVS
 			//localparam dm=32768, im=32768;
 			localparam dm=16384, im=16384;
+
 			always@(posedge clk) begin
-				if(a_uart_valid & !b_uart_valid) begin
-					$write("%c", a_IO_mem_wdata[7:0]);
-					$fflush(32'h8000_0001);
-				end
-				if(!a_uart_valid & b_uart_valid) begin
-					$write("%c", b_IO_mem_wdata[7:0]);
-					$fflush(32'h8000_0001);
-				end
-				if(a_uart_valid & b_uart_valid) begin
-					$write("%c%c", a_IO_mem_wdata[7:0],b_IO_mem_wdata[7:0]);
-					$fflush(32'h8000_0001);
-				end
-
+                                if(a_uart_valid) begin
+                                        $write("%c", a_IO_mem_wdata[7:0]);
+                                        $fflush(32'h8000_0001);
+                                end
 				if(halt) begin
-				//	$finish();
+					$finish();
 				end
 
-				/*if(~IO_mem_wr && (|mem_wmask)) begin
-					$write("address: 0x%x\n", mem_addr);
-				end*/
 			end
 		`else	
 			localparam dm=65536, im=32768;
+			//localparam dm=16384, im=16384;
 			always@(posedge clk) begin
 				if(uart_valid) begin
 					$write("%c", IO_mem_wdata[7:0]);
@@ -320,9 +303,6 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
 					$finish();
 				end
 
-				/*if(~IO_mem_wr && (|mem_wmask)) begin
-					$write("address: 0x%x\n", mem_addr);
-				end*/
 			end
 
 		`endif
@@ -337,47 +317,20 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
 
 endmodule
 
-/*module mem (
-	input 	          clk,
+`include "AUX/clockworks.v"
+`include "AUX/uart_tx.v"
+`include "COPROC/pico_mul.v"
+`include "COPROC/pico_div.v"
 
-	input         	  imem_en,
-        input      [15:0] imem_addr,
-        output reg [31:0] imem_data,
-	
-        output reg [31:0] mem_data,
-        input      [ 3:0] mem_wmask,
-        input      [31:0] mem_addr,
-        input      [31:0] mem_wdata
-);
-
-        parameter ROM_SIZE = 16384;
-	parameter RAM_SIZE = 16384;
-
-        reg [31:0] ROM [0:ROM_SIZE-1];
-	reg [31:0] RAM [0:RAM_SIZE-1];
-
-        initial begin
-                $readmemh("PROGROM.hex", ROM);
-		$readmemh("DATARAM.hex", RAM);
-        end
-	always@(posedge clk) begin
-		if(imem_en)
-			imem_data <= ROM[imem_addr[15:2]];
-	end
-
-        always@(posedge clk) begin
-		mem_data <= RAM[mem_addr];
-                if(mem_wmask[0]) RAM[mem_addr][ 7:0 ] <= mem_wdata[ 7:0 ];
-                if(mem_wmask[1]) RAM[mem_addr][15:8 ] <= mem_wdata[15:8 ];
-                if(mem_wmask[2]) RAM[mem_addr][23:16] <= mem_wdata[23:16];
-                if(mem_wmask[3]) RAM[mem_addr][31:24] <= mem_wdata[31:24];
-        end
-
-
-endmodule*/
+`ifdef TORVS
+	`include "TORVS/mem_dual.sv"
+`else
+	`include "mem.sv"
+`endif
 
 `ifdef CORE 
-	`include "core.sv"
+	//`include "core.sv"
+	`include "core.v"
 `elsif CORE2 
         `include "core2.v"
 `elsif CORE3 

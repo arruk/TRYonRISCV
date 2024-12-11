@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include <perf.h>
+#include <LIB/perf.h>
 
 uint64_t time() {
     return rdcycle();

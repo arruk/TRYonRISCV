@@ -1,9 +1,9 @@
 `default_nettype none
 
 `ifdef ALU
-	`include "alu2.v"
+	`include "AUX/alu2.v"
 `else
-	`include "alu.v"
+	`include "AUX/alu.v"
 `endif
 
 module torv32(

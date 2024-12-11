@@ -27,6 +27,11 @@ show_config:
 uname := $(shell uname)
 uname_m := $(shell uname -m)
 
+#BDIR=/home/arruk/riscv/SIM/FIRMWARE/BUILD
+
+#SDIR = LIB 
+#BDIR = BUILD
+
 TOOLCHAIN_GCC_VER=8.3.0
 RVTOOLCHAIN_BIN_PREFIX=riscv64-unknown-elf
 
@@ -88,12 +93,12 @@ RVCPPFLAGS=-fno-exceptions -fno-enforce-eh-specs
 	$(RVGCC) $(RVCFLAGS) $(RVUSERCFLAGS) -c $<
 
 #Rule to compile C++ objects
-.cpp.o: $< $(RV_BINARIES)
-	$(RVGPP) $(RVCFLAGS) $(RVUSERCFLAGS) $(RVCPPFLAGS) -c $<
+#.cpp.o: $< $(RV_BINARIES)
+#	$(RVGPP) $(RVCFLAGS) $(RVUSERCFLAGS) $(RVCPPFLAGS) -c $<
 
 #Rule to compile ASM objects
 .S.o: $< $(RV_BINARIES)
-	$(RVAS) $(RVASFLAGS) $(RVUSERASFLAGS) $< -o $@ 
+	$(RVAS) $(RVASFLAGS) $(RVUSERASFLAGS) $< -o $@
 
 # Libraries to link with standard executables
 FEMTORV32_LIBS=$(FIRMWARE_DIR)/CRT/syscalls.o \
@@ -157,7 +162,7 @@ FEMTORV32_LIBS_SMALL=-L$(RVTOOLCHAIN_LIB_DIR)\
 root: all
 
 clean:
-	rm -f *.o *.elf *.hex *.exe *~ *.a *.bin *.list
+	rm -f *.o $(BDIR)/*.o *.elf *.hex *.exe *~ *.a *.bin *.list
 
 #Generating the conversion utility for hex files
 

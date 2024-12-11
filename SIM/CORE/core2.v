@@ -1,9 +1,9 @@
 `default_nettype none
 
 `ifdef ALU
-	`include "alu2.v"
+	`include "AUX/alu2.v"
 `else
-	`include "alu.v"
+	`include "AUX/alu.v"
 `endif
 
 module torv32(
@@ -64,8 +64,8 @@ module torv32(
 		fd_NOP <= d_flush | !resetn;
 
 		if(!resetn) begin
-			//f_PC <=0;
-			f_PC  <=32'h20000;
+			f_PC <=0;
+			//f_PC  <=32'h20000;
 		end
 	
 	end

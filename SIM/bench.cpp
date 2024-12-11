@@ -1,11 +1,11 @@
 #include "VSOC.h"
 #include "verilated.h"
-#include "verilated_vcd_c.h"
+//#include "verilated_vcd_c.h"
 #include "femto_elf.h"
 #include <iostream>
 
 
-vluint64_t sim_time = 0;
+//vluint64_t sim_time = 0;
 
 int main(int argc, char** argv, char** env) {
 
@@ -15,10 +15,12 @@ int main(int argc, char** argv, char** env) {
 	Elf32Info elf;
 	int elf_status;
 
-	Verilated::traceEverOn(true);
+
+	/*Verilated::traceEverOn(true);
 	VerilatedVcdC *m_trace = new VerilatedVcdC;
 	top.trace(m_trace, 99);
 	m_trace->open("wf.vcd");
+	*/
 
 	// Call eval() so that readmemh()/initial bocks are executed
 	// before anything else.
@@ -31,8 +33,8 @@ int main(int argc, char** argv, char** env) {
 		top.CLK = !top.CLK;
 		top.eval();
 		
-		m_trace->dump(sim_time);
-		sim_time++;
+		//m_trace->dump(sim_time);
+		//sim_time++;
 		
 		//if(top.chg == 1){
 		//	std::cout<<"write a char"<<std::endl;
@@ -40,6 +42,6 @@ int main(int argc, char** argv, char** env) {
 		//	top.IO_mem_rdata = c;
 		//}
 	}
-	m_trace->close();
+	//m_trace->close();
 	return 0;
 }

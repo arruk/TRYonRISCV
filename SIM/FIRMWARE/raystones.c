@@ -7,8 +7,8 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "perf.h"
-#include "io.h"
+#include "LIB/perf.h"
+#include "LIB/io.h"
 
 /*******************************************************************/
 

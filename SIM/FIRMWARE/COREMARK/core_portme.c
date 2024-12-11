@@ -15,11 +15,11 @@ limitations under the License.
 
 Original Author: Shay Gal-on
 */
-#include <io.h>
+#include <LIB/io.h>
 #include <stdio.h>
 #include "coremark.h"
 #include "core_portme.h"
-#include <perf.h>
+#include <LIB/perf.h>
 
 #if VALIDATION_RUN
 volatile ee_s32 seed1_volatile = 0x3415;
