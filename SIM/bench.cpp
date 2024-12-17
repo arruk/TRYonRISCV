@@ -15,8 +15,8 @@ int main(int argc, char** argv, char** env) {
 	Elf32Info elf;
 	int elf_status;
 
-
-	/*Verilated::traceEverOn(true);
+	/*
+	Verilated::traceEverOn(true);
 	VerilatedVcdC *m_trace = new VerilatedVcdC;
 	top.trace(m_trace, 99);
 	m_trace->open("wf.vcd");

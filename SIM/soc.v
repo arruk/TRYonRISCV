@@ -1,4 +1,4 @@
-//`define TORVS
+`define TORVS
 //`define COPROC
 
 module SOC( input CLK, output [5:0] LEDS, output UART_TX);
@@ -345,8 +345,8 @@ endmodule
         `include "core7.v"
 `elsif CORE8
         `include "core8.v"
-`elsif TORV32
-        `include "torv32.v"
+//`elsif TORV32
+//        `include "torv32.v"
 `elsif NEWBYPASS
         `include "newbypass.v"
 `elsif NEWBYPASS2
@@ -355,5 +355,7 @@ endmodule
         `include "newbypass3.v"
 `elsif NEWBYPASS4
         `include "newbypass4.v"
+`elsif TORVS9P1
+        `include "torvs9p1.sv"
 `endif
 

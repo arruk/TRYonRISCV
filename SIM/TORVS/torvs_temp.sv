@@ -48,39 +48,27 @@ module torv32(
 	wire a_rs1_HAZ  = reads_rs1(a_fd_IR) & (rs1ID(a_fd_IR) == rdID(a_de_IR));
 	wire a_rs2_HAZ  = reads_rs2(a_fd_IR) & (rs2ID(a_fd_IR) == rdID(a_de_IR));
 
-	wire b_rs1_HAZ = !b_fd_NOP & !control_HAZ & reads_rs1(b_fd_IR) & rs1ID(b_fd_IR)!=0 &    (
-                        (writes_rd(b_de_IR) & (rs1ID(b_fd_IR) == rdID(b_de_IR))) |
-                        (writes_rd(b_em_IR) & (rs1ID(b_fd_IR) == rdID(b_em_IR))) );
+	wire ba_rs1_HAZ = reads_rs1(b_fd_IR) & (rs1ID(b_fd_IR) == rdID(a_de_IR)); 
+	wire ba_rs2_HAZ = reads_rs2(b_fd_IR) & (rs2ID(b_fd_IR) == rdID(a_de_IR)); 
 
-        wire b_rs2_HAZ = !b_fd_NOP & !control_HAZ & reads_rs2(b_fd_IR) & rs2ID(b_fd_IR)!=0 &    (
-                        (writes_rd(b_de_IR) & (rs2ID(b_fd_IR) == rdID(b_de_IR))) |
-                        (writes_rd(b_em_IR) & (rs2ID(b_fd_IR) == rdID(b_em_IR))) );
-
-        wire ab_rs1_HAZ =!a_fd_NOP & reads_rs1(a_fd_IR) & rs1ID(a_fd_IR)!=0 &    (
-                        (writes_rd(b_de_IR) & (rs1ID(a_fd_IR) == rdID(b_de_IR))) |
-                        (writes_rd(b_em_IR) & (rs1ID(a_fd_IR) == rdID(b_em_IR))) );
-
-        wire ab_rs2_HAZ =!a_fd_NOP & reads_rs2(a_fd_IR) & rs2ID(a_fd_IR)!=0 &    (
-                        (writes_rd(b_de_IR) & (rs2ID(a_fd_IR) == rdID(b_de_IR))) |
-                        (writes_rd(b_em_IR) & (rs2ID(a_fd_IR) == rdID(b_em_IR))) );
-
-        wire ba_rs1_HAZ =!b_fd_NOP & !control_HAZ & reads_rs1(b_fd_IR) & rs1ID(b_fd_IR)!=0 &    (
-                        (writes_rd(a_de_IR) & (rs1ID(b_fd_IR) == rdID(a_de_IR))) |
-                        (writes_rd(a_em_IR) & (rs1ID(b_fd_IR) == rdID(a_em_IR))) );
-
-        wire ba_rs2_HAZ =!b_fd_NOP & !control_HAZ & reads_rs2(b_fd_IR) & rs2ID(b_fd_IR)!=0 &    (
-                        (writes_rd(a_de_IR) & (rs2ID(b_fd_IR) == rdID(a_de_IR))) |
-                        (writes_rd(a_em_IR) & (rs2ID(b_fd_IR) == rdID(a_em_IR))) );
-
-        wire a_data_HAZ   = !a_fd_NOP & (isLoad(a_de_IR) | isCSRRS(a_de_IR)) & (a_rs1_HAZ | a_rs2_HAZ);
-        wire b_data_HAZ   = b_rs1_HAZ | b_rs2_HAZ;
-
-        wire ab_data_HAZ  = ab_rs1_HAZ | ab_rs2_HAZ;
-        wire ba_data_HAZ  = ba_rs1_HAZ | ba_rs2_HAZ;
-
-        wire data_HAZ = a_data_HAZ | b_data_HAZ | ab_data_HAZ | ba_data_HAZ;
+	wire a_data_HAZ   = !a_fd_NOP & (isLoad(a_de_IR) | isCSRRS(a_de_IR)) & ( a_rs1_HAZ | a_rs2_HAZ );
+	wire ba_data_HAZ  = !b_fd_NOP & (isLoad(a_de_IR) | isCSRRS(a_de_IR)) & (ba_rs1_HAZ | ba_rs2_HAZ) & !control_HAZ;
 
 	wire data_HAZ = a_data_HAZ | ba_data_HAZ;
+
+	//wire b_rs1_HAZ = !control_HAZ & reads_rs1(b_fd_IR) & (rs1ID(b_fd_IR) == rdID(b_de_IR));
+
+	//wire b_rs2_HAZ = !control_HAZ & reads_rs2(b_fd_IR) & (rs2ID(b_fd_IR) == rdID(b_de_IR));
+
+	//wire ab_rs1_HAZ = reads_rs1(a_fd_IR) & (rs1ID(a_fd_IR) == rdID(b_de_IR)); 
+
+	//wire ab_rs2_HAZ = reads_rs2(a_fd_IR) & (rs2ID(a_fd_IR) == rdID(b_de_IR)); 
+
+	//wire b_data_HAZ   = 0;//!b_fd_NOP & (isLoad(b_de_IR) | isCSRRS(b_de_IR)) & (b_rs1_HAZ | b_rs2_HAZ);
+	
+	//wire ab_data_HAZ  = !a_fd_NOP & (isLoad(b_de_IR) | isCSRRS(b_de_IR)) & (ab_rs1_HAZ | ab_rs2_HAZ);
+	
+	//wire data_HAZ = a_data_HAZ | b_data_HAZ | ab_data_HAZ | ba_data_HAZ;
 
 	wire a_f_stall = halt | data_HAZ;
 	wire a_d_stall = halt | data_HAZ;
@@ -216,25 +204,25 @@ module torv32(
 	wire ae_am_fwd_rs1 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs1ID(a_de_IR));
         wire ae_aw_fwd_rs1 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs1ID(a_de_IR));
 
-	//wire ae_bm_fwd_rs1 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs1ID(a_de_IR));
-        //wire ae_bw_fwd_rs1 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs1ID(a_de_IR));
+	wire ae_bm_fwd_rs1 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs1ID(a_de_IR));
+        wire ae_bw_fwd_rs1 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs1ID(a_de_IR));
 
         wire ae_am_fwd_rs2 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs2ID(a_de_IR));
         wire ae_aw_fwd_rs2 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs2ID(a_de_IR));
 
-	//wire ae_bm_fwd_rs2 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs2ID(a_de_IR));
-        //wire ae_bw_fwd_rs2 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs2ID(a_de_IR));
+	wire ae_bm_fwd_rs2 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs2ID(a_de_IR));
+        wire ae_bw_fwd_rs2 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs2ID(a_de_IR));
 
         wire [31:0] a_e_rs1 = ae_am_fwd_rs1 ? a_em_RES  :
                               ae_aw_fwd_rs1 ? a_wb_DATA :
-			      //ae_bm_fwd_rs1 ? b_em_RES  :
-                              //ae_bw_fwd_rs1 ? b_wb_DATA :
+			      ae_bm_fwd_rs1 ? b_em_RES  :
+                              ae_bw_fwd_rs1 ? b_wb_DATA :
                                               a_de_rs1  ;
 
         wire [31:0] a_e_rs2 = ae_am_fwd_rs2 ? a_em_RES  :
                               ae_aw_fwd_rs2 ? a_wb_DATA :
-			      //ae_bm_fwd_rs2 ? b_em_RES  :
-                              //ae_bw_fwd_rs2 ? b_wb_DATA :
+			      ae_bm_fwd_rs2 ? b_em_RES  :
+                              ae_bw_fwd_rs2 ? b_wb_DATA :
                                               a_de_rs2  ;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -279,28 +267,28 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        //wire b_e_bm_fwd_rs1 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs1ID(b_de_IR));
-        //wire b_e_bw_fwd_rs1 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs1ID(b_de_IR));
+        wire b_e_bm_fwd_rs1 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs1ID(b_de_IR));
+        wire b_e_bw_fwd_rs1 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs1ID(b_de_IR));
 
-        //wire b_e_am_fwd_rs1 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs1ID(b_de_IR));
-        //wire b_e_aw_fwd_rs1 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs1ID(b_de_IR));
+        wire b_e_am_fwd_rs1 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs1ID(b_de_IR));
+        wire b_e_aw_fwd_rs1 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs1ID(b_de_IR));
 
-        //wire b_e_bm_fwd_rs2 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs2ID(b_de_IR));
-        //wire b_e_bw_fwd_rs2 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs2ID(b_de_IR));
+        wire b_e_bm_fwd_rs2 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs2ID(b_de_IR));
+        wire b_e_bw_fwd_rs2 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs2ID(b_de_IR));
 
-        //wire b_e_am_fwd_rs2 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs2ID(b_de_IR));
-        //wire b_e_aw_fwd_rs2 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs2ID(b_de_IR));
+        wire b_e_am_fwd_rs2 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs2ID(b_de_IR));
+        wire b_e_aw_fwd_rs2 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs2ID(b_de_IR));
 
-        wire [31:0] b_e_rs1 = /*b_e_bm_fwd_rs1 ? b_em_RES  :
+        wire [31:0] b_e_rs1 = b_e_bm_fwd_rs1 ? b_em_RES  :
                               b_e_bw_fwd_rs1 ? b_wb_DATA :
                               b_e_am_fwd_rs1 ? a_em_RES  :
-                              b_e_aw_fwd_rs1 ? a_wb_DATA : */
+                              b_e_aw_fwd_rs1 ? a_wb_DATA :
                                                b_de_rs1  ;
 
-        wire [31:0] b_e_rs2 = /*b_e_bm_fwd_rs2 ? b_em_RES  :
+        wire [31:0] b_e_rs2 = b_e_bm_fwd_rs2 ? b_em_RES  :
                               b_e_bw_fwd_rs2 ? b_wb_DATA :
                               b_e_am_fwd_rs2 ? a_em_RES  :
-                              b_e_aw_fwd_rs2 ? a_wb_DATA : */
+                              b_e_aw_fwd_rs2 ? a_wb_DATA :
                                                b_de_rs2  ;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

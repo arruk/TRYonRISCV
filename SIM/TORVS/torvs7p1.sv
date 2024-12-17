@@ -44,43 +44,16 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	
 	wire a_rs1_HAZ  = reads_rs1(a_fd_IR) & (rs1ID(a_fd_IR) == rdID(a_de_IR));
 	wire a_rs2_HAZ  = reads_rs2(a_fd_IR) & (rs2ID(a_fd_IR) == rdID(a_de_IR));
 
-	wire b_rs1_HAZ = !b_fd_NOP & !control_HAZ & reads_rs1(b_fd_IR) & rs1ID(b_fd_IR)!=0 &    (
-                        (writes_rd(b_de_IR) & (rs1ID(b_fd_IR) == rdID(b_de_IR))) |
-                        (writes_rd(b_em_IR) & (rs1ID(b_fd_IR) == rdID(b_em_IR))) );
+	wire ba_rs1_HAZ = reads_rs1(b_fd_IR) & (rs1ID(b_fd_IR) == rdID(a_de_IR));
+        wire ba_rs2_HAZ = reads_rs2(b_fd_IR) & (rs2ID(b_fd_IR) == rdID(a_de_IR));
 
-        wire b_rs2_HAZ = !b_fd_NOP & !control_HAZ & reads_rs2(b_fd_IR) & rs2ID(b_fd_IR)!=0 &    (
-                        (writes_rd(b_de_IR) & (rs2ID(b_fd_IR) == rdID(b_de_IR))) |
-                        (writes_rd(b_em_IR) & (rs2ID(b_fd_IR) == rdID(b_em_IR))) );
+        wire a_data_HAZ   = !a_fd_NOP & (isLoad(a_de_IR) | isCSRRS(a_de_IR)) & ( a_rs1_HAZ | a_rs2_HAZ );
+        wire ba_data_HAZ  = !b_fd_NOP & (isLoad(a_de_IR) | isCSRRS(a_de_IR)) & (ba_rs1_HAZ | ba_rs2_HAZ) & !control_HAZ;
 
-        wire ab_rs1_HAZ =!a_fd_NOP & reads_rs1(a_fd_IR) & rs1ID(a_fd_IR)!=0 &    (
-                        (writes_rd(b_de_IR) & (rs1ID(a_fd_IR) == rdID(b_de_IR))) |
-                        (writes_rd(b_em_IR) & (rs1ID(a_fd_IR) == rdID(b_em_IR))) );
-
-        wire ab_rs2_HAZ =!a_fd_NOP & reads_rs2(a_fd_IR) & rs2ID(a_fd_IR)!=0 &    (
-                        (writes_rd(b_de_IR) & (rs2ID(a_fd_IR) == rdID(b_de_IR))) |
-                        (writes_rd(b_em_IR) & (rs2ID(a_fd_IR) == rdID(b_em_IR))) );
-
-        wire ba_rs1_HAZ =!b_fd_NOP & !control_HAZ & reads_rs1(b_fd_IR) & rs1ID(b_fd_IR)!=0 &    (
-                        (writes_rd(a_de_IR) & (rs1ID(b_fd_IR) == rdID(a_de_IR))) |
-                        (writes_rd(a_em_IR) & (rs1ID(b_fd_IR) == rdID(a_em_IR))) );
-
-        wire ba_rs2_HAZ =!b_fd_NOP & !control_HAZ & reads_rs2(b_fd_IR) & rs2ID(b_fd_IR)!=0 &    (
-                        (writes_rd(a_de_IR) & (rs2ID(b_fd_IR) == rdID(a_de_IR))) |
-                        (writes_rd(a_em_IR) & (rs2ID(b_fd_IR) == rdID(a_em_IR))) );
-
-        wire a_data_HAZ   = !a_fd_NOP & (isLoad(a_de_IR) | isCSRRS(a_de_IR)) & (a_rs1_HAZ | a_rs2_HAZ);
-        wire b_data_HAZ   = b_rs1_HAZ | b_rs2_HAZ;
-
-        wire ab_data_HAZ  = ab_rs1_HAZ | ab_rs2_HAZ;
-        wire ba_data_HAZ  = ba_rs1_HAZ | ba_rs2_HAZ;
-
-        wire data_HAZ = a_data_HAZ | b_data_HAZ | ab_data_HAZ | ba_data_HAZ;
-
-	wire data_HAZ = a_data_HAZ | ba_data_HAZ;
+        wire data_HAZ = a_data_HAZ | ba_data_HAZ;
 
 	wire a_f_stall = halt | data_HAZ;
 	wire a_d_stall = halt | data_HAZ;
@@ -94,12 +67,10 @@ module torv32(
 	wire b_e_flush = a_e_JoB | data_HAZ;
 	wire b_d_flush = a_e_JoB;
 
-
-	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR);
-	wire b_LBC_HAZ = isBtype(a_fd_IR) | isJAL(a_fd_IR) | isJALR(a_fd_IR);
-
 	wire control_HAZ = !b_ins_ALL | b_LBC_HAZ | fd_data_HAZ;
-
+	
+	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR) | isAUIPC(b_fd_IR) | isLUI(b_fd_IR);
+	wire b_LBC_HAZ = isBtype(a_fd_IR) | isJAL(a_fd_IR) | isJALR(a_fd_IR);
 	wire ba_fd_rs1_HAZ = !b_fd_NOP & reads_rs1(b_fd_IR) & rs1ID(b_fd_IR)!=0 & (
 			   (writes_rd(a_fd_IR) & (rs1ID(b_fd_IR) == rdID(a_fd_IR))));
 	wire ba_fd_rs2_HAZ = !b_fd_NOP & reads_rs2(b_fd_IR) & rs2ID(b_fd_IR)!=0 & (
@@ -109,8 +80,15 @@ module torv32(
 	wire halt = resetn & isEBREAK(a_de_IR);	
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	reg [31:0] f_PC;
+
+	reg [31:0] PC;
+	//wire [31:0] f_PC = a_d_JoB_now  ? a_d_JoB_ADDR  :
+	//		   a_em_JoB_now ? a_em_JoB_ADDR :
+	//		   			     PC ;
+
+	wire [31:0] f_PC = a_d_JoB_now  ? a_d_JoB_ADDR  :
+			   a_em_JoB_now ? a_em_JoB_ADDR :
+	       			     	             PC ;
 
 	wire [31:0] a_fd_IR = a_imem_data;
 	wire [31:0] b_fd_IR = b_imem_data;
@@ -119,14 +97,10 @@ module torv32(
 		if(!a_f_stall) begin
 			a_fd_PC <= a_imem_addr;
 
-			f_PC <= (control_HAZ & !a_fd_NOP) ? f_PC + 4:
-						            f_PC + 8;
+			PC <= (control_HAZ & !a_fd_NOP & !(a_d_JoB_now|a_em_JoB_now)) ? f_PC + 4:
+						          f_PC + 8;
 
 		end
-
-		if(a_e_JoB) begin
-			f_PC <= a_e_JoB_ADDR;
-		end 
 
 		a_fd_NOP <= a_d_flush | !resetn;
 		
@@ -138,16 +112,16 @@ module torv32(
 		
 		
 		if(!resetn) begin
-			f_PC <= 32'h00000;
+			PC <= 32'h00000;
 		end
 	       
 	end
 	
 	assign a_imem_en   = !a_f_stall;
-	assign a_imem_addr = (control_HAZ & !a_fd_NOP) ? f_PC-4 : f_PC;
+	assign a_imem_addr = (control_HAZ & !a_fd_NOP & !(a_d_JoB_now|a_em_JoB_now)) ? f_PC-4 : f_PC;
 
 	assign b_imem_en   = !b_f_stall;
-	assign b_imem_addr = (control_HAZ & !a_fd_NOP) ? f_PC :  f_PC+4 ;
+	assign b_imem_addr = (control_HAZ & !a_fd_NOP & !(a_d_JoB_now|a_em_JoB_now)) ? f_PC :  f_PC+4 ;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -155,6 +129,10 @@ module torv32(
         reg a_fd_NOP, b_fd_NOP, b_control_HAZ;
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        wire a_d_predict = a_fd_IR[31];
+        wire a_d_JoB_now = !a_fd_NOP & (isJAL(a_fd_IR) | (isBtype(a_fd_IR) & a_d_predict));
+        wire [31:0] a_d_JoB_ADDR = a_fd_PC + (isJAL(a_fd_IR) ? Jimm(a_fd_IR) : Bimm(a_fd_IR));
 
 	localparam NOP = 32'b0000000_00000_00000_000_00000_0110011;
 	
@@ -171,9 +149,9 @@ module torv32(
 	always@(posedge clk) begin
 
 		if(!a_d_stall) begin
-			a_de_IR <= (a_e_flush | a_fd_NOP) ? NOP : a_fd_IR;
-
-			a_de_PC <= a_fd_PC;
+			a_de_IR      <= (a_e_flush | a_fd_NOP) ? NOP : a_fd_IR;
+			a_de_PC      <= a_fd_PC;
+			a_de_predict <= a_d_predict;
 		end
 		
 		if(a_e_flush) begin
@@ -202,7 +180,7 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	reg [31:0] a_de_IR, a_de_PC;
+	reg [31:0] a_de_IR, a_de_PC; reg a_de_predict;
 	reg [31:0] b_de_IR, b_de_PC;
 
 	wire [31:0] a_de_rs1 = reg_file[rs1ID(a_de_IR)];
@@ -216,26 +194,26 @@ module torv32(
 	wire ae_am_fwd_rs1 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs1ID(a_de_IR));
         wire ae_aw_fwd_rs1 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs1ID(a_de_IR));
 
-	//wire ae_bm_fwd_rs1 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs1ID(a_de_IR));
-        //wire ae_bw_fwd_rs1 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs1ID(a_de_IR));
+	wire ae_bm_fwd_rs1 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs1ID(a_de_IR));
+        wire ae_bw_fwd_rs1 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs1ID(a_de_IR));
 
         wire ae_am_fwd_rs2 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs2ID(a_de_IR));
         wire ae_aw_fwd_rs2 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs2ID(a_de_IR));
 
-	//wire ae_bm_fwd_rs2 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs2ID(a_de_IR));
-        //wire ae_bw_fwd_rs2 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs2ID(a_de_IR));
+	wire ae_bm_fwd_rs2 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs2ID(a_de_IR));
+        wire ae_bw_fwd_rs2 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs2ID(a_de_IR));
 
-        wire [31:0] a_e_rs1 = ae_am_fwd_rs1 ? a_em_RES  :
-                              ae_aw_fwd_rs1 ? a_wb_DATA :
-			      //ae_bm_fwd_rs1 ? b_em_RES  :
-                              //ae_bw_fwd_rs1 ? b_wb_DATA :
-                                              a_de_rs1  ;
+        wire [31:0] a_e_rs1 = ae_bm_fwd_rs1 ? b_em_RES  : //
+			      ae_am_fwd_rs1 ? a_em_RES  : //
+                              ae_bw_fwd_rs1 ? b_wb_DATA : // A ORDEM IMPORTA!!
+                              ae_aw_fwd_rs1 ? a_wb_DATA : //
+                                              a_de_rs1  ; //
 
-        wire [31:0] a_e_rs2 = ae_am_fwd_rs2 ? a_em_RES  :
-                              ae_aw_fwd_rs2 ? a_wb_DATA :
-			      //ae_bm_fwd_rs2 ? b_em_RES  :
-                              //ae_bw_fwd_rs2 ? b_wb_DATA :
-                                              a_de_rs2  ;
+        wire [31:0] a_e_rs2 = ae_bm_fwd_rs2 ? b_em_RES  : //
+			      ae_am_fwd_rs2 ? a_em_RES  : //
+                              ae_bw_fwd_rs2 ? b_wb_DATA : // A ORDEM IMPORTA!!
+                              ae_aw_fwd_rs2 ? a_wb_DATA : //
+                                              a_de_rs2  ; //
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -263,48 +241,83 @@ module torv32(
 	wire [31:0] a_e_RES = isLUI(a_de_IR) ? a_e_IMM : a_e_ALUout;
 
 	wire [31:0] a_e_ADDin1 = (isJAL(a_de_IR) | isBtype(a_de_IR)) ? a_de_PC : a_e_rs1;
-	wire [31:0] a_e_ADDR_RES = a_e_ADDin1 + a_e_IMM;
+	wire [31:0] a_e_ADDin2 = (isBtype(a_de_IR) & a_de_predict)   ? 32'd4 : a_e_IMM;
+	wire [31:0] a_e_ADDR_RES = a_e_ADDin1 + a_e_ADDin2;
 	wire [31:0] a_e_ADDR = {a_e_ADDR_RES[31:1], a_e_ADDR_RES[0] & (~isJALR(a_de_IR))}; 
 
-	wire a_e_JoB = isJAL(a_de_IR) | isJALR(a_de_IR) | (isBtype(a_de_IR) & a_e_takeB);
+	//wire a_e_JoB = isJAL(a_de_IR) | isJALR(a_de_IR) | (isBtype(a_de_IR) & a_e_takeB);
+	//wire a_e_JoB = isJALR(a_de_IR) | (isBtype(a_de_IR) & a_e_takeB);
+	wire a_e_JoB = isJALR(a_de_IR) | (isBtype(a_de_IR) & (a_e_takeB^a_de_predict));
 	wire [31:0] a_e_JoB_ADDR = a_e_ADDR;
 
 	always@(posedge clk) begin
-		a_em_IR   <= a_de_IR;
-		a_em_PC   <= a_de_PC;
-		a_em_rs2  <= a_e_rs2;
-		a_em_RES  <= a_e_RES;
-		a_em_ADDR <= a_e_ADDR;
+		a_em_IR       <= a_de_IR;
+		a_em_PC       <= a_de_PC;
+		a_em_rs2      <= a_e_rs2;
+		a_em_RES      <= a_e_RES;
+		a_em_ADDR     <= a_e_ADDR;
+                a_em_JoB_now  <= a_e_JoB;
+                a_em_JoB_ADDR <= a_e_JoB_ADDR;		
 	end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        //wire b_e_bm_fwd_rs1 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs1ID(b_de_IR));
-        //wire b_e_bw_fwd_rs1 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs1ID(b_de_IR));
+        wire b_e_bm_fwd_rs1 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs1ID(b_de_IR));
+        wire b_e_bw_fwd_rs1 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs1ID(b_de_IR));
 
-        //wire b_e_am_fwd_rs1 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs1ID(b_de_IR));
-        //wire b_e_aw_fwd_rs1 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs1ID(b_de_IR));
+        wire b_e_am_fwd_rs1 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs1ID(b_de_IR));
+        wire b_e_aw_fwd_rs1 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs1ID(b_de_IR));
 
-        //wire b_e_bm_fwd_rs2 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs2ID(b_de_IR));
-        //wire b_e_bw_fwd_rs2 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs2ID(b_de_IR));
+        wire b_e_bm_fwd_rs2 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs2ID(b_de_IR));
+        wire b_e_bw_fwd_rs2 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs2ID(b_de_IR));
 
-        //wire b_e_am_fwd_rs2 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs2ID(b_de_IR));
-        //wire b_e_aw_fwd_rs2 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs2ID(b_de_IR));
+        wire b_e_am_fwd_rs2 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs2ID(b_de_IR));
+        wire b_e_aw_fwd_rs2 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs2ID(b_de_IR));
 
-        wire [31:0] b_e_rs1 = /*b_e_bm_fwd_rs1 ? b_em_RES  :
-                              b_e_bw_fwd_rs1 ? b_wb_DATA :
-                              b_e_am_fwd_rs1 ? a_em_RES  :
-                              b_e_aw_fwd_rs1 ? a_wb_DATA : */
-                                               b_de_rs1  ;
+        wire [31:0] b_e_rs1 = b_e_bm_fwd_rs1 ? b_em_RES  : //
+                              b_e_am_fwd_rs1 ? a_em_RES  : //
+                              b_e_bw_fwd_rs1 ? b_wb_DATA : // A ORDEM IMPORTA!!
+                              b_e_aw_fwd_rs1 ? a_wb_DATA : //
+                                               b_de_rs1  ; //
 
-        wire [31:0] b_e_rs2 = /*b_e_bm_fwd_rs2 ? b_em_RES  :
-                              b_e_bw_fwd_rs2 ? b_wb_DATA :
-                              b_e_am_fwd_rs2 ? a_em_RES  :
-                              b_e_aw_fwd_rs2 ? a_wb_DATA : */
-                                               b_de_rs2  ;
+        wire [31:0] b_e_rs2 = b_e_bm_fwd_rs2 ? b_em_RES  : //
+                              b_e_am_fwd_rs2 ? a_em_RES  : //
+                              b_e_bw_fwd_rs2 ? b_wb_DATA : // A ORDEM IMPORTA!!
+                              b_e_aw_fwd_rs2 ? a_wb_DATA : //
+                                               b_de_rs2  ; //
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	wire [31:0] b_e_IMM;
+
+        imm_mux m1(
+                .instr(b_de_IR),
+                .imm(b_e_IMM)
+        );
+
+        wire [31:0] b_e_ALUin1 = (isJAL(b_de_IR) | isJALR(b_de_IR) | isAUIPC(b_de_IR)) ? b_de_PC : b_e_rs1;
+        wire [31:0] b_e_ALUin2 = (isRtype(b_de_IR) | isBtype(b_de_IR))? b_e_rs2 :
+                                 (isRimm(b_de_IR)  | isAUIPC(b_de_IR))? b_e_IMM  :
+                                                                          32'd4  ;
+        wire [31:0] b_e_ALUout;
+        wire b_e_takeB;
+
+        alu u1(
+                .in_a(b_e_ALUin1),
+                .in_b(b_e_ALUin2),
+                .inst(b_de_IR),
+                .result(b_e_ALUout),
+                .take_b(b_e_takeB)
+        );
+        wire [31:0] b_e_RES = isLUI(b_de_IR) ? b_e_IMM : b_e_ALUout;
+
+        always@(posedge clk) begin
+                b_em_IR   <= b_de_IR;
+                b_em_PC   <= b_de_PC;
+                b_em_RES  <= b_e_RES;
+        end
+
+	/*
 	wire [31:0] b_e_IMM;
 
 	imm_mux m1(
@@ -336,9 +349,12 @@ module torv32(
 		b_em_PC   <= b_de_PC;
 		b_em_RES  <= b_e_RES;
 	end
+	*/
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	reg[31:0] a_em_IR, a_em_PC, a_em_rs2, a_em_RES, a_em_ADDR;
+	reg[31:0] a_em_IR, a_em_PC, a_em_rs2, a_em_RES, a_em_ADDR, a_em_JoB_ADDR;
+	reg       a_em_JoB_now;
 	reg[31:0] b_em_IR, b_em_PC, b_em_RES;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -489,6 +505,9 @@ module torv32(
 
 	function isEBREAK; input [31:0] I; isEBREAK = (isSYSTEM(I) && funct3(I) == 3'b000); endfunction
 	function isCSRRS; input [31:0] I; isCSRRS = (isSYSTEM(I) && funct3(I) == 3'b010); endfunction
+
+	function [31:0] Bimm; input [31:0] I; Bimm = {{20{I[31]}},I[7],I[30:25],I[11:8],1'b0};   endfunction
+        function [31:0] Jimm; input [31:0] I; Jimm = {{12{I[31]}},I[19:12],I[20],I[30:21],1'b0}; endfunction
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
