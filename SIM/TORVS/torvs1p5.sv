@@ -96,21 +96,19 @@ module torv32(
 	wire a_f_stall = halt | data_HAZ;
 	wire a_d_stall = halt | data_HAZ;
 
-	wire a_e_flush = a_e_JoB | data_HAZ;
-	wire a_d_flush = a_e_JoB ;
+	wire a_e_flush = a_e_JoB | b_e_JoB | data_HAZ;
+	wire a_d_flush = a_e_JoB | b_e_JoB;
 
 	wire b_f_stall = halt | data_HAZ;
 	wire b_d_stall = halt | data_HAZ;
 
-	wire b_e_flush = a_e_JoB | data_HAZ;
-	wire b_d_flush = a_e_JoB;
+	wire b_e_flush = a_e_JoB | b_e_JoB | data_HAZ;
+	wire b_d_flush = a_e_JoB | b_e_JoB ;
 
 
-	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR) | isAUIPC(b_fd_IR) | isLUI(b_fd_IR) | isStype(b_fd_IR);
+	wire b_ins_ALL = isRtype(b_fd_IR) | isRimm(b_fd_IR) | isAUIPC(b_fd_IR) | isLUI(b_fd_IR) | isStype(b_fd_IR) | isLoad(b_fd_IR) | isBtype(b_fd_IR) | isJAL(b_fd_IR) | isJALR(b_fd_IR);
 
-	wire b_LBC_HAZ = isBtype(a_fd_IR) | isJAL(a_fd_IR) | isJALR(a_fd_IR);
-
-	wire control_HAZ = !b_ins_ALL | b_LBC_HAZ | fd_data_HAZ;
+	wire control_HAZ = !b_ins_ALL | fd_data_HAZ;
 
 	wire halt = resetn & isEBREAK(a_de_IR);	
 
@@ -132,7 +130,9 @@ module torv32(
 
 		if(a_e_JoB) begin
 			f_PC <= a_e_JoB_ADDR;
-		end 
+		end else if (b_e_JoB) begin
+			f_PC <= b_e_JoB_ADDR;
+		end
 
 		a_fd_NOP <= a_d_flush | !resetn;
 		
@@ -286,9 +286,15 @@ module torv32(
 	wire [31:0] b_e_ADDin1 = (isJAL(b_de_IR) | isBtype(b_de_IR)) ? b_de_PC : b_de_rs1;
         wire [31:0] b_e_ADDR_RES = b_e_ADDin1 + b_e_IMM;
         wire [31:0] b_e_ADDR = {b_e_ADDR_RES[31:1], b_e_ADDR_RES[0] & (~isJALR(b_de_IR))};
+       
+       	wire b_e_JoB = isJAL(b_de_IR) | isJALR(b_de_IR) | (isBtype(b_de_IR) & b_e_takeB);
+        wire [31:0] b_e_JoB_ADDR = b_e_ADDR;
 	
 	always@(posedge clk) begin
-		b_em_IR   <= b_de_IR;
+		if(a_e_JoB) 
+			b_em_IR   <= NOP;
+		else
+			b_em_IR   <= b_de_IR;
 		b_em_PC   <= b_de_PC;
 		b_em_rs2  <= b_de_rs2;
 		b_em_RES  <= b_e_RES;
@@ -394,42 +400,31 @@ module torv32(
 	assign b_IO_mem_wr    = isStype(b_em_IR) & b_M_isIO;
 	assign b_IO_mem_wdata = b_em_rs2;
 
-        assign b_mem_wmask = b_m_WMASK & {4{!addr_HAZ}};
+        assign b_mem_wmask = b_m_WMASK & {4{!store_addr_HAZ}};
         assign b_mem_addr =  {9'b0,b_em_ADDR[22:0]};
         assign b_mem_wdata = b_m_store_DATA;
 
-	wire [31:0] b_mw_Mdata = b_mem_data;
 
-	wire addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);
+	wire store_addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);
+
+	wire a_store_b_load_HAZ = isStype(a_em_IR) & isLoad(b_em_IR) & (a_mem_addr == b_mem_addr);
 
 	always@(posedge clk) begin
-		b_mw_IR     <= b_em_IR;
-		b_mw_PC     <= b_em_PC;
-		b_mw_RES    <= b_em_RES;
-		//b_mw_IO_RES <= b_IO_mem_rdata;
-		//b_mw_ADDR   <= b_em_ADDR;
+		b_mw_IR      <= b_em_IR;
+		b_mw_PC      <= b_em_PC;
+		b_mw_RES     <= b_em_RES;
+		b_mw_IO_RES  <= b_IO_mem_rdata;
+		b_mw_ADDR    <= b_em_ADDR;
 	end
 
-	/*assign b_IO_mem_addr  = 0;
-	assign b_IO_mem_wr    = 0;
-	assign b_IO_mem_wdata = 0;
-       	
-	assign b_mem_wmask = 0;
-        assign b_mem_addr  = 0;
-        assign b_mem_wdata = 0;
-
-        always@(posedge clk) begin
-                b_mw_IR     <= b_em_IR;
-                b_mw_PC     <= b_em_PC;
-                b_mw_RES    <= b_em_RES;
-	end*/
+	//wire [31:0] b_mw_Mdata = b_ASBL_HAZ ? b_store_DATA : b_mem_data;
+	wire [31:0] b_mw_Mdata = a_store_b_load_HAZ ? b_m_store_DATA : b_mem_data;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	reg [31:0] a_mw_IR, a_mw_PC, a_mw_RES, a_mw_IO_RES, a_mw_ADDR, a_mw_CSR_RES;
-	
-	//reg [31:0] b_mw_IR, b_mw_PC, b_mw_RES, b_mw_IO_RES, b_mw_ADDR, b_mw_CSR_RES;
-	reg [31:0] b_mw_IR, b_mw_PC, b_mw_RES;
+	reg [31:0] b_mw_IR, b_mw_PC, b_mw_RES, b_mw_IO_RES, b_mw_ADDR;
+	//reg [31:0] b_mw_IR, b_mw_PC, b_mw_RES;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -459,8 +454,24 @@ module torv32(
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-	assign b_wb_DATA = b_mw_RES;
-	
+        wire [2:0] b_w_funct3 = funct3(b_mw_IR);
+
+        wire b_w_isB = (b_w_funct3[1:0] == 2'b00);
+        wire b_w_isH = (b_w_funct3[1:0] == 2'b01);
+        wire b_w_sign_e = !b_w_funct3[2];
+        wire b_W_isIO   = b_mw_ADDR[22];
+
+        wire [15:0] b_w_loadH = b_mw_ADDR[1] ? b_mw_Mdata[31:16] : b_mw_Mdata[15:0];
+        wire [ 7:0] b_w_loadB = b_mw_ADDR[0] ? b_w_loadH[15:8 ] : b_w_loadH[7: 0];
+        wire b_w_load_sign    = b_w_sign_e & (b_w_isB ? b_w_loadB[7] : b_w_loadH[15]);
+
+        wire [31:0] b_w_mem_RES = b_w_isB ? {{24{b_w_load_sign}}, b_w_loadB} :
+                                  b_w_isH ? {{16{b_w_load_sign}}, b_w_loadH} :
+                                                                  b_mw_Mdata ;
+
+        assign b_wb_DATA = isLoad(b_mw_IR) ? (b_W_isIO ? b_mw_IO_RES : b_w_mem_RES):
+                                                                           b_mw_RES;
+
 	assign b_wb_enable = writes_rd(b_mw_IR) & (rdID(b_mw_IR)!=0);
 
 	assign b_wb_rdID = rdID(b_mw_IR);
@@ -514,18 +525,37 @@ module torv32(
 		*/
 
                 /* verilator lint_off WIDTH */
-                always @(posedge clk) begin
-			
-			if(addr_HAZ & (|b_mem_wmask) & (|a_mem_wmask) & (a_em_PC > b_em_PC)) begin
-				$display("HAZ, a_PC %x | b_PC %x", a_em_PC, b_em_PC);
+		
+		integer n_chaz_INS =0;
+		integer n_chaz_FD =0;
+		integer n_datahaz =0;
+                
+		always @(posedge clk) begin
+
+			//if(a_store_b_load_HAZ)
+			//	$display("HAZ");
+
+			if(!b_ins_ALL) begin
+				n_chaz_INS <= n_chaz_INS + 1;
+			end
+
+			if(fd_data_HAZ) begin
+				n_chaz_FD <= n_chaz_FD + 1;
+			end
+
+			if(data_HAZ) begin
+				n_datahaz <= n_datahaz + 1;
 			end
 
                         if(halt) begin
-                                /*$display("Simulated processor's report");
+                                //$display("Simulated processor's report");
                                 $display("----------------------------");
 				//$display("Numbers of stalls in F stage: %d", n_fstall);
                                 $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
-                                $display("CPI = %3.3f" , cycle/instret);*/
+                                $display("Numbers of control HAZs ins: %d", n_chaz_INS);
+                                $display("Numbers of control HAZs fd: %d", n_chaz_FD);
+                                $display("Numbers of data HAZs: %d", n_datahaz);
+                                //$display("CPI = %3.3f" , cycle/instret);*/
 				$finish();
                         end
                 end

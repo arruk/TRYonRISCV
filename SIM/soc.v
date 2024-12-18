@@ -217,7 +217,7 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
 	wire a_uart_valid = a_IO_mem_wr & a_IO_wordaddr[1];
 	wire b_uart_valid = b_IO_mem_wr & b_IO_wordaddr[1];
 	
-	wire uart_valid = a_uart_valid ;//| b_uart_valid;
+	wire uart_valid = a_uart_valid | b_uart_valid;
         wire uart_ready;
         
 	wire [31:0] IO_mem_wdata = a_IO_mem_wdata;
@@ -281,10 +281,18 @@ module SOC( input CLK, output [5:0] LEDS, output UART_TX);
 			localparam dm=16384, im=16384;
 
 			always@(posedge clk) begin
-                                if(a_uart_valid) begin
+                                if(a_uart_valid & b_uart_valid) begin
+                                        $write("%c%c", a_IO_mem_wdata[7:0], b_IO_mem_wdata[7:0]);
+                                        $fflush(32'h8000_0001);
+                                end else if(a_uart_valid) begin
                                         $write("%c", a_IO_mem_wdata[7:0]);
                                         $fflush(32'h8000_0001);
+                                end else if(b_uart_valid) begin
+                                        $write("%c", b_IO_mem_wdata[7:0]);
+                                        $fflush(32'h8000_0001);
                                 end
+
+
 				if(halt) begin
 					$finish();
 				end
@@ -355,7 +363,23 @@ endmodule
         `include "newbypass3.v"
 `elsif NEWBYPASS4
         `include "newbypass4.v"
-`elsif TORVS9P1
-        `include "torvs9p1.sv"
+`elsif TORVS6P1
+        `include "torvs6p1.sv"
+`elsif TORVS9P4
+        `include "torvs9p4.sv"
+`elsif TORVS1P4
+        `include "torvs1p4.sv"
+`elsif TORVS9P5
+        `include "torvs9p5.sv"
+`elsif TORVS8P1
+        `include "torvs8p1.sv"
+`elsif TORVS8P2
+        `include "torvs8p2.sv"
+`elsif TORVS8P3
+        `include "torvs8p3.sv"
+`elsif TORVS8P4
+        `include "torvs8p4.sv"
+`elsif TORVS8P5
+        `include "torvs8p5.sv"
 `endif
 

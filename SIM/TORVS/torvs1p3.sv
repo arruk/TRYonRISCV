@@ -108,9 +108,9 @@ module torv32(
 
 	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR) | isAUIPC(b_fd_IR) | isLUI(b_fd_IR) | isStype(b_fd_IR);
 
-	wire b_LBC_HAZ = isBtype(a_fd_IR) | isJAL(a_fd_IR) | isJALR(a_fd_IR);
+	//wire b_LBC_HAZ = isBtype(a_fd_IR) | isJAL(a_fd_IR) | isJALR(a_fd_IR);
 
-	wire control_HAZ = !b_ins_ALL | b_LBC_HAZ | fd_data_HAZ;
+	wire control_HAZ = !b_ins_ALL | fd_data_HAZ;
 
 	wire halt = resetn & isEBREAK(a_de_IR);	
 
@@ -288,7 +288,10 @@ module torv32(
         wire [31:0] b_e_ADDR = {b_e_ADDR_RES[31:1], b_e_ADDR_RES[0] & (~isJALR(b_de_IR))};
 	
 	always@(posedge clk) begin
-		b_em_IR   <= b_de_IR;
+		if(a_e_JoB) 
+			b_em_IR   <= NOP;
+		else
+			b_em_IR   <= b_de_IR;
 		b_em_PC   <= b_de_PC;
 		b_em_rs2  <= b_de_rs2;
 		b_em_RES  <= b_e_RES;
@@ -410,25 +413,10 @@ module torv32(
 		//b_mw_ADDR   <= b_em_ADDR;
 	end
 
-	/*assign b_IO_mem_addr  = 0;
-	assign b_IO_mem_wr    = 0;
-	assign b_IO_mem_wdata = 0;
-       	
-	assign b_mem_wmask = 0;
-        assign b_mem_addr  = 0;
-        assign b_mem_wdata = 0;
-
-        always@(posedge clk) begin
-                b_mw_IR     <= b_em_IR;
-                b_mw_PC     <= b_em_PC;
-                b_mw_RES    <= b_em_RES;
-	end*/
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	reg [31:0] a_mw_IR, a_mw_PC, a_mw_RES, a_mw_IO_RES, a_mw_ADDR, a_mw_CSR_RES;
 	
-	//reg [31:0] b_mw_IR, b_mw_PC, b_mw_RES, b_mw_IO_RES, b_mw_ADDR, b_mw_CSR_RES;
 	reg [31:0] b_mw_IR, b_mw_PC, b_mw_RES;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

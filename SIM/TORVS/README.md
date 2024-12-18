@@ -4,6 +4,11 @@
 	- despacho duplo simples (pipelines A e B)
 	- fetch apenas de intruções do tipo R e Imm no pipeline B
 	- verificado pelos três benchmarks
+	- torvs1p1.sv adiciona LUI e AUIPC no pipeline B
+	- torvs1p2.sv adiciona LUI, AUIPC e STOREs no pipeline B
+	- torvs1p3.sv adiciona LUI, AUIPC e STOREs no pipeline B; e permite issue com btype no pipeline A
+	- torvs1p4.sv adiciona LUI, AUIPC, STOREs e LOADs no pipeline B; e permite issue em B com Btype no pipeline A
+	- torvs1p5.sv adiciona LUI, AUIPC, STOREs, LOADs e Btype no pipeline B; e permite issue em B com Btype no pipeline A
 
 - torvs1.1.sv
 	- despacho duplo simples (pipelines A e B)
@@ -72,6 +77,12 @@
 	- JAL nao causa mais bolhas
 	- predição de desvio dinamica, bimodal 2bits
 	- verificado pelos três benchmarks
+	- torvs8p1.sv adiciona LUI e AUIPC no pipeline B
+	- torvs8p2.sv adiciona LUI, AUIPC e STOREs no pipeline B
+	- torvs8p3.sv adiciona LUI, AUIPC e STOREs no pipeline B; e permite issue com btype no pipeline A
+	- torvs8p4.sv adiciona LUI, AUIPC, STOREs e LOADs no pipeline B; e permite issue em B com Btype no pipeline A
+	- torvs8p5.sv adiciona LUI, AUIPC, STOREs, LOADs e Btype no pipeline B; e permite issue em B com Btype no pipeline A
+
 
 - torvs9.sv
 	- despacho duplo simples (pipelines A e B)
@@ -84,4 +95,8 @@
 	- predição de desvio dinamica, gselect e gshare
 	- verificado pelos três benchmarks
 	- torvs9p1.sv adiciona LUI e AUIPC no pipeline B
+	- torvs9p2.sv adiciona LUI, AUIPC e STOREs no pipeline B
+	- torvs9p3.sv adiciona LUI, AUIPC e STOREs no pipeline B; e permite issue com btype no pipeline A
+	- torvs9p4.sv adiciona LUI, AUIPC, STOREs e LOADs no pipeline B; e permite issue em B com Btype no pipeline A
+	- torvs9p5.sv adiciona LUI, AUIPC, STOREs, LOADs e Btype no pipeline B; e permite issue em B com Btype no pipeline A
 
