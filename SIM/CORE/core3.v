@@ -1,11 +1,9 @@
-//`include "uart_tx.v"
-//`include "clockworks.v"
-`default_nettype none
+`ifndef BENCH
+        `define SYN
+`endif
 
-`ifdef ALU
-        `include "alu2.v"
-`else
-        `include "alu.v"
+`ifndef SYN
+        `include "AUX/alu.v"
 `endif
 
 module torv32(

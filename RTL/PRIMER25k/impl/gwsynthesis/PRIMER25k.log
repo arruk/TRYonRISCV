@@ -1,0 +1,48 @@
+GowinSynthesis start
+Running parser ...
+Analyzing Verilog file '/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v'
+Analyzing Verilog file '/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/clockworks.v'
+Analyzing Verilog file '/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/core.v'
+WARN  (EX2950) : Extra semicolon is not allowed here in this dialect, use SystemVerilog mode instead("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/core.v":258)
+Analyzing Verilog file '/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/mem.sv'
+Analyzing Verilog file '/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/soc.v'
+Analyzing Verilog file '/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/uart_tx.v'
+Compiling module 'SOC'("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/soc.v":7)
+Compiling module 'torv32'("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/core.v":9)
+Extracting RAM for identifier 'BHT'("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/core.v":119)
+Extracting RAM for identifier 'reg_file'("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/core.v":169)
+WARN  (EX3791) : Expression size 21 truncated to fit in target size 12("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/core.v":103)
+Compiling module 'imm_mux'("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v":137)
+Compiling module 'alu'("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v":3)
+Compiling module 'add_sub'("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v":71)
+Compiling module 'flip32'("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v":128)
+WARN  (EX3791) : Expression size 33 truncated to fit in target size 32("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v":39)
+Compiling module 'mem(RAM_SIZE=16384)'("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/mem.sv":6)
+Extracting RAM for identifier 'RAM'("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/mem.sv":29)
+Extracting RAM for identifier 'ROM'("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/mem.sv":30)
+Compiling module 'corescore_emitter_uart(clk_freq_hz=50000000,baud_rate=230400)'("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/uart_tx.v":1)
+WARN  (EX3791) : Expression size 32 truncated to fit in target size 9("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/uart_tx.v":34)
+Compiling module 'Clockworks'("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/clockworks.v":3)
+NOTE  (EX0101) : Current top module is "SOC"
+[5%] Running netlist conversion ...
+Running device independent optimization ...
+[10%] Optimizing Phase 0 completed
+[15%] Optimizing Phase 1 completed
+[25%] Optimizing Phase 2 completed
+Running inference ...
+[30%] Inferring Phase 0 completed
+[40%] Inferring Phase 1 completed
+[50%] Inferring Phase 2 completed
+[55%] Inferring Phase 3 completed
+Running technical mapping ...
+[60%] Tech-Mapping Phase 0 completed
+[65%] Tech-Mapping Phase 1 completed
+[75%] Tech-Mapping Phase 2 completed
+[80%] Tech-Mapping Phase 3 completed
+[90%] Tech-Mapping Phase 4 completed
+WARN  (NL0002) : The module "imm_mux" instantiated to "m0" is swept in optimizing("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/core.v":219)
+WARN  (NL0002) : The module "flip32" instantiated to "fl0" is swept in optimizing("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v":34)
+WARN  (NL0002) : The module "flip32" instantiated to "fl1" is swept in optimizing("/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v":43)
+[95%] Generate netlist file "/home/arruk/TRYonRISCV/RTL/PRIMER25k/impl/gwsynthesis/PRIMER25k.vg" completed
+[100%] Generate report file "/home/arruk/TRYonRISCV/RTL/PRIMER25k/impl/gwsynthesis/PRIMER25k_syn.rpt.html" completed
+GowinSynthesis finish

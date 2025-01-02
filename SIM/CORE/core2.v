@@ -1,8 +1,8 @@
-`default_nettype none
+`ifndef BENCH
+	`define SYN
+`endif
 
-`ifdef ALU
-	`include "AUX/alu2.v"
-`else
+`ifndef SYN
 	`include "AUX/alu.v"
 `endif
 
