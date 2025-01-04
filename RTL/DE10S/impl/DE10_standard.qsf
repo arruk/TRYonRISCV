@@ -5,7 +5,7 @@ set_global_assignment -name DEVICE 5CSXFC6D6F31C6
 
 set_location_assignment PIN_AF14 -to CLK
 
-set_location_assignment PIN_D10 -to UART_TX
+set_location_assignment PIN_AG5 -to UART_TX
 
 set_location_assignment PIN_AJ4  -to KEY[0]
 set_location_assignment PIN_AK4  -to KEY[1]

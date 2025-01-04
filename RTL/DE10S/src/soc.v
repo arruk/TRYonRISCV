@@ -1,10 +1,11 @@
 //`define TORVS
 //`define COPROC
+`define DE10S
 `ifndef BENCH
 	`define SYN
 `endif
 
-module SOC( input CLK, input RESET, output [7:0] LEDS, output UART_TX, output UART_CTS);
+module SOC( input CLK, output [7:0] LEDS, output UART_TX, output UART_CTS);
 
         wire resetn, clk;
 	
@@ -128,6 +129,8 @@ module SOC( input CLK, input RESET, output [7:0] LEDS, output UART_TX, output UA
 	wire uart_valid = IO_mem_wr & IO_wordaddr[1];
 
 	wire halt = IO_mem_wr & IO_wordaddr[3];
+
+	reg RESET =0;
 
         //assign LEDS = IO_mem_wdata[7:0];
 	assign LEDS = {8{uart_ready}};

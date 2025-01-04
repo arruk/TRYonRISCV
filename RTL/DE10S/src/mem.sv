@@ -1,3 +1,4 @@
+`define DE10S
 `ifndef BENCH
 	`define SYN
 `endif
@@ -24,10 +25,13 @@ module mem (
 	
 	parameter RAM_SIZE = 32768;
 
-	//reg [ 3:0][7:0] RAM [0:RAM_SIZE-1];  // 64kB of RAM
-	//reg [ 3:0][7:0] ROM [0:RAM_SIZE-1];  // 64kB of RAM
+	`ifdef DE10S
+	reg [ 3:0][7:0] RAM [0:RAM_SIZE-1];  // 64kB of RAM
+	reg [ 3:0][7:0] ROM [0:RAM_SIZE-1];  // 64kB of RAM
+	`else
 	reg [31:0] RAM [0:RAM_SIZE-1];  // 64kB of RAM
 	reg [31:0] ROM [0:RAM_SIZE-1];  // 64kB of RAM
+	`endif
 
 	`ifdef SYN	
 	initial begin
@@ -42,15 +46,23 @@ module mem (
 	`endif
 	
 	always@(posedge clk) begin
-//		if(mem_wmask[0]) RAM[mem_addr_seg][0] <= mem_wdata[ 7:0 ];
-//		if(mem_wmask[1]) RAM[mem_addr_seg][1] <= mem_wdata[15:8 ];
-//		if(mem_wmask[2]) RAM[mem_addr_seg][2] <= mem_wdata[23:16];
-//		if(mem_wmask[3]) RAM[mem_addr_seg][3] <= mem_wdata[31:24];
-        if(mem_wmask[0]) RAM[mem_addr_seg][ 7:0 ] <= mem_wdata[ 7:0 ];
-        if(mem_wmask[1]) RAM[mem_addr_seg][15:8 ] <= mem_wdata[15:8 ];
-        if(mem_wmask[2]) RAM[mem_addr_seg][23:16] <= mem_wdata[23:16];
-        if(mem_wmask[3]) RAM[mem_addr_seg][31:24] <= mem_wdata[31:24];
-        mem_data <= RAM[mem_addr_seg];
+		`ifdef DE10S
+		
+		if(mem_wmask[0]) RAM[mem_addr_seg][0] <= mem_wdata[ 7:0 ];
+		if(mem_wmask[1]) RAM[mem_addr_seg][1] <= mem_wdata[15:8 ];
+		if(mem_wmask[2]) RAM[mem_addr_seg][2] <= mem_wdata[23:16];
+		if(mem_wmask[3]) RAM[mem_addr_seg][3] <= mem_wdata[31:24];
+  		
+		`else
+	
+		if(mem_wmask[0]) RAM[mem_addr_seg][ 7:0 ] <= mem_wdata[ 7:0 ];
+		if(mem_wmask[1]) RAM[mem_addr_seg][15:8 ] <= mem_wdata[15:8 ];
+		if(mem_wmask[2]) RAM[mem_addr_seg][23:16] <= mem_wdata[23:16];
+		if(mem_wmask[3]) RAM[mem_addr_seg][31:24] <= mem_wdata[31:24];
+		
+		`endif
+		
+		mem_data <= RAM[mem_addr_seg];
 	end 
 
         always@(posedge clk) begin
