@@ -32,7 +32,7 @@ uname_m := $(shell uname -m)
 #SDIR = LIB 
 #BDIR = BUILD
 
-TOOLCHAIN_GCC_VER=8.2.0
+TOOLCHAIN_GCC_VER=8.3.0
 RVTOOLCHAIN_BIN_PREFIX=riscv64-unknown-elf
 
 RVTOOLCHAIN_DIR=$(RV_UNK)

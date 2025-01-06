@@ -1,11 +1,9 @@
-`default_nettype none
+`ifndef BENCH
+        `define SYN
+`endif
 
-`define TORVS
-
-`ifdef ALU
-	`include "AUX/alu2.v"
-`else
-	`include "AUX/alu.v"
+`ifndef SYN
+        `include "AUX/alu.v"
 `endif
 
 module torv32(
@@ -175,8 +173,17 @@ module torv32(
 	wire [31:0] b_wb_DATA;
 	wire [4:0]  b_wb_rdID;
 
-	reg [3:0][7:0] reg_file [0:31];
-	
+        /*
+        `ifndef SYN
+        reg [3:0][7:0] reg_file [0:31];
+        `else
+        reg [31:0] reg_file [0:31];
+        `endif
+        */
+
+        reg [31:0] reg_file [0:31];
+
+
 	always@(posedge clk) begin
 
 		if(!a_d_stall) begin

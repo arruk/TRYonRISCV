@@ -1,4 +1,4 @@
-//`define TORVS
+`define TORVS
 //`define COPROC
 `ifndef BENCH
 	`define SYN
@@ -103,7 +103,7 @@ module SOC( input CLK, input RESET, output [7:0] LEDS, output UART_TX, output UA
 	
 	wire halt = a_IO_mem_wr & a_IO_wordaddr[3] | b_IO_mem_wr & b_IO_wordaddr[3];
         
-	assign LEDS = a_IO_mem_wdata[5:0];
+	assign LEDS = a_IO_mem_wdata[7:0];
 	
 	`else
 
@@ -346,11 +346,13 @@ endmodule
 	`include "COPROC/pico_mul.v"
 	`include "COPROC/pico_div.v"
 
-	`ifdef TORVS
-		`include "TORVS/mem_dual.sv"
-	`else
-		`include "mem.sv"
-	`endif
+	//`ifdef TORVS
+	//	`include "TORVS/mem_dual.sv"
+	//`else
+	//	`include "mem.sv"
+	//`endif
+	
+	`include "mem.sv"
 
 	`ifdef CORE 
 		//`include "core.sv"
@@ -379,6 +381,8 @@ endmodule
 		`include "newbypass3.v"
 	`elsif NEWBYPASS4
 		`include "newbypass4.v"
+	`elsif TORVS1
+		`include "torvs1.sv"
 	`elsif TORVS6P1
 		`include "torvs6p1.sv"
 	`elsif TORVS9P4

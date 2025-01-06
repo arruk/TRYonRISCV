@@ -4,32 +4,35 @@
 // Internal details; most calling programs do not need this header,
 // unless using verilator public meta comments.
 
-#ifndef _VSOC__SYMS_H_
-#define _VSOC__SYMS_H_  // guard
+#ifndef VERILATED_VSOC__SYMS_H_
+#define VERILATED_VSOC__SYMS_H_  // guard
 
-#include "verilated_heavy.h"
+#include "verilated.h"
 
-// INCLUDE MODULE CLASSES
+// INCLUDE MODEL CLASS
+
 #include "VSOC.h"
 
-// SYMS CLASS
-class VSOC__Syms : public VerilatedSyms {
+// INCLUDE MODULE CLASSES
+#include "VSOC___024root.h"
+
+// SYMS CLASS (contains all model state)
+class alignas(VL_CACHE_LINE_BYTES)VSOC__Syms final : public VerilatedSyms {
   public:
-    
-    // LOCAL STATE
-    const char* __Vm_namep;
-    bool __Vm_didInit;
-    
-    // SUBCELL STATE
-    VSOC*                          TOPp;
-    
-    // CREATORS
-    VSOC__Syms(VSOC* topp, const char* namep);
-    ~VSOC__Syms() {}
-    
+    // INTERNAL STATE
+    VSOC* const __Vm_modelp;
+    VlDeleter __Vm_deleter;
+    bool __Vm_didInit = false;
+
+    // MODULE INSTANCE STATE
+    VSOC___024root                 TOP;
+
+    // CONSTRUCTORS
+    VSOC__Syms(VerilatedContext* contextp, const char* namep, VSOC* modelp);
+    ~VSOC__Syms();
+
     // METHODS
-    inline const char* name() { return __Vm_namep; }
-    
-} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);
+    const char* name() { return TOP.name(); }
+};
 
 #endif  // guard

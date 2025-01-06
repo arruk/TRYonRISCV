@@ -1,21 +1,26 @@
 // Verilated -*- C++ -*-
 // DESCRIPTION: Verilator output: Symbol table implementation internals
 
-#include "VSOC__Syms.h"
+#include "VSOC__pch.h"
 #include "VSOC.h"
-
-
+#include "VSOC___024root.h"
 
 // FUNCTIONS
-VSOC__Syms::VSOC__Syms(VSOC* topp, const char* namep)
-    // Setup locals
-    : __Vm_namep(namep)
-    , __Vm_didInit(false)
-    // Setup submodule names
+VSOC__Syms::~VSOC__Syms()
 {
-    // Pointer to top level
-    TOPp = topp;
+}
+
+VSOC__Syms::VSOC__Syms(VerilatedContext* contextp, const char* namep, VSOC* modelp)
+    : VerilatedSyms{contextp}
+    // Setup internal state of the Syms class
+    , __Vm_modelp{modelp}
+    // Setup module instances
+    , TOP{this, namep}
+{
+    // Configure time unit / time precision
+    _vm_contextp__->timeunit(-12);
+    _vm_contextp__->timeprecision(-12);
     // Setup each module's pointers to their submodules
     // Setup each module's pointer back to symbol table (for public functions)
-    TOPp->__Vconfigure(this, true);
+    TOP.__Vconfigure(true);
 }

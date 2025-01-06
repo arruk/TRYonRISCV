@@ -1,57 +1,99 @@
 [
  {
-  "InstFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/soc.v",
+  "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/soc.v",
   "InstLine" : 7,
   "InstName" : "SOC",
-  "ModuleFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/soc.v",
+  "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/soc.v",
   "ModuleLine" : 7,
   "ModuleName" : "SOC",
   "SubInsts" : [
    {
-    "InstFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/soc.v",
-    "InstLine" : 204,
+    "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/soc.v",
+    "InstLine" : 139,
     "InstName" : "CPU",
-    "ModuleFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/core2.v",
+    "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/core.sv",
     "ModuleLine" : 9,
     "ModuleName" : "torv32",
     "SubInsts" : [
      {
-      "InstFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/core2.v",
-      "InstLine" : 116,
+      "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/core.sv",
+      "InstLine" : 230,
       "InstName" : "m0",
-      "ModuleFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v",
+      "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
       "ModuleLine" : 137,
       "ModuleName" : "imm_mux"
      },
      {
-      "InstFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/core2.v",
-      "InstLine" : 128,
+      "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/core.sv",
+      "InstLine" : 242,
       "InstName" : "u0",
-      "ModuleFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v",
+      "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
       "ModuleLine" : 3,
       "ModuleName" : "alu",
       "SubInsts" : [
        {
-        "InstFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v",
+        "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
         "InstLine" : 25,
         "InstName" : "s0",
-        "ModuleFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v",
+        "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
         "ModuleLine" : 71,
         "ModuleName" : "add_sub"
        },
        {
-        "InstFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v",
+        "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
         "InstLine" : 34,
         "InstName" : "fl0",
-        "ModuleFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v",
+        "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
         "ModuleLine" : 128,
         "ModuleName" : "flip32"
        },
        {
-        "InstFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v",
+        "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
         "InstLine" : 43,
         "InstName" : "fl1",
-        "ModuleFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/alu.v",
+        "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
+        "ModuleLine" : 128,
+        "ModuleName" : "flip32"
+       }
+      ]
+     },
+     {
+      "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/core.sv",
+      "InstLine" : 270,
+      "InstName" : "m1",
+      "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
+      "ModuleLine" : 137,
+      "ModuleName" : "imm_mux"
+     },
+     {
+      "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/core.sv",
+      "InstLine" : 282,
+      "InstName" : "u1",
+      "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
+      "ModuleLine" : 3,
+      "ModuleName" : "alu",
+      "SubInsts" : [
+       {
+        "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
+        "InstLine" : 25,
+        "InstName" : "s0",
+        "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
+        "ModuleLine" : 71,
+        "ModuleName" : "add_sub"
+       },
+       {
+        "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
+        "InstLine" : 34,
+        "InstName" : "fl0",
+        "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
+        "ModuleLine" : 128,
+        "ModuleName" : "flip32"
+       },
+       {
+        "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
+        "InstLine" : 43,
+        "InstName" : "fl1",
+        "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
         "ModuleLine" : 128,
         "ModuleName" : "flip32"
        }
@@ -60,26 +102,44 @@
     ]
    },
    {
-    "InstFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/soc.v",
-    "InstLine" : 255,
-    "InstName" : "DATA",
-    "ModuleFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/mem.sv",
-    "ModuleLine" : 6,
-    "ModuleName" : "mem"
+    "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/soc.v",
+    "InstLine" : 232,
+    "InstName" : "MI",
+    "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/mem.sv",
+    "ModuleLine" : 68,
+    "ModuleName" : "mem",
+    "SubInsts" : [
+     {
+      "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/mem.sv",
+      "InstLine" : 96,
+      "InstName" : "imem",
+      "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/mem.sv",
+      "ModuleLine" : 124,
+      "ModuleName" : "insn_mem"
+     },
+     {
+      "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/mem.sv",
+      "InstLine" : 108,
+      "InstName" : "dmem",
+      "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/mem.sv",
+      "ModuleLine" : 172,
+      "ModuleName" : "data_mem"
+     }
+    ]
    },
    {
-    "InstFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/soc.v",
-    "InstLine" : 273,
+    "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/soc.v",
+    "InstLine" : 274,
     "InstName" : "UART",
-    "ModuleFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/uart_tx.v",
+    "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/uart_tx.v",
     "ModuleLine" : 1,
     "ModuleName" : "corescore_emitter_uart"
    },
    {
-    "InstFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/soc.v",
-    "InstLine" : 284,
+    "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/soc.v",
+    "InstLine" : 285,
     "InstName" : "CW",
-    "ModuleFile" : "/home/arruk/TRYonRISCV/RTL/PRIMER25k/src/clockworks.v",
+    "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/clockworks.v",
     "ModuleLine" : 3,
     "ModuleName" : "Clockworks"
    }

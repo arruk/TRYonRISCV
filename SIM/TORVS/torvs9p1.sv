@@ -1,11 +1,9 @@
-`default_nettype none
+`ifndef BENCH
+        `define SYN
+`endif
 
-`define TORVS
-
-`ifdef ALU
-	`include "AUX/alu2.v"
-`else
-	`include "AUX/alu.v"
+`ifndef SYN
+        `include "AUX/alu.v"
 `endif
 
 module torv32(
@@ -82,21 +80,21 @@ module torv32(
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	
-        //function [BHT_ADDR_BITS-1:0] BHT_index;
-        //input [31:0] PC;
+        function [BHT_ADDR_BITS-1:0] BHT_index;
+        input [31:0] PC;
         /* verilator lint_off WIDTH */
-        //        BHT_index = {(BH << (BHT_ADDR_BITS - BP_HIST_BITS)), PC[BHT_ADDR_BITS+1:2] };
+                BHT_index = {(BH << (BHT_ADDR_BITS - BP_HIST_BITS)), PC[BHT_ADDR_BITS+1:2] };
         /* verilator lint_on WIDTH */
-        //endfunction
+        endfunction
 	
 	
-	function [BHT_ADDR_BITS-1:0] BHT_index;
-	input [31:0] PC;
+	//function [BHT_ADDR_BITS-1:0] BHT_index;
+	//input [31:0] PC;
 	/* verilator lint_off WIDTH */
-		BHT_index = PC[BHT_ADDR_BITS+1:2] ^ 
-			   (BH << (BHT_ADDR_BITS - BP_HIST_BITS));
+	//	BHT_index = PC[BHT_ADDR_BITS+1:2] ^ 
+	//		   (BH << (BHT_ADDR_BITS - BP_HIST_BITS));
 	/* verilator lint_on WIDTH */      
-	endfunction
+	//endfunction
 
 
 	/*
@@ -106,8 +104,8 @@ module torv32(
         endfunction
 	*/
 
-	localparam BP_HIST_BITS = 10;
-        parameter BHT_ADDR_BITS = 16;
+	localparam BP_HIST_BITS = 4;
+        parameter BHT_ADDR_BITS = 8;
         localparam BHT_SIZE=1<<BHT_ADDR_BITS;
         reg [1:0] BHT [BHT_SIZE-1:0];
 	reg [BP_HIST_BITS-1:0] BH;
@@ -176,7 +174,15 @@ module torv32(
 	wire [31:0] b_wb_DATA;
 	wire [4:0]  b_wb_rdID;
 
-	reg [3:0][7:0] reg_file [0:31];
+        /*
+        `ifndef SYN
+        reg [3:0][7:0] reg_file [0:31];
+        `else
+        reg [31:0] reg_file [0:31];
+        `endif
+        */
+
+        reg [31:0] reg_file [0:31];
 	
 	always@(posedge clk) begin
 

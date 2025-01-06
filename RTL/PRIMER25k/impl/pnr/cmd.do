@@ -1,8 +1,8 @@
--d /home/arruk/TRYonRISCV/RTL/PRIMER25k/impl/gwsynthesis/PRIMER25k.vg
+-d /home/arruk/riscv/RTL/PRIMER25k/impl/gwsynthesis/PRIMER25k.vg
 -p GW5A-25A-MBGA121N-1
 -pn GW5A-LV25MG121NC1/I0
--cst /home/arruk/TRYonRISCV/RTL/PRIMER25k/src/soc.cst
--cfg /home/arruk/TRYonRISCV/RTL/PRIMER25k/impl/pnr/device.cfg
+-cst /home/arruk/riscv/RTL/PRIMER25k/src/soc.cst
+-cfg /home/arruk/riscv/RTL/PRIMER25k/impl/pnr/device.cfg
 -bit
 -tr
 -ph

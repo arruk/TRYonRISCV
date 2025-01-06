@@ -1,3 +1,9 @@
+
+changes:
+	rm -rf src/core.sv
+	ln -P ../../SIM/TORVS/$(v).sv src/core.sv
+	echo "$(v)" > core.txt
+
 change:
 	rm -rf src/core.v
 	ln -P ../../SIM/CORE/$(v).v src/core.v
@@ -24,4 +30,4 @@ all:
 	gw_sh gwsyn.tcl
 
 program:
-	sudo openFPGALoader -b tangprimer25k /home/arruk/TRYonRISCV/RTL/PRIMER25k/impl/pnr/PRIMER25k.fs
+	sudo openFPGALoader -b tangprimer25k /home/arruk/riscv/RTL/PRIMER25k/impl/pnr/PRIMER25k.fs

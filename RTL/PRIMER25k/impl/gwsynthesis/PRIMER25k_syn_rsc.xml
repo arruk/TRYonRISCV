@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Module name="SOC" Lut="2" T_Register="4641(0)" T_Alu="268(0)" T_Lut="8204(2)" T_Bsram="43(0)">
- <SubModule name="CPU" Register="4605" Alu="219" Lut="8019" Bsram="3" T_Register="4605(4605)" T_Alu="252(219)" T_Lut="8163(8019)" T_Bsram="3(3)">
-  <SubModule name="u0" Lut="65" T_Alu="33(0)" T_Lut="144(65)">
-   <SubModule name="s0" Alu="33" Lut="79" T_Alu="33(33)" T_Lut="79(79)"/>
+<Module name="SOC" Lut="2" T_Register="2236(0)" T_Alu="318(0)" T_Lut="6487(2)" T_Bsram="48(0)">
+ <SubModule name="CPU" Register="2200" Alu="236" Lut="5992" T_Register="2200(2200)" T_Alu="302(236)" T_Lut="6444(5992)">
+  <SubModule name="u0" Lut="66" T_Alu="33(0)" T_Lut="162(66)">
+   <SubModule name="s0" Alu="33" Lut="96" T_Alu="33(33)" T_Lut="96(96)"/>
+  </SubModule>
+  <SubModule name="u1" Lut="66" T_Alu="33(0)" T_Lut="290(66)">
+   <SubModule name="s0" Alu="33" Lut="224" T_Alu="33(33)" T_Lut="224(224)"/>
   </SubModule>
  </SubModule>
- <SubModule name="DATA" Lut="1" Bsram="40" T_Lut="1(1)" T_Bsram="40(40)"/>
- <SubModule name="UART" Register="20" Lut="33" T_Register="20(20)" T_Lut="33(33)"/>
+ <SubModule name="MI" T_Lut="2(0)" T_Bsram="48(0)">
+  <SubModule name="imem" Lut="2" Bsram="16" T_Lut="2(2)" T_Bsram="16(16)"/>
+  <SubModule name="dmem" Bsram="32" T_Bsram="32(32)"/>
+ </SubModule>
+ <SubModule name="UART" Register="20" Lut="34" T_Register="20(20)" T_Lut="34(34)"/>
  <SubModule name="CW" Register="16" Alu="16" Lut="5" T_Register="16(16)" T_Alu="16(16)" T_Lut="5(5)"/>
 </Module>
