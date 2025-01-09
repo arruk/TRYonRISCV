@@ -3,27 +3,35 @@ change:
 	ln -P ../../SIM/CORE/$(v).v src/core.v
 	echo "$(v)" > core.txt
 
+torvs:
+	rm -rf src/core.sv
+	ln -P ../../SIM/TORVS/$(v).sv src/core.sv
+	echo "$(v)" > core.txt
+
 coremark:
-	cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/COREMARK/PROGROM.hex ./src
-	cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/COREMARK/DATARAM.hex ./src
+	cp ../../SIM/PRECOMPILED/COREMARK/PROGROM.hex ./src
+	#cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/COREMARK/DATARAM.hex ./src
+	cp mem/CMRAM.mif ./src/RAM.mif
 	echo "coremark" > firmware.txt
 	make -C impl/ all
 
 dhrystones:
-	cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/DHRYSTONES/PROGROM.hex ./src
-	cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/DHRYSTONES/DATARAM.hex ./src
-	echo "coremark" > firmware.txt
+	cp ../../SIM/PRECOMPILED/DHRYSTONES/PROGROM.hex ./src
+	#cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/DHRYSTONES/DATARAM.hex ./src
+	cp mem/DHRYRAM.mif ./src/RAM.mif
+	echo "dhrystones" > firmware.txt
 	make -C impl/ all
 
 raystones:
-	cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/RAYSTONES/PROGROM.hex ./src
-	cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/RAYSTONES/DATARAM.hex ./src
-	echo "coremark" > firmware.txt
+	cp ../../SIM/PRECOMPILED/RAYSTONES/PROGROM.hex ./src
+	#cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/RAYSTONES/DATARAM.hex ./src
+	cp mem/RAYRAM.mif ./src/RAM.mif
+	echo "raystones" > firmware.txt
 	make -C impl/ all
 
 all:
-	cp ../../SIM/HEX/PROGROM.hex ./src
-	cp ../../SIM/HEX/DATARAM.hex ./src
+	#cp ../../SIM/HEX/PROGROM.hex ./src
+	#cp ../../SIM/HEX/DATARAM.hex ./src
 	make -C impl/ all
 
 clean:

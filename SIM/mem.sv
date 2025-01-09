@@ -1,6 +1,7 @@
 `define TORVS
 //`define GOWIN
 //`define DUALMEM
+`define DE10S
 
 `ifndef BENCH
 	`define SYN
@@ -21,18 +22,19 @@ module mem (
         input      [31:0] mem_wdata
 
 );
-	//wire [15:0] mem_addr_seg  = mem_addr [17:2]; 
-	//wire [15:0] imem_addr_seg = imem_addr[17:2];
 	
 	wire [13:0] mem_addr_seg  = mem_addr [15:2]; 
 	wire [13:0] imem_addr_seg = imem_addr[15:2];
 	
 	parameter RAM_SIZE = 32768;
 
-	//reg [ 3:0][7:0] RAM [0:RAM_SIZE-1];  // 64kB of RAM
-	//reg [ 3:0][7:0] ROM [0:RAM_SIZE-1];  // 64kB of RAM
-	reg [31:0] RAM [0:RAM_SIZE-1];  // 64kB of RAM
-	reg [31:0] ROM [0:RAM_SIZE-1];  // 64kB of RAM
+	`ifdef DE10S
+	reg [ 3:0][7:0] RAM [0:RAM_SIZE-1];  // 64kB of RAM
+	reg [ 3:0][7:0] ROM [0:RAM_SIZE-1];  // 64kB of RAM
+	`else
+	reg [31:0]      RAM [0:RAM_SIZE-1];  // 64kB of RAM
+	reg [31:0]      ROM [0:RAM_SIZE-1];  // 64kB of RAM
+	`endif
 
 	`ifdef SYN	
 	initial begin
@@ -45,17 +47,20 @@ module mem (
                 $readmemh("HEX/PROGROM.hex", ROM);		
 	end
 	`endif
-	
+
 	always@(posedge clk) begin
-//		if(mem_wmask[0]) RAM[mem_addr_seg][0] <= mem_wdata[ 7:0 ];
-//		if(mem_wmask[1]) RAM[mem_addr_seg][1] <= mem_wdata[15:8 ];
-//		if(mem_wmask[2]) RAM[mem_addr_seg][2] <= mem_wdata[23:16];
-//		if(mem_wmask[3]) RAM[mem_addr_seg][3] <= mem_wdata[31:24];
-        if(mem_wmask[0]) RAM[mem_addr_seg][ 7:0 ] <= mem_wdata[ 7:0 ];
-        if(mem_wmask[1]) RAM[mem_addr_seg][15:8 ] <= mem_wdata[15:8 ];
-        if(mem_wmask[2]) RAM[mem_addr_seg][23:16] <= mem_wdata[23:16];
-        if(mem_wmask[3]) RAM[mem_addr_seg][31:24] <= mem_wdata[31:24];
-        mem_data <= RAM[mem_addr_seg];
+		`ifdef DE10S
+		if(mem_wmask[0]) RAM[mem_addr_seg][0] <= mem_wdata[ 7:0 ];
+		if(mem_wmask[1]) RAM[mem_addr_seg][1] <= mem_wdata[15:8 ];
+		if(mem_wmask[2]) RAM[mem_addr_seg][2] <= mem_wdata[23:16];
+		if(mem_wmask[3]) RAM[mem_addr_seg][3] <= mem_wdata[31:24];
+		`else
+		if(mem_wmask[0]) RAM[mem_addr_seg][ 7:0 ] <= mem_wdata[ 7:0 ];
+		if(mem_wmask[1]) RAM[mem_addr_seg][15:8 ] <= mem_wdata[15:8 ];
+		if(mem_wmask[2]) RAM[mem_addr_seg][23:16] <= mem_wdata[23:16];
+		if(mem_wmask[3]) RAM[mem_addr_seg][31:24] <= mem_wdata[31:24];
+		`endif
+		mem_data <= RAM[mem_addr_seg];
 	end 
 
         always@(posedge clk) begin
@@ -77,6 +82,11 @@ module mem(
 	input             b_imem_en,
         input      [31:0] b_imem_addr,
         output     [31:0] b_imem_data,
+
+	`ifdef DE10S
+	input		  a_mem_we,
+	input		  b_mem_we,
+	`endif
 
 	output     [31:0] a_mem_data,
         input      [ 3:0] a_mem_wmask,
@@ -151,6 +161,7 @@ module mem(
 		.a_mem_wmask(a_mem_wmask),
 		.a_mem_addr (a_mem_addr),
 		.a_mem_wdata(a_mem_wdata),
+<<<<<<< HEAD
 		.a_mem_we   (a_mem_we),
 		.b_mem_data (b_mem_data),
 		.b_mem_wmask(b_mem_wmask),
@@ -162,6 +173,19 @@ module mem(
 
 
 
+=======
+		`ifdef DE10S
+	       	.a_mem_we   (a_mem_we), 
+		.b_mem_we   (b_mem_we),
+		`endif	
+		.b_mem_data (b_mem_data),
+		.b_mem_wmask(b_mem_wmask),
+		.b_mem_addr (b_mem_addr),
+		.b_mem_wdata(b_mem_wdata)
+	);
+	*/
+	
+>>>>>>> main
 endmodule
 
 module insn_mem(
@@ -176,18 +200,13 @@ module insn_mem(
         output reg [31:0] b_imem_data
 
 );
-	//wire [15:0] b_imem_addr_seg = a_imem_addr[17:2];
-	//wire [15:0] a_imem_addr_seg = b_imem_addr[17:2];
-	//wire [14:0] a_imem_addr_seg = a_imem_addr[16:2];
-	//wire [14:0] b_imem_addr_seg = b_imem_addr[16:2];
 	wire [13:0] a_imem_addr_seg = a_imem_addr[15:2];
 	wire [13:0] b_imem_addr_seg = b_imem_addr[15:2];
 
-
 	parameter IROM_SIZE = 32768;
 
-	`ifndef SYN
-	reg [3:0][7:0] ROM [0:IROM_SIZE-1];  // 64kB of RAM
+	`ifdef DE10S
+	logic [3:0][7:0] ROM [0:IROM_SIZE-1];  // 64kB of RAM
 	`else	
 	reg [31:0] ROM [0:IROM_SIZE-1];  // 64kB of RAM
 	`endif
@@ -212,6 +231,7 @@ module insn_mem(
 
 endmodule 
 
+
 module data_mem(
         input             clk,
 
@@ -221,6 +241,11 @@ module data_mem(
         input      [31:0] a_mem_wdata,
         input             a_mem_we,
 
+	`ifdef DE10S
+	input		  a_mem_we,
+	input		  b_mem_we,
+	`endif
+
 	output reg [31:0] b_mem_data,
         input      [ 3:0] b_mem_wmask,
         input      [31:0] b_mem_addr,
@@ -228,17 +253,13 @@ module data_mem(
         input             b_mem_we
 
 );
-	//wire [15:0] a_mem_addr_seg  = a_mem_addr [17:2];
-	//wire [15:0] b_mem_addr_seg  = b_mem_addr [17:2];
-	//wire [14:0] a_mem_addr_seg  = a_mem_addr [16:2];
-	//wire [14:0] b_mem_addr_seg  = b_mem_addr [16:2];
 	wire [13:0] a_mem_addr_seg  = a_mem_addr [15:2];
 	wire [13:0] b_mem_addr_seg  = b_mem_addr [15:2];
 
 	parameter DRAM_SIZE = 32768;
 	
-	`ifndef SYN
-	reg [3:0][7:0] RAM [0:DRAM_SIZE-1];  // 64kB of RAM
+	`ifdef DE10S
+	logic [3:0][7:0] RAM [0:DRAM_SIZE-1];  // 64kB of RAM
 	`else
 	reg [31:0] RAM [0:DRAM_SIZE-1];  // 64kB of RAM
 	`endif
@@ -252,14 +273,22 @@ module data_mem(
 	end
 	
 	always@(posedge clk) begin
+<<<<<<< HEAD
 		`ifndef SYN
+=======
+		`ifdef DE10S
+>>>>>>> main
 		if(a_mem_we) begin
 			if(a_mem_wmask[0]) RAM[a_mem_addr_seg][0] <= a_mem_wdata[ 7:0 ];
 			if(a_mem_wmask[1]) RAM[a_mem_addr_seg][1] <= a_mem_wdata[15:8 ];
 			if(a_mem_wmask[2]) RAM[a_mem_addr_seg][2] <= a_mem_wdata[23:16];
 			if(a_mem_wmask[3]) RAM[a_mem_addr_seg][3] <= a_mem_wdata[31:24];
+<<<<<<< HEAD
 		end else if(~a_mem_we)
 	        	a_mem_data <= RAM[a_mem_addr_seg];
+=======
+		end
+>>>>>>> main
 		`else
 		if(a_mem_we) begin
 			if(a_mem_wmask[0]) RAM[a_mem_addr_seg][ 7:0 ] <= a_mem_wdata[ 7:0 ];
@@ -273,15 +302,24 @@ module data_mem(
 	end
 
 	always@(posedge clk) begin
+<<<<<<< HEAD
 		`ifndef SYN
 		if(b_mem_we) begin
+=======
+		`ifdef DE10S
+		if(a_mem_we) begin
+>>>>>>> main
 			if(b_mem_wmask[0]) RAM[b_mem_addr_seg][0] <= b_mem_wdata[ 7:0 ];
 			if(b_mem_wmask[1]) RAM[b_mem_addr_seg][1] <= b_mem_wdata[15:8 ];
 			if(b_mem_wmask[2]) RAM[b_mem_addr_seg][2] <= b_mem_wdata[23:16];
 			if(b_mem_wmask[3]) RAM[b_mem_addr_seg][3] <= b_mem_wdata[31:24];
+<<<<<<< HEAD
 		end else if(~b_mem_we)
 	        	b_mem_data <= RAM[b_mem_addr_seg];
 
+=======
+		end
+>>>>>>> main
 		`else
 		if(b_mem_we) begin
 			if(b_mem_wmask[0]) RAM[b_mem_addr_seg][ 7:0 ] <= b_mem_wdata[ 7:0 ];
@@ -295,6 +333,159 @@ module data_mem(
 	end
 
 endmodule 
+
+// Quartus Prime SystemVerilog Template
+//
+// True Dual-Port RAM with different read/write addresses and single read/write clock
+// and with a control for writing single bytes into the memory word; byte enable
+
+// Read during write produces old data on ports A and B and old data on mixed ports
+// For device families that do not support this mode (e.g. Stratix V) the ram is not inferred
+
+/*module byte_enabled_true_dual_port_ram
+	#(
+		parameter int
+		BYTE_WIDTH = 8,
+		ADDRESS_WIDTH = 6,
+		BYTES = 4,
+		DATA_WIDTH_R = BYTE_WIDTH * BYTES
+)
+(
+	input [ADDRESS_WIDTH-1:0] addr1,
+	input [ADDRESS_WIDTH-1:0] addr2,
+	input [BYTES-1:0] be1,
+	input [BYTES-1:0] be2,
+	input [BYTE_WIDTH-1:0] data_in1, 
+	input [BYTE_WIDTH-1:0] data_in2, 
+	input we1, we2, clk,
+	output [DATA_WIDTH_R-1:0] data_out1,
+	output [DATA_WIDTH_R-1:0] data_out2);
+	localparam RAM_DEPTH = 1 << ADDRESS_WIDTH;
+
+	// model the RAM with two dimensional packed array
+	logic [BYTES-1:0][BYTE_WIDTH-1:0] ram[0:RAM_DEPTH-1];
+
+	reg [DATA_WIDTH_R-1:0] data_reg1;
+	reg [DATA_WIDTH_R-1:0] data_reg2;
+
+	// port A
+	always@(posedge clk)
+	begin
+		if(we1) begin
+		// edit this code if using other than four bytes per word
+			if(be1[0]) ram[addr1][0] <= data_in1;
+			if(be1[1]) ram[addr1][1] <= data_in1;
+			if(be1[2]) ram[addr1][2] <= data_in1;
+			if(be1[3]) ram[addr1][3] <= data_in1;
+		end
+	data_reg1 <= ram[addr1];
+	end
+
+	assign data_out1 = data_reg1;
+   
+	// port B
+	always@(posedge clk)
+	begin
+		if(we2) begin
+		// edit this code if using other than four bytes per word
+			if(be2[0]) ram[addr2][0] <= data_in2;
+			if(be2[1]) ram[addr2][1] <= data_in2;
+			if(be2[2]) ram[addr2][2] <= data_in2;
+			if(be2[3]) ram[addr2][3] <= data_in2;
+		end
+	data_reg2 <= ram[addr2];
+	end
+
+	assign data_out2 = data_reg2;
+
+endmodule : byte_enabled_true_dual_port_ram
+*/
+// Quartus Prime SystemVerilog Template
+//
+// True Dual-Port RAM with different read/write addresses and single read/write clock
+// and with a control for writing single bytes into the memory word; byte enable
+
+// Read during write produces old data on ports A and B and old data on mixed ports
+// For device families that do not support this mode (e.g. Stratix V) the ram is not inferred
+
+/*
+module byte_enabled_true_dual_port_ram
+	#(
+		parameter int
+		BYTE_WIDTH = 8,
+		ADDRESS_WIDTH = 6,
+		BYTES = 4,
+		DATA_WIDTH_R = BYTE_WIDTH * BYTES
+)
+(
+	input [ADDRESS_WIDTH-1:0] addr1,
+	input [ADDRESS_WIDTH-1:0] addr2,
+	input [BYTES-1:0] be1,
+	input [BYTES-1:0] be2,
+	input [BYTE_WIDTH -1:0] data_in1, 
+	input [BYTE_WIDTH -1:0] data_in2, 
+	input we1, we2, clk,
+	output [DATA_WIDTH_R-1:0] data_out1,
+	output [DATA_WIDTH_R-1:0] data_out2);
+	localparam RAM_DEPTH = 1 << ADDRESS_WIDTH;
+
+	//initial begin
+	//	$readmemh("DATARAM.hex", ram);
+	//end
+
+	// model the RAM with two dimensional packed array
+	logic [BYTES-1:0][BYTE_WIDTH-1:0] ram[0:RAM_DEPTH-1];
+
+	reg [DATA_WIDTH_R-1:0] data_reg1;
+	reg [DATA_WIDTH_R-1:0] data_reg2;
+
+	// port A
+	always@(posedge clk)
+	begin
+		if(we1) begin
+		// edit this code if using other than four bytes per word
+			if(be1[0]) ram[addr1][0] <= data_in1[ 7:0 ];
+			if(be1[1]) ram[addr1][1] <= data_in1[15:8 ];
+			if(be1[2]) ram[addr1][2] <= data_in1[23:16];
+			if(be1[3]) ram[addr1][3] <= data_in1[31:24];			
+			if(be1[0]) ram[addr1][0] <= data_in1;
+			if(be1[1]) ram[addr1][1] <= data_in1;
+			if(be1[2]) ram[addr1][2] <= data_in1;
+			if(be1[3]) ram[addr1][3] <= data_in1;
+		end
+	end
+
+	always@(posedge clk) begin
+		data_reg1 <= ram[addr1];
+	end
+
+	assign data_out1 = data_reg1 & {32{1'b1}};
+   
+	// port B
+	always@(posedge clk)
+	begin
+		if(we2) begin
+		// edit this code if using other than four bytes per word
+			/*if(be2[0]) ram[addr2][0] <= data_in2[ 7:0 ];
+			if(be2[1]) ram[addr2][1] <= data_in2[15:8 ];
+			if(be2[2]) ram[addr2][2] <= data_in2[23:16];
+			if(be2[3]) ram[addr2][3] <= data_in2[31:24];
+
+			if(be2[0]) ram[addr2][0] <= data_in2;
+			if(be2[1]) ram[addr2][1] <= data_in2;
+			if(be2[2]) ram[addr2][2] <= data_in2;
+			if(be2[3]) ram[addr2][3] <= data_in2;
+		end
+	end
+
+	always@(posedge clk) begin
+		data_reg2 <= ram[addr2];
+	end
+
+	assign data_out2 = data_reg2 & {32{1'b1}};
+
+endmodule : byte_enabled_true_dual_port_ram
+*/
 
 `else
 
@@ -337,3 +528,4 @@ module mem (
 endmodule 
 
 `endif
+
