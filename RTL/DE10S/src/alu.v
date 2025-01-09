@@ -1,5 +1,3 @@
-`define SYNA
-
 module alu(
 	input [31:0] in_a,
         input [31:0] in_b,

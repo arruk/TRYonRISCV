@@ -87,6 +87,7 @@ module torv32(
 	wire [4:0]  wb_rdID;
 
 	reg [31:0] reg_file [0:31];
+	//reg [3:0][7:0] reg_file [0:31];
 	
 	always@(posedge clk) begin
 		if(!d_stall) begin

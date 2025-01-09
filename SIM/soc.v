@@ -1,10 +1,22 @@
 `define TORVS
 //`define COPROC
+`define DE10S
 `ifndef BENCH
 	`define SYN
 `endif
 
-module SOC( input CLK, input RESET, output [7:0] LEDS, output UART_TX, output UART_CTS);
+module SOC( 
+	input CLK,
+	`ifndef DE10S
+       	input RESET,
+	`endif
+       	output [7:0] LEDS, 
+	output UART_TX, 
+	output UART_CTS
+);
+	`ifdef DE10S
+	reg RESET=0;
+	`endif
 
         wire resetn, clk;
 	
@@ -80,6 +92,13 @@ module SOC( input CLK, input RESET, output [7:0] LEDS, output UART_TX, output UA
         wire [ 3:0] b_mem_wmask;
         wire [31:0] b_mem_addr ;
         wire [31:0] b_mem_wdata;
+
+	`ifdef DE10S
+	
+	wire a_mem_we = |a_mem_wmask;
+	wire b_mem_we = |b_mem_wmask;
+
+	`endif
 
 	wire a_IO_mem_wr;
         wire [31:0] a_IO_mem_addr;
@@ -239,6 +258,11 @@ module SOC( input CLK, input RESET, output [7:0] LEDS, output UART_TX, output UA
                 .b_imem_addr(b_imem_addr), //
                 .b_imem_data(b_imem_data),  //
 
+		`ifdef DE10S
+	       	.a_mem_we   (a_mem_we   ),  //
+		.b_mem_we   (b_mem_we   ), // DUAL PORT DATA
+		`endif
+
                 .a_mem_data (a_mem_data ),  //
                 .a_mem_wmask(a_mem_wmask), //
                 .a_mem_addr (a_mem_addr ),  //
@@ -270,7 +294,7 @@ module SOC( input CLK, input RESET, output [7:0] LEDS, output UART_TX, output UA
 
 	corescore_emitter_uart #(
 		.clk_freq_hz (50000000),
-		.baud_rate   (230400)
+		.baud_rate   (115200)
 	) UART(
 		.i_clk     (clk),
 		.i_rst     (!resetn),
@@ -391,6 +415,8 @@ endmodule
 		`include "torvs1p4.sv"
 	`elsif TORVS9P5
 		`include "torvs9p5.sv"
+	`elsif TORVS9P1
+		`include "torvs9p1.sv"
 	`elsif TORVS8P1
 		`include "torvs8p1.sv"
 	`elsif TORVS8P2
