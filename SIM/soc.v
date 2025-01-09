@@ -1,22 +1,18 @@
-`define TORVS
+//`define TORVS
 //`define COPROC
-`define DE10S
+//`define DE10S
+`define PRIMER20K
 `ifndef BENCH
 	`define SYN
 `endif
 
 module SOC( 
 	input CLK,
-	`ifndef DE10S
        	input RESET,
-	`endif
-       	output [7:0] LEDS, 
+    	output [7:0] LEDS, 
 	output UART_TX, 
 	output UART_CTS
 );
-	`ifdef DE10S
-	reg RESET=0;
-	`endif
 
         wire resetn, clk;
 	
@@ -144,7 +140,8 @@ module SOC(
 	wire halt = IO_mem_wr & IO_wordaddr[3];
 
         //assign LEDS = IO_mem_wdata[7:0];
-	assign LEDS = {8{uart_ready}};
+	assign LEDS[6:0] = {7{uart_ready}};
+	assign LEDS[7]   = RESET;
 
 	`endif
 
@@ -288,8 +285,13 @@ module SOC(
 	
 
 	corescore_emitter_uart #(
-		.clk_freq_hz (50000000),
+        `ifdef PRIMER20K
+		.clk_freq_hz (27000000),
 		.baud_rate   (115200)
+        `else
+		.clk_freq_hz (50000000),
+		.baud_rate   (115200)    
+        `endif
 	) UART(
 		.i_clk     (clk),
 		.i_rst     (!resetn),
@@ -299,11 +301,15 @@ module SOC(
 		.o_uart_tx (UART_TX)      			       
 	);
 
-	//reg RESET = 0;
+	reg RESETT = 0;
 
         Clockworks CW(
                 .CLK(CLK),
+                `ifdef PRIMER20K               
+                .RESET(~RESET),
+                `else
                 .RESET(RESET),
+                `endif
                 .clk(clk),
                 .resetn(resetn)
         );

@@ -29,14 +29,14 @@ LIBOBJECTS = $(S_OBJS) $(C_OBJS)
 %.PROGROM.hex: %.pipeline.elf $(FIRMWARE_DIR)/TOOLS/firmware_words 
 	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x20000 -max_addr 0x20000 -out $@ -from_addr 0 -to_addr 0xFFFF
 	cp $@ ../HEX/PROGROM.hex
-	cp $@ ../../RTL/PRIMER25k/src/PROGROM.hex
+	#cp $@ ../../RTL/PRIMER25k/src/PROGROM.hex
 	mkdir -p ../obj_dir
 	cp $@ ../obj_dir/PROGROM.hex
 
 %.DATARAM.hex: %.pipeline.elf $(FIRMWARE_DIR)/TOOLS/firmware_words 
 	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x20000 -max_addr 0x20000 -out $@ -from_addr 0x10000 -to_addr 0x1FFFF
 	cp $@ ../HEX/DATARAM.hex
-	cp $@ ../../RTL/PRIMER25k/src/DATARAM.hex
+	#cp $@ ../../RTL/PRIMER25k/src/DATARAM.hex
 	mkdir -p ../obj_dir
 	cp $@ ../obj_dir/DATARAM.hex
 

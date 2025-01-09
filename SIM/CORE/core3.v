@@ -11,7 +11,7 @@ module torv32(
         input 	      resetn,
 
         output        imem_en,
-        output [15:0] imem_addr,    // addres to fetch an instruction
+        output [31:0] imem_addr,    // addres to fetch an instruction
         input  [31:0] imem_data,    // instruction fetched
 
         input  [31:0] mem_data,     // data read from memory
@@ -109,7 +109,7 @@ module torv32(
 	end
 
         assign imem_en   = !f_stall;
-        assign imem_addr = f_PC[15:0];
+        assign imem_addr = f_PC[31:0];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
