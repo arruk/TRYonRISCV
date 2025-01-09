@@ -7,7 +7,6 @@
 	`define SYN
 `endif
 
-
 `ifdef DUALMEM
 module mem (
         input             clk,
@@ -83,11 +82,6 @@ module mem(
         input      [31:0] b_imem_addr,
         output     [31:0] b_imem_data,
 
-	`ifdef DE10S
-	input		  a_mem_we,
-	input		  b_mem_we,
-	`endif
-
 	output     [31:0] a_mem_data,
         input      [ 3:0] a_mem_wmask,
         input      [31:0] a_mem_addr,
@@ -117,26 +111,26 @@ module mem(
         	.b_imem_data(b_imem_data)
 	);
 
-	//`ifdef GOWIN	  
+	wire a_mem_we = |a_mem_wmask;
+	wire b_mem_we = |b_mem_wmask;	
+	
+	`ifdef GOWIN	  
 
-	wire wrea = |a_mem_wmask;
-	wire wreb = |b_mem_wmask;	
 	
 	Gowin_DPB data_mem (
 		.clka(clk),     //input clka
 		.clkb(clk),     //input clkb
-
 		.resetb(reset), //input resetb
 		.reseta(reset), //input reseta
 
-		.wrea(wrea), 	        // A WRITE ENABLE (0 - READ, 1 - WRITE)
+		.wrea(a_mem_we), 	        // A WRITE ENABLE (0 - READ, 1 - WRITE)
 		.cea(a_mem_cen),              // A CLOCK ENABLE
 		.dina(a_mem_wdata),     // A DATA IN
 		.byte_ena(a_mem_wmask), // A WRITE MASK
 		.ada(a_mem_addr[15:2]),       // A DATA ADDRESS
 		.douta(a_mem_data),     // A DATA OUT 
 
-		.wreb(wreb), 	        // B WRITE ENABLE (0 - READ, 1 - WRITE)
+		.wreb(b_mem_we), 	        // B WRITE ENABLE (0 - READ, 1 - WRITE)
 		.ceb(b_mem_cen),              // B CLOCK ENABLE
 		.dinb(b_mem_wdata),     // B DATA IN
 		.byte_enb(b_mem_wmask), // B WRITE MASK
@@ -147,12 +141,24 @@ module mem(
 		.oceb(1'b1) //input oceb INVALID
 	);
 
-	//`else
+	`elsif DE10S
 
-	/*
-	wire a_mem_we = |a_mem_wmask;
-	wire b_mem_we = |b_mem_wmask;	
-	
+	memdual dmem (
+                .address_a(a_mem_addr[15:2]),
+                .address_b(b_mem_addr[15:2]),
+                .byteena_a(a_mem_wmask),
+                .byteena_b(b_mem_wmask),
+                .clock    (clk),
+                .data_a   (a_mem_wdata),
+                .data_b   (b_mem_wdata),
+                .wren_a   (a_mem_we),
+                .wren_b   (b_mem_we),
+                .q_a      (a_mem_data),
+                .q_b      (b_mem_data)
+        );
+
+	`else
+
 	data_mem #(
 		.DRAM_SIZE(RAM_SIZE)	
 	) dmem (
@@ -161,31 +167,16 @@ module mem(
 		.a_mem_wmask(a_mem_wmask),
 		.a_mem_addr (a_mem_addr),
 		.a_mem_wdata(a_mem_wdata),
-<<<<<<< HEAD
 		.a_mem_we   (a_mem_we),
 		.b_mem_data (b_mem_data),
 		.b_mem_wmask(b_mem_wmask),
 		.b_mem_addr (b_mem_addr),
 		.b_mem_wdata(b_mem_wdata),
 		.b_mem_we   (b_mem_we)
-	);*/
-
-
-
-
-=======
-		`ifdef DE10S
-	       	.a_mem_we   (a_mem_we), 
-		.b_mem_we   (b_mem_we),
-		`endif	
-		.b_mem_data (b_mem_data),
-		.b_mem_wmask(b_mem_wmask),
-		.b_mem_addr (b_mem_addr),
-		.b_mem_wdata(b_mem_wdata)
 	);
-	*/
+
+	`endif
 	
->>>>>>> main
 endmodule
 
 module insn_mem(
@@ -273,22 +264,15 @@ module data_mem(
 	end
 	
 	always@(posedge clk) begin
-<<<<<<< HEAD
-		`ifndef SYN
-=======
 		`ifdef DE10S
->>>>>>> main
 		if(a_mem_we) begin
 			if(a_mem_wmask[0]) RAM[a_mem_addr_seg][0] <= a_mem_wdata[ 7:0 ];
 			if(a_mem_wmask[1]) RAM[a_mem_addr_seg][1] <= a_mem_wdata[15:8 ];
 			if(a_mem_wmask[2]) RAM[a_mem_addr_seg][2] <= a_mem_wdata[23:16];
 			if(a_mem_wmask[3]) RAM[a_mem_addr_seg][3] <= a_mem_wdata[31:24];
-<<<<<<< HEAD
 		end else if(~a_mem_we)
 	        	a_mem_data <= RAM[a_mem_addr_seg];
-=======
 		end
->>>>>>> main
 		`else
 		if(a_mem_we) begin
 			if(a_mem_wmask[0]) RAM[a_mem_addr_seg][ 7:0 ] <= a_mem_wdata[ 7:0 ];
@@ -302,24 +286,15 @@ module data_mem(
 	end
 
 	always@(posedge clk) begin
-<<<<<<< HEAD
-		`ifndef SYN
-		if(b_mem_we) begin
-=======
 		`ifdef DE10S
-		if(a_mem_we) begin
->>>>>>> main
+		if(b_mem_we) begin
 			if(b_mem_wmask[0]) RAM[b_mem_addr_seg][0] <= b_mem_wdata[ 7:0 ];
 			if(b_mem_wmask[1]) RAM[b_mem_addr_seg][1] <= b_mem_wdata[15:8 ];
 			if(b_mem_wmask[2]) RAM[b_mem_addr_seg][2] <= b_mem_wdata[23:16];
 			if(b_mem_wmask[3]) RAM[b_mem_addr_seg][3] <= b_mem_wdata[31:24];
-<<<<<<< HEAD
 		end else if(~b_mem_we)
 	        	b_mem_data <= RAM[b_mem_addr_seg];
-
-=======
 		end
->>>>>>> main
 		`else
 		if(b_mem_we) begin
 			if(b_mem_wmask[0]) RAM[b_mem_addr_seg][ 7:0 ] <= b_mem_wdata[ 7:0 ];

@@ -95,13 +95,6 @@ module SOC(
         wire [31:0] b_mem_wdata;
 	wire        b_mem_cen  ;
 
-	`ifdef DE10S
-	
-	wire a_mem_we = |a_mem_wmask;
-	wire b_mem_we = |b_mem_wmask;
-
-	`endif
-
 	wire a_IO_mem_wr;
         wire [31:0] a_IO_mem_addr;
         wire [31:0] a_IO_mem_wdata;
@@ -263,15 +256,7 @@ module SOC(
                 .b_imem_addr(b_imem_addr), //
                 .b_imem_data(b_imem_data),  //
 
-<<<<<<< HEAD
 		.a_mem_cen  (a_mem_cen  ), //
-=======
-		`ifdef DE10S
-	       	.a_mem_we   (a_mem_we   ),  //
-		.b_mem_we   (b_mem_we   ), // DUAL PORT DATA
-		`endif
-
->>>>>>> main
                 .a_mem_data (a_mem_data ),  //
                 .a_mem_wmask(a_mem_wmask), //
                 .a_mem_addr (a_mem_addr ),  //
