@@ -18,6 +18,7 @@ module torv32(
         output [ 3:0] a_mem_wmask,    
         output [31:0] a_mem_addr ,     
         output [31:0] a_mem_wdata,    
+	output        a_mem_cen,
 
 	output        b_imem_en  ,      
         output [31:0] b_imem_addr,    
@@ -27,6 +28,7 @@ module torv32(
         output [ 3:0] b_mem_wmask,    
         output [31:0] b_mem_addr ,     
         output [31:0] b_mem_wdata,    
+	output        b_mem_cen,
 
 	output [31:0] a_IO_mem_addr ,  
 	input  [31:0] a_IO_mem_rdata, 
@@ -338,6 +340,7 @@ module torv32(
         assign a_mem_wmask = a_m_WMASK;
         assign a_mem_addr = {9'b0,a_em_ADDR[22:0]};
         assign a_mem_wdata = a_m_store_DATA;
+	assign a_mem_cen = isLoad(a_em_IR) | isStype(a_em_IR);
 
 	wire [31:0] a_mw_Mdata = a_mem_data;
 
@@ -403,6 +406,7 @@ module torv32(
         assign b_mem_wmask = b_m_WMASK & {4{!addr_HAZ}};
         assign b_mem_addr =  {9'b0,b_em_ADDR[22:0]};
         assign b_mem_wdata = b_m_store_DATA;
+	assign b_mem_cen = isLoad(b_em_IR) | isStype(b_em_IR);
 
 	wire [31:0] b_mw_Mdata = b_mem_data;
 

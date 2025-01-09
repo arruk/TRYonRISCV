@@ -7,6 +7,7 @@
         <File path="/home/arruk/riscv/RTL/PRIMER25k/src/alu.v" type="verilog"/>
         <File path="/home/arruk/riscv/RTL/PRIMER25k/src/clockworks.v" type="verilog"/>
         <File path="/home/arruk/riscv/RTL/PRIMER25k/src/core.sv" type="verilog"/>
+        <File path="/home/arruk/riscv/RTL/PRIMER25k/src/gowin_dpb/gowin_dpb.v" type="verilog"/>
         <File path="/home/arruk/riscv/RTL/PRIMER25k/src/mem.sv" type="verilog"/>
         <File path="/home/arruk/riscv/RTL/PRIMER25k/src/soc.v" type="verilog"/>
         <File path="/home/arruk/riscv/RTL/PRIMER25k/src/uart_tx.v" type="verilog"/>

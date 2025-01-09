@@ -5,16 +5,11 @@
 	- fetch apenas de intruções do tipo R e Imm no pipeline B
 	- verificado pelos três benchmarks
 	- verificado na primer25k
-	- torvs1p1.sv adiciona LUI e AUIPC no pipeline B
-	- torvs1p2.sv adiciona LUI, AUIPC e STOREs no pipeline B
-	- torvs1p3.sv adiciona LUI, AUIPC e STOREs no pipeline B; e permite issue com btype no pipeline A
-	- torvs1p4.sv adiciona LUI, AUIPC, STOREs e LOADs no pipeline B; e permite issue em B com Btype no pipeline A
-	- torvs1p5.sv adiciona LUI, AUIPC, STOREs, LOADs e Btype no pipeline B; e permite issue em B com Btype no pipeline A
-
-- torvs1.1.sv
-	- despacho duplo simples (pipelines A e B)
-	- fetch apenas de intruções do tipo R, Imm, LUI e AUIPC no pipeline B
-	- verificado pelos três benchmarks
+	- torvs1p1.sv adiciona LUI e AUIPC no pipeline B (primer25k check)
+	- torvs1p2.sv adiciona LUI, AUIPC e STOREs no pipeline B (primer25k check)
+	- torvs1p3.sv adiciona LUI, AUIPC e STOREs no pipeline B; e permite issue com btype no pipeline A (primer25k check)
+	- torvs1p4.sv adiciona LUI, AUIPC, STOREs e LOADs no pipeline B; e permite issue em B com Btype no pipeline A (primer25k check)
+	- torvs1p5.sv adiciona LUI, AUIPC, STOREs, LOADs e Btype no pipeline B; e permite issue em B com Btype no pipeline A (primer25k check)
 
 - torvs2.sv
 	- despacho duplo simples (pipelines A e B)

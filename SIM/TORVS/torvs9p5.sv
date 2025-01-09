@@ -1,11 +1,9 @@
-`default_nettype none
+`ifndef BENCH
+        `define SYN
+`endif
 
-`define TORVS
-
-`ifdef ALU
-	`include "AUX/alu2.v"
-`else
-	`include "AUX/alu.v"
+`ifndef SYN
+        `include "AUX/alu.v"
 `endif
 
 module torv32(
@@ -20,6 +18,9 @@ module torv32(
         output [ 3:0] a_mem_wmask,    
         output [31:0] a_mem_addr ,     
         output [31:0] a_mem_wdata,    
+
+	output        a_mem_cen,
+        output        b_mem_cen,
 
 	output        b_imem_en  ,      
         output [31:0] b_imem_addr,    
@@ -115,8 +116,8 @@ module torv32(
         endfunction
 	*/
 
-	localparam BP_HIST_BITS = 16;
-        parameter BHT_ADDR_BITS = 16;
+	localparam BP_HIST_BITS = 4;
+        parameter BHT_ADDR_BITS = 8;
         localparam BHT_SIZE=1<<BHT_ADDR_BITS;
         reg [1:0] BHT [BHT_SIZE-1:0];
 	reg [BP_HIST_BITS-1:0] BH;
@@ -198,7 +199,7 @@ module torv32(
 	wire [31:0] b_wb_DATA;
 	wire [4:0]  b_wb_rdID;
 
-	reg [3:0][7:0] reg_file [0:31];
+	reg [31:0] reg_file [0:31];
 	
 	always@(posedge clk) begin
 
@@ -477,6 +478,7 @@ module torv32(
         assign a_mem_wmask = a_m_WMASK;
         assign a_mem_addr = {9'b0,a_em_ADDR[22:0]};
         assign a_mem_wdata = a_m_store_DATA;
+        assign a_mem_cen = isLoad(a_em_IR) | isStype(a_em_IR);
 
 	wire [31:0] a_mw_Mdata = a_mem_data;
 
@@ -541,6 +543,7 @@ module torv32(
         assign b_mem_wmask = b_m_WMASK & {4{!store_addr_HAZ}};
         assign b_mem_addr =  {9'b0,b_em_ADDR[22:0]};
         assign b_mem_wdata = b_m_store_DATA;
+        assign b_mem_cen = isLoad(b_em_IR) | isStype(b_em_IR);
 
         wire store_addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);
 

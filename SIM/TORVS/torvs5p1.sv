@@ -1,11 +1,9 @@
-`default_nettype none
+`ifndef BENCH
+        `define SYN
+`endif
 
-`define TORVS
-
-`ifdef ALU
-	`include "AUX/alu2.v"
-`else
-	`include "AUX/alu.v"
+`ifndef SYN
+        `include "AUX/alu.v"
 `endif
 
 module torv32(
@@ -20,6 +18,9 @@ module torv32(
         output [ 3:0] a_mem_wmask,    
         output [31:0] a_mem_addr ,     
         output [31:0] a_mem_wdata,    
+
+	output        a_mem_cen,
+        output        b_mem_cen,
 
 	output        b_imem_en  ,      
         output [31:0] b_imem_addr,    
@@ -137,7 +138,7 @@ module torv32(
 	wire [31:0] b_wb_DATA;
 	wire [4:0]  b_wb_rdID;
 
-	reg [3:0][7:0] reg_file [0:31];
+	reg [31:0] reg_file [0:31];
 	
 	always@(posedge clk) begin
 
@@ -342,6 +343,7 @@ module torv32(
         assign a_mem_addr = {9'b0,a_em_ADDR[22:0]};
         //assign mem_addr = {11'b0,m_word_ADDR};
         assign a_mem_wdata = a_m_store_DATA;
+        assign a_mem_cen = isLoad(a_em_IR) | isStype(a_em_IR);
 
 	wire [31:0] a_mw_Mdata = a_mem_data;
 
@@ -383,6 +385,7 @@ module torv32(
 	assign b_mem_wmask = 0;
         assign b_mem_addr  = 0;
         assign b_mem_wdata = 0;
+        assign b_mem_cen   = 0;//isLoad(a_em_IR) | isStype(a_em_IR);
 
         always@(posedge clk) begin
                 b_mw_IR     <= b_em_IR;

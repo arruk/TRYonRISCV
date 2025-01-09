@@ -20,6 +20,9 @@ module torv32(
         output [31:0] a_mem_addr ,     
         output [31:0] a_mem_wdata,    
 
+	output        a_mem_cen,
+        output        b_mem_cen,
+
 	output        b_imem_en  ,      
         output [31:0] b_imem_addr,    
         input  [31:0] b_imem_data,    
@@ -351,6 +354,7 @@ module torv32(
         assign a_mem_addr = {9'b0,a_em_ADDR[22:0]};
         //assign mem_addr = {11'b0,m_word_ADDR};
         assign a_mem_wdata = a_m_store_DATA;
+        assign a_mem_cen = isLoad(a_em_IR) | isStype(a_em_IR);
 
 	wire [31:0] a_mw_Mdata = a_mem_data;
 
@@ -392,6 +396,7 @@ module torv32(
 	assign b_mem_wmask = 0;
         assign b_mem_addr  = 0;
         assign b_mem_wdata = 0;
+        assign b_mem_cen   = 0;//isLoad(a_em_IR) | isStype(a_em_IR);
 
         always@(posedge clk) begin
                 b_mw_IR     <= b_em_IR;

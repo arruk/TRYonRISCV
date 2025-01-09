@@ -75,11 +75,13 @@ module SOC( input CLK, input RESET, output [7:0] LEDS, output UART_TX, output UA
         wire [ 3:0] a_mem_wmask;
         wire [31:0] a_mem_addr ;
         wire [31:0] a_mem_wdata;
+	wire        a_mem_cen  ;
 
         wire [31:0] b_mem_data ;
         wire [ 3:0] b_mem_wmask;
         wire [31:0] b_mem_addr ;
         wire [31:0] b_mem_wdata;
+	wire        b_mem_cen  ;
 
 	wire a_IO_mem_wr;
         wire [31:0] a_IO_mem_addr;
@@ -147,14 +149,16 @@ module SOC( input CLK, input RESET, output [7:0] LEDS, output UART_TX, output UA
                 .b_imem_addr(b_imem_addr), //
                 .b_imem_data(b_imem_data),  //
 
-                .a_mem_data (a_mem_data ),  //
-                .a_mem_wmask(a_mem_wmask), //
-                .a_mem_addr (a_mem_addr ),  //
-                .a_mem_wdata(a_mem_wdata), // DUAL PORT DATA
+		.a_mem_cen  (a_mem_cen  ),  //
+                .a_mem_data (a_mem_data ), //
+                .a_mem_wmask(a_mem_wmask),  //
+                .a_mem_addr (a_mem_addr ), //
+                .a_mem_wdata(a_mem_wdata),  //
+	       	.b_mem_cen  (b_mem_cen  ), // DUAL PORT DATA
                 .b_mem_data (b_mem_data ),  //    MEMORY
                 .b_mem_wmask(b_mem_wmask), //
                 .b_mem_addr (b_mem_addr ),  //
-                .b_mem_wdata(b_mem_wdata),  //
+                .b_mem_wdata(b_mem_wdata), //
 		
 		.a_IO_mem_addr  (a_IO_mem_addr),
                 .a_IO_mem_rdata (a_IO_mem_rdata),
@@ -231,6 +235,7 @@ module SOC( input CLK, input RESET, output [7:0] LEDS, output UART_TX, output UA
                 .RAM_SIZE(dm)
         ) MI (
                 .clk        (clk),
+		.reset	    (~resetn),
 
                 .a_imem_en  (a_imem_en  ), //
                 .a_imem_addr(a_imem_addr),  //
@@ -239,14 +244,16 @@ module SOC( input CLK, input RESET, output [7:0] LEDS, output UART_TX, output UA
                 .b_imem_addr(b_imem_addr), //
                 .b_imem_data(b_imem_data),  //
 
+		.a_mem_cen  (a_mem_cen  ), //
                 .a_mem_data (a_mem_data ),  //
                 .a_mem_wmask(a_mem_wmask), //
                 .a_mem_addr (a_mem_addr ),  //
-                .a_mem_wdata(a_mem_wdata), // DUAL PORT DATA
-                .b_mem_data (b_mem_data ),  //    MEMORY
-                .b_mem_wmask(b_mem_wmask), //
-                .b_mem_addr (b_mem_addr ),  //
-                .b_mem_wdata(b_mem_wdata)  //
+                .a_mem_wdata(a_mem_wdata), //
+	       	.b_mem_cen  (b_mem_cen  ),  // DUAL PORT DATA
+                .b_mem_data (b_mem_data ), //    MEMORY
+                .b_mem_wmask(b_mem_wmask),  //
+                .b_mem_addr (b_mem_addr ), //
+                .b_mem_wdata(b_mem_wdata)   //
         );
 
 	`else

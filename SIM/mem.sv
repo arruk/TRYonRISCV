@@ -1,4 +1,5 @@
 `define TORVS
+//`define GOWIN
 //`define DUALMEM
 
 `ifndef BENCH
@@ -67,6 +68,7 @@ endmodule
 
 module mem(
         input             clk,
+	input 	  	  reset,
 
         input             a_imem_en,
         input      [31:0] a_imem_addr,
@@ -80,11 +82,13 @@ module mem(
         input      [ 3:0] a_mem_wmask,
         input      [31:0] a_mem_addr,
         input      [31:0] a_mem_wdata,
+        input      	  a_mem_cen,
 
 	output     [31:0] b_mem_data,
         input      [ 3:0] b_mem_wmask,
         input      [31:0] b_mem_addr,
-        input      [31:0] b_mem_wdata
+        input      [31:0] b_mem_wdata,
+        input      	  b_mem_cen
 
 );
 
@@ -103,6 +107,42 @@ module mem(
         	.b_imem_data(b_imem_data)
 	);
 
+	//`ifdef GOWIN	  
+
+	wire wrea = |a_mem_wmask;
+	wire wreb = |b_mem_wmask;	
+	
+	Gowin_DPB data_mem (
+		.clka(clk),     //input clka
+		.clkb(clk),     //input clkb
+
+		.resetb(reset), //input resetb
+		.reseta(reset), //input reseta
+
+		.wrea(wrea), 	        // A WRITE ENABLE (0 - READ, 1 - WRITE)
+		.cea(a_mem_cen),              // A CLOCK ENABLE
+		.dina(a_mem_wdata),     // A DATA IN
+		.byte_ena(a_mem_wmask), // A WRITE MASK
+		.ada(a_mem_addr[15:2]),       // A DATA ADDRESS
+		.douta(a_mem_data),     // A DATA OUT 
+
+		.wreb(wreb), 	        // B WRITE ENABLE (0 - READ, 1 - WRITE)
+		.ceb(b_mem_cen),              // B CLOCK ENABLE
+		.dinb(b_mem_wdata),     // B DATA IN
+		.byte_enb(b_mem_wmask), // B WRITE MASK
+		.adb(b_mem_addr[15:2]),       // B DATA ADDRESS
+		.doutb(b_mem_data),     // B DATA OUT
+
+		.ocea(a_mem_cen), //input ocea INVALID
+		.oceb(1'b1) //input oceb INVALID
+	);
+
+	//`else
+
+	/*
+	wire a_mem_we = |a_mem_wmask;
+	wire b_mem_we = |b_mem_wmask;	
+	
 	data_mem #(
 		.DRAM_SIZE(RAM_SIZE)	
 	) dmem (
@@ -111,11 +151,14 @@ module mem(
 		.a_mem_wmask(a_mem_wmask),
 		.a_mem_addr (a_mem_addr),
 		.a_mem_wdata(a_mem_wdata),
+		.a_mem_we   (a_mem_we),
 		.b_mem_data (b_mem_data),
 		.b_mem_wmask(b_mem_wmask),
 		.b_mem_addr (b_mem_addr),
-		.b_mem_wdata(b_mem_wdata)
-	);
+		.b_mem_wdata(b_mem_wdata),
+		.b_mem_we   (b_mem_we)
+	);*/
+
 
 
 
@@ -176,11 +219,13 @@ module data_mem(
         input      [ 3:0] a_mem_wmask,
         input      [31:0] a_mem_addr,
         input      [31:0] a_mem_wdata,
+        input             a_mem_we,
 
 	output reg [31:0] b_mem_data,
         input      [ 3:0] b_mem_wmask,
         input      [31:0] b_mem_addr,
-        input      [31:0] b_mem_wdata
+        input      [31:0] b_mem_wdata,
+        input             b_mem_we
 
 );
 	//wire [15:0] a_mem_addr_seg  = a_mem_addr [17:2];
@@ -200,7 +245,7 @@ module data_mem(
 
 	initial begin
 		`ifndef SYN
-                $readmemh("HEX/DATARAM.hex", RAM);		
+                $readmemh("HEX/GWDATARAM.hex", RAM);		
 		`else
                 $readmemh("DATARAM.hex", RAM);		
 		`endif
@@ -208,32 +253,45 @@ module data_mem(
 	
 	always@(posedge clk) begin
 		`ifndef SYN
-		if(a_mem_wmask[0]) RAM[a_mem_addr_seg][0] <= a_mem_wdata[ 7:0 ];
-		if(a_mem_wmask[1]) RAM[a_mem_addr_seg][1] <= a_mem_wdata[15:8 ];
-		if(a_mem_wmask[2]) RAM[a_mem_addr_seg][2] <= a_mem_wdata[23:16];
-		if(a_mem_wmask[3]) RAM[a_mem_addr_seg][3] <= a_mem_wdata[31:24];
+		if(a_mem_we) begin
+			if(a_mem_wmask[0]) RAM[a_mem_addr_seg][0] <= a_mem_wdata[ 7:0 ];
+			if(a_mem_wmask[1]) RAM[a_mem_addr_seg][1] <= a_mem_wdata[15:8 ];
+			if(a_mem_wmask[2]) RAM[a_mem_addr_seg][2] <= a_mem_wdata[23:16];
+			if(a_mem_wmask[3]) RAM[a_mem_addr_seg][3] <= a_mem_wdata[31:24];
+		end else if(~a_mem_we)
+	        	a_mem_data <= RAM[a_mem_addr_seg];
 		`else
-		if(a_mem_wmask[0]) RAM[a_mem_addr_seg][ 7:0 ] <= a_mem_wdata[ 7:0 ];
-		if(a_mem_wmask[1]) RAM[a_mem_addr_seg][15:8 ] <= a_mem_wdata[15:8 ];
-		if(a_mem_wmask[2]) RAM[a_mem_addr_seg][23:16] <= a_mem_wdata[23:16];
-		if(a_mem_wmask[3]) RAM[a_mem_addr_seg][31:24] <= a_mem_wdata[31:24];
+		if(a_mem_we) begin
+			if(a_mem_wmask[0]) RAM[a_mem_addr_seg][ 7:0 ] <= a_mem_wdata[ 7:0 ];
+			if(a_mem_wmask[1]) RAM[a_mem_addr_seg][15:8 ] <= a_mem_wdata[15:8 ];
+			if(a_mem_wmask[2]) RAM[a_mem_addr_seg][23:16] <= a_mem_wdata[23:16];
+			if(a_mem_wmask[3]) RAM[a_mem_addr_seg][31:24] <= a_mem_wdata[31:24];
+		end else if(~a_mem_we)
+	        	a_mem_data <= RAM[a_mem_addr_seg];
+
 		`endif
-        	a_mem_data <= RAM[a_mem_addr_seg];
 	end
 
 	always@(posedge clk) begin
 		`ifndef SYN
-		if(b_mem_wmask[0]) RAM[b_mem_addr_seg][0] <= b_mem_wdata[ 7:0 ];
-		if(b_mem_wmask[1]) RAM[b_mem_addr_seg][1] <= b_mem_wdata[15:8 ];
-		if(b_mem_wmask[2]) RAM[b_mem_addr_seg][2] <= b_mem_wdata[23:16];
-		if(b_mem_wmask[3]) RAM[b_mem_addr_seg][3] <= b_mem_wdata[31:24];
+		if(b_mem_we) begin
+			if(b_mem_wmask[0]) RAM[b_mem_addr_seg][0] <= b_mem_wdata[ 7:0 ];
+			if(b_mem_wmask[1]) RAM[b_mem_addr_seg][1] <= b_mem_wdata[15:8 ];
+			if(b_mem_wmask[2]) RAM[b_mem_addr_seg][2] <= b_mem_wdata[23:16];
+			if(b_mem_wmask[3]) RAM[b_mem_addr_seg][3] <= b_mem_wdata[31:24];
+		end else if(~b_mem_we)
+	        	b_mem_data <= RAM[b_mem_addr_seg];
+
 		`else
-		if(b_mem_wmask[0]) RAM[b_mem_addr_seg][ 7:0 ] <= b_mem_wdata[ 7:0 ];
-		if(b_mem_wmask[1]) RAM[b_mem_addr_seg][15:8 ] <= b_mem_wdata[15:8 ];
-		if(b_mem_wmask[2]) RAM[b_mem_addr_seg][23:16] <= b_mem_wdata[23:16];
-		if(b_mem_wmask[3]) RAM[b_mem_addr_seg][31:24] <= b_mem_wdata[31:24];
+		if(b_mem_we) begin
+			if(b_mem_wmask[0]) RAM[b_mem_addr_seg][ 7:0 ] <= b_mem_wdata[ 7:0 ];
+			if(b_mem_wmask[1]) RAM[b_mem_addr_seg][15:8 ] <= b_mem_wdata[15:8 ];
+			if(b_mem_wmask[2]) RAM[b_mem_addr_seg][23:16] <= b_mem_wdata[23:16];
+			if(b_mem_wmask[3]) RAM[b_mem_addr_seg][31:24] <= b_mem_wdata[31:24];
+		end else if(~b_mem_we)
+	        	b_mem_data <= RAM[b_mem_addr_seg];
+
 		`endif
-        	b_mem_data <= RAM[b_mem_addr_seg];
 	end
 
 endmodule 

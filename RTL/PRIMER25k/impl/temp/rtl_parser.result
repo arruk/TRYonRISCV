@@ -1,5 +1,13 @@
 [
  {
+  "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/mem.sv",
+  "InstLine" : 215,
+  "InstName" : "data_mem",
+  "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/mem.sv",
+  "ModuleLine" : 215,
+  "ModuleName" : "data_mem"
+ },
+ {
   "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/soc.v",
   "InstLine" : 7,
   "InstName" : "SOC",
@@ -9,7 +17,7 @@
   "SubInsts" : [
    {
     "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/soc.v",
-    "InstLine" : 139,
+    "InstLine" : 141,
     "InstName" : "CPU",
     "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/core.sv",
     "ModuleLine" : 9,
@@ -17,7 +25,7 @@
     "SubInsts" : [
      {
       "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/core.sv",
-      "InstLine" : 230,
+      "InstLine" : 236,
       "InstName" : "m0",
       "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
       "ModuleLine" : 137,
@@ -25,7 +33,7 @@
      },
      {
       "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/core.sv",
-      "InstLine" : 242,
+      "InstLine" : 248,
       "InstName" : "u0",
       "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
       "ModuleLine" : 3,
@@ -59,7 +67,7 @@
      },
      {
       "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/core.sv",
-      "InstLine" : 270,
+      "InstLine" : 277,
       "InstName" : "m1",
       "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
       "ModuleLine" : 137,
@@ -67,7 +75,7 @@
      },
      {
       "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/core.sv",
-      "InstLine" : 282,
+      "InstLine" : 289,
       "InstName" : "u1",
       "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/alu.v",
       "ModuleLine" : 3,
@@ -103,33 +111,33 @@
    },
    {
     "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/soc.v",
-    "InstLine" : 232,
+    "InstLine" : 236,
     "InstName" : "MI",
     "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/mem.sv",
-    "ModuleLine" : 68,
+    "ModuleLine" : 69,
     "ModuleName" : "mem",
     "SubInsts" : [
      {
       "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/mem.sv",
-      "InstLine" : 96,
+      "InstLine" : 100,
       "InstName" : "imem",
       "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/mem.sv",
-      "ModuleLine" : 124,
+      "ModuleLine" : 167,
       "ModuleName" : "insn_mem"
      },
      {
       "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/mem.sv",
-      "InstLine" : 108,
-      "InstName" : "dmem",
-      "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/mem.sv",
-      "ModuleLine" : 172,
-      "ModuleName" : "data_mem"
+      "InstLine" : 115,
+      "InstName" : "data_mem",
+      "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/gowin_dpb/gowin_dpb.v",
+      "ModuleLine" : 10,
+      "ModuleName" : "Gowin_DPB"
      }
     ]
    },
    {
     "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/soc.v",
-    "InstLine" : 274,
+    "InstLine" : 281,
     "InstName" : "UART",
     "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/uart_tx.v",
     "ModuleLine" : 1,
@@ -137,7 +145,7 @@
    },
    {
     "InstFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/soc.v",
-    "InstLine" : 285,
+    "InstLine" : 292,
     "InstName" : "CW",
     "ModuleFile" : "/home/arruk/riscv/RTL/PRIMER25k/src/clockworks.v",
     "ModuleLine" : 3,

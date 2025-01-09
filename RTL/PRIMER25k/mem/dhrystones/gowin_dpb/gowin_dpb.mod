@@ -1,0 +1,27 @@
+-series GW5A
+-device GW5A-25
+-device_version A
+-package MBGA121N
+-part_number GW5A-LV25MG121NC1/I0
+
+
+-mod_name Gowin_DPB
+-file_name gowin_dpb
+-path /home/arruk/riscv/RTL/PRIMER25k/src/gowin_dpb/
+-type RAM_DP
+-file_type vlg
+-bram_b true
+-dev_type GW5A-25A
+-depth_0 16384
+-depth_1 16384
+-width_0 32
+-width_1 32
+-read_mode_0 bypass
+-read_mode_1 bypass
+-write_mode_0 normal
+-write_mode_1 normal
+-byteEnable 1
+-speed false
+-reset_mode sync
+-init_file /home/arruk/riscv/RTL/PRIMER25k/src/GWDATARAM.hex
+-init_match port_A
