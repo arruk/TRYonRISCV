@@ -19,8 +19,6 @@ coremark:
 
 dhrystones:
 	cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/DHRYSTONES/PROGROM.hex ./src
-	cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/DHRYSTONES/DATARAM.hex ./src
-	rm -rf ./src/GWDATARAM.hex
 	cat ../../SIM/FIRMWARE/PRECOMPILED/RV32I/DHRYSTONES/DATARAM.hex | tr [:blank:] [\\n] | awk 'NF' | tr 'a-z' 'A-Z' | sed '1s/^/#File_format=Hex\n#Address_depth=16384\n#Data_width=32\n/' > ./src/GWDATARAM.hex
 	echo "dhrystones" > firmware.txt
 	gw_sh gwsyn.tcl

@@ -38,3 +38,11 @@ RTL/PRIMER25k/src/RAM.mif
 RTL/DE10S/src/DATARAM.hex
 RTL/DE10S/src/PROGROM.hex
 RTL/DE10S/src/RAM.mif
+RTL/PRIMER25k/src/*.v
+!RLT/PRIMER25k/src/soc.cst
+RTL/PRIMER25k/src/*.v
+RTL/PRIMER25k/src/*.sv
+RTL/PRIMER20k/src/*.v
+RTL/PRIMER20k/src/*.sv
+RTL/PRIMER25k/src/gowin_dpb/
+RTL/DONE/primer20k/

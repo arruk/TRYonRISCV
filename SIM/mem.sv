@@ -1,6 +1,6 @@
-//`define TORVS
-//`define GOWIN
-`define DUALMEM
+`define TORVS
+`define GOWIN
+//`define DUALMEM
 //`define DE10S
 
 `ifndef BENCH
