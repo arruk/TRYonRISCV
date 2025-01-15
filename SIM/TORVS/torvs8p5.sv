@@ -118,7 +118,7 @@ module torv32(
 			a_fd_PC <= a_imem_addr;
 
 			PC <= (control_HAZ & !a_fd_NOP & !(a_d_JoB_now|a_em_JoB_now) & !(b_d_JoB_now|b_em_JoB_now)) ? f_PC + 4:
-						          f_PC + 8;
+								   					              f_PC + 8;
 
 		end
 

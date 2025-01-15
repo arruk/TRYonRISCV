@@ -41,6 +41,12 @@
 	- forwarding do pipeline A para B (A-\>B)
 	- verificado pelos três benchmarks
 	- verificado na primer25k
+	- torvs5p1.sv adiciona LUI e AUIPC no pipeline B
+    - torvs5p2.sv adiciona LUI, AUIPC e STOREs no pipeline B
+    - torvs5p3.sv adiciona LUI, AUIPC e STOREs no pipeline B; e permite issue com btype no pipeline A
+    - torvs5p4.sv adiciona LUI, AUIPC, STOREs e LOADs no pipeline B; e permite issue em B com Btype no pipeline A
+    - torvs5p5.sv adiciona LUI, AUIPC, STOREs, LOADs e Btype no pipeline B; e permite issue em B com Btype no pipeline A
+
 
 - torvs6.sv
 	- despacho duplo simples (pipelines A e B)
@@ -52,6 +58,12 @@
 	- JAL nao causa mais bolhas
 	- verificado pelos três benchmarks
 	- verificado na primer25k
+	- torvs6p1.sv adiciona LUI e AUIPC no pipeline B
+    - torvs6p2.sv adiciona LUI, AUIPC e STOREs no pipeline B
+    - torvs6p3.sv adiciona LUI, AUIPC e STOREs no pipeline B; e permite issue com btype no pipeline A
+    - torvs6p4.sv adiciona LUI, AUIPC, STOREs e LOADs no pipeline B; e permite issue em B com Btype no pipeline A
+    - torvs6p5.sv adiciona LUI, AUIPC, STOREs, LOADs e Btype no pipeline B; e permite issue em B com Btype no pipeline A
+
 
 - torvs7.sv
 	- despacho duplo simples (pipelines A e B)
@@ -65,6 +77,11 @@
 	- verificado pelos três benchmarks
 	- verificado na primer25k
 	- torvs7p1.sv adiciona LUI e AUIPC no pipeline B
+    - torvs7p2.sv adiciona LUI, AUIPC e STOREs no pipeline B
+    - torvs7p3.sv adiciona LUI, AUIPC e STOREs no pipeline B; e permite issue com btype no pipeline A
+    - torvs7p4.sv adiciona LUI, AUIPC, STOREs e LOADs no pipeline B; e permite issue em B com Btype no pipeline A
+    - torvs7p5.sv adiciona LUI, AUIPC, STOREs, LOADs e Btype no pipeline B; e permite issue em B com Btype no pipeline A
+
 
 - torvs8.sv
 	- despacho duplo simples (pipelines A e B)

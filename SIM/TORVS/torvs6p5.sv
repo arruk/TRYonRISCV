@@ -3,7 +3,7 @@
 `endif
 
 `ifndef SYN
-        `include "AUX/alu.v" 
+        `include "AUX/alu.v"
 `endif
 
 module torv32(
@@ -54,7 +54,16 @@ module torv32(
         wire a_data_HAZ   = !a_fd_NOP & (isLoad(a_de_IR) | isCSRRS(a_de_IR)) & ( a_rs1_HAZ | a_rs2_HAZ );
         wire ba_data_HAZ  = !b_fd_NOP & (isLoad(a_de_IR) | isCSRRS(a_de_IR)) & (ba_rs1_HAZ | ba_rs2_HAZ) & !control_HAZ;
 
-        wire data_HAZ = a_data_HAZ | ba_data_HAZ;
+	wire b_rs1_HAZ  = reads_rs1(b_fd_IR) & (rs1ID(b_fd_IR) == rdID(b_de_IR));
+        wire b_rs2_HAZ  = reads_rs2(b_fd_IR) & (rs2ID(b_fd_IR) == rdID(b_de_IR));
+
+        wire ab_rs1_HAZ = reads_rs1(a_fd_IR) & (rs1ID(a_fd_IR) == rdID(b_de_IR));
+        wire ab_rs2_HAZ = reads_rs2(a_fd_IR) & (rs2ID(a_fd_IR) == rdID(b_de_IR));
+
+        wire b_data_HAZ   = !b_fd_NOP & (isLoad(b_de_IR)) & ( b_rs1_HAZ | b_rs2_HAZ ) & !control_HAZ;
+        wire ab_data_HAZ  = !a_fd_NOP & (isLoad(b_de_IR)) & (ab_rs1_HAZ | ab_rs2_HAZ);
+
+        wire data_HAZ = a_data_HAZ | ba_data_HAZ | b_data_HAZ | ab_data_HAZ;
 
 	wire a_f_stall = halt | data_HAZ;
 	wire a_d_stall = halt | data_HAZ;
@@ -68,10 +77,10 @@ module torv32(
 	wire b_e_flush = a_e_JoB | data_HAZ;
 	wire b_d_flush = a_e_JoB;
 
-	wire control_HAZ = !b_ins_ALL | b_LBC_HAZ | fd_data_HAZ;
+	wire control_HAZ = !b_ins_ALL | fd_data_HAZ;
 	
-	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR);//| isAUIPC(b_fd_IR) | isLUI(b_fd_IR);
-	wire b_LBC_HAZ = isBtype(a_fd_IR) | isJAL(a_fd_IR) | isJALR(a_fd_IR);
+	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR) | isLUI(b_fd_IR) | isAUIPC(b_fd_IR) | isStype(b_fd_IR) | isLoad(b_fd_IR);
+	
 	wire ba_fd_rs1_HAZ = !b_fd_NOP & reads_rs1(b_fd_IR) & rs1ID(b_fd_IR)!=0 & (
 			   (writes_rd(a_fd_IR) & (rs1ID(b_fd_IR) == rdID(a_fd_IR))));
 	wire ba_fd_rs2_HAZ = !b_fd_NOP & reads_rs2(b_fd_IR) & rs2ID(b_fd_IR)!=0 & (
@@ -83,10 +92,6 @@ module torv32(
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	reg [31:0] PC;
-	//wire [31:0] f_PC = a_d_JoB_now  ? a_d_JoB_ADDR  :
-	//		   a_em_JoB_now ? a_em_JoB_ADDR :
-	//		   			     PC ;
-
 	wire [31:0] f_PC = a_d_JoB_now  ? a_d_JoB_ADDR  :
 			   a_em_JoB_now ? a_em_JoB_ADDR :
 	       			     	             PC ;
@@ -145,15 +150,7 @@ module torv32(
 	wire [31:0] b_wb_DATA;
 	wire [4:0]  b_wb_rdID;
 
-        /*
-        `ifndef SYN
-        reg [3:0][7:0] reg_file [0:31];
-        `else
-        reg [31:0] reg_file [0:31];
-        `endif
-        */
-
-        reg [31:0] reg_file [0:31];
+	reg [31:0] reg_file [0:31];
 	
 	always@(posedge clk) begin
 
@@ -168,8 +165,7 @@ module torv32(
 		end
 
 		if(!b_d_stall) begin
-			b_de_IR <= (b_e_flush | b_fd_NOP | control_HAZ) ? NOP : b_fd_IR;
-
+			b_de_IR <= (b_e_flush | b_fd_NOP | control_HAZ | a_d_JoB_now) ? NOP : b_fd_IR;	
 			b_de_PC <= b_fd_PC;
 		end 
 			
@@ -253,7 +249,9 @@ module torv32(
 	wire [31:0] a_e_ADDR_RES = a_e_ADDin1 + a_e_IMM;
 	wire [31:0] a_e_ADDR = {a_e_ADDR_RES[31:1], a_e_ADDR_RES[0] & (~isJALR(a_de_IR))}; 
 
+	//wire a_e_JoB = isJAL(a_de_IR) | isJALR(a_de_IR) | (isBtype(a_de_IR) & a_e_takeB);
 	wire a_e_JoB = isJALR(a_de_IR) | (isBtype(a_de_IR) & a_e_takeB);
+	//wire a_e_JoB = isJALR(a_de_IR) | (isBtype(a_de_IR) & (a_e_takeB^a_de_predict));
 	wire [31:0] a_e_JoB_ADDR = a_e_ADDR;
 
 	always@(posedge clk) begin
@@ -303,8 +301,9 @@ module torv32(
 
 	wire [31:0] b_e_ALUin1 = (isJAL(b_de_IR) | isJALR(b_de_IR) | isAUIPC(b_de_IR)) ? b_de_PC : b_e_rs1;
 	wire [31:0] b_e_ALUin2 = (isRtype(b_de_IR) | isBtype(b_de_IR))? b_e_rs2 :
-	       		         (isRimm(b_de_IR)  | isAUIPC(b_de_IR))? b_e_IMM :
-			       		   			          32'd4 ;
+	       		         (isRimm(b_de_IR)  | isAUIPC(b_de_IR))? b_e_IMM  :
+			       		   			         32'd4  ;	
+	
 	wire [31:0] b_e_ALUout;
 	wire b_e_takeB;
 
@@ -315,19 +314,26 @@ module torv32(
 	        .result(b_e_ALUout),
 	        .take_b(b_e_takeB)
 	);
-
         wire [31:0] b_e_RES = isLUI(b_de_IR) ? b_e_IMM : b_e_ALUout;
 
+        wire [31:0] b_e_ADDin1 = (isJAL(b_de_IR) | isBtype(b_de_IR)) ? b_de_PC : b_e_rs1;
+        wire [31:0] b_e_ADDR_RES = b_e_ADDin1 + b_e_IMM;
+        wire [31:0] b_e_ADDR = {b_e_ADDR_RES[31:1], b_e_ADDR_RES[0] & (~isJALR(b_de_IR))};
+
 	always@(posedge clk) begin
-		b_em_IR   <= b_de_IR;
-		b_em_PC   <= b_de_PC;
-		b_em_RES  <= b_e_RES;
+                if(a_e_JoB)
+                        b_em_IR <= NOP;
+                else
+                        b_em_IR <= b_de_IR;
+                b_em_PC   <= b_de_PC;
+                b_em_rs2  <= b_e_rs2;
+                b_em_RES  <= b_e_RES;
+                b_em_ADDR <= b_e_ADDR;
 	end
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	reg[31:0] a_em_IR, a_em_PC, a_em_rs2, a_em_RES, a_em_ADDR, a_em_JoB_ADDR;
-	reg       a_em_JoB_now;
-	reg[31:0] b_em_IR, b_em_PC, b_em_RES;
+	reg[31:0] a_em_IR, a_em_PC, a_em_rs2, a_em_RES, a_em_ADDR, a_em_JoB_ADDR; reg a_em_JoB_now;
+        reg[31:0] b_em_IR, b_em_PC, b_em_rs2, b_em_RES, b_em_ADDR;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -359,7 +365,6 @@ module torv32(
 
         assign a_mem_wmask = a_m_WMASK;
         assign a_mem_addr = {9'b0,a_em_ADDR[22:0]};
-        //assign mem_addr = {11'b0,m_word_ADDR};
         assign a_mem_wdata = a_m_store_DATA;
         assign a_mem_cen = isLoad(a_em_IR) | isStype(a_em_IR);
 
@@ -396,26 +401,60 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	assign b_IO_mem_addr  = 0;
-	assign b_IO_mem_wr    = 0;
-	assign b_IO_mem_wdata = 0;
-       	
-	assign b_mem_wmask = 0;
-        assign b_mem_addr  = 0;
-        assign b_mem_wdata = 0;
-        assign b_mem_cen   = 0;//isLoad(a_em_IR) | isStype(a_em_IR);
+	wire [2:0] b_m_funct3 = funct3(b_em_IR);
+        wire b_m_isB = (b_m_funct3[1:0] == 2'b00);
+        wire b_m_isH = (b_m_funct3[1:0] == 2'b01);
+
+
+        wire [31:0] b_m_store_DATA;
+        assign b_m_store_DATA[ 7:0 ] = b_em_rs2[7:0];
+        assign b_m_store_DATA[15:8 ] = b_em_ADDR[0] ? b_em_rs2[7:0]  : b_em_rs2[15:8 ] ;
+        assign b_m_store_DATA[23:16] = b_em_ADDR[1] ? b_em_rs2[7:0]  : b_em_rs2[23:16] ;
+        assign b_m_store_DATA[31:24] = b_em_ADDR[0] ? b_em_rs2[7:0]  :
+                                       b_em_ADDR[1] ? b_em_rs2[15:8] : b_em_rs2[31:24] ;
+
+        wire [3:0] b_m_store_WMASK = b_m_isB ? (b_em_ADDR[1] ? (b_em_ADDR[0] ? 4'b1000 : 4'b0100)  :
+                                                               (b_em_ADDR[0] ? 4'b0010 : 4'b0001)) :
+                                     b_m_isH ? (b_em_ADDR[1] ?                 4'b1100 : 4'b0011)  :
+                                                                                         4'b1111   ;
+
+        wire [3:0] b_m_WMASK = {4{isStype(b_em_IR) & b_M_isRAM}} & b_m_store_WMASK;
+        wire [20:0] b_m_word_ADDR = b_em_ADDR[22:2];
+        wire b_M_isIO  = b_em_ADDR[22];
+        wire b_M_isRAM = !b_M_isIO;
+
+
+        assign b_IO_mem_addr  = b_em_ADDR;
+        assign b_IO_mem_wr    = isStype(b_em_IR) & b_M_isIO;
+        assign b_IO_mem_wdata = b_em_rs2;
+
+        assign b_mem_wmask = b_m_WMASK & {4{!store_addr_HAZ}};
+        assign b_mem_addr =  {9'b0,b_em_ADDR[22:0]};
+        assign b_mem_wdata = b_m_store_DATA;
+        assign b_mem_cen = isLoad(b_em_IR) | isStype(b_em_IR);
+
+        wire store_addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);
+
+	wire a_store_b_load_HAZ = isStype(a_em_IR) & (|a_mem_wmask) & isLoad(b_em_IR) & (a_mem_addr == b_mem_addr);
 
         always@(posedge clk) begin
-                b_mw_IR     <= b_em_IR;
+		b_mw_IR     <= b_em_IR;
                 b_mw_PC     <= b_em_PC;
                 b_mw_RES    <= b_em_RES;
-	end
+                b_mw_IO_RES <= b_IO_mem_rdata;
+                b_mw_ADDR   <= b_em_ADDR;
+                b_mw_ASBL   <= a_store_b_load_HAZ;
+                b_mw_store  <= a_m_store_DATA;
+
+        end
+
+	wire [31:0] b_mw_Mdata = b_mw_ASBL ? b_mw_store : b_mem_data;
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	reg [31:0] a_mw_IR, a_mw_PC, a_mw_RES, a_mw_IO_RES, a_mw_ADDR, a_mw_CSR_RES;
-	
-	//reg [31:0] b_mw_IR, b_mw_PC, b_mw_RES, b_mw_IO_RES, b_mw_ADDR, b_mw_CSR_RES;
-	reg [31:0] b_mw_IR, b_mw_PC, b_mw_RES;
+        reg [31:0] b_mw_IR, b_mw_PC, b_mw_RES, b_mw_IO_RES, b_mw_ADDR, b_mw_store  ; reg b_mw_ASBL;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -444,12 +483,27 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+        wire [2:0] b_w_funct3 = funct3(b_mw_IR);
 
-	assign b_wb_DATA = b_mw_RES;
-	
-	assign b_wb_enable = writes_rd(b_mw_IR) & (rdID(b_mw_IR)!=0);
+        wire b_w_isB = (b_w_funct3[1:0] == 2'b00);
+        wire b_w_isH = (b_w_funct3[1:0] == 2'b01);
+        wire b_w_sign_e = !b_w_funct3[2];
+        wire b_W_isIO   = b_mw_ADDR[22];
 
-	assign b_wb_rdID = rdID(b_mw_IR);
+        wire [15:0] b_w_loadH = b_mw_ADDR[1] ? b_mw_Mdata[31:16] : b_mw_Mdata[15:0];
+        wire [ 7:0] b_w_loadB = b_mw_ADDR[0] ? b_w_loadH[15:8 ] : b_w_loadH[7: 0];
+        wire b_w_load_sign    = b_w_sign_e & (b_w_isB ? b_w_loadB[7] : b_w_loadH[15]);
+
+        wire [31:0] b_w_mem_RES = b_w_isB ? {{24{b_w_load_sign}}, b_w_loadB} :
+                                  b_w_isH ? {{16{b_w_load_sign}}, b_w_loadH} :
+                                                                  b_mw_Mdata ;
+
+        assign b_wb_DATA = isLoad(b_mw_IR) ? (b_W_isIO ? b_mw_IO_RES : b_w_mem_RES):
+                                                                           b_mw_RES;
+
+        assign b_wb_enable = writes_rd(b_mw_IR) & (rdID(b_mw_IR)!=0);
+
+        assign b_wb_rdID = rdID(b_mw_IR);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

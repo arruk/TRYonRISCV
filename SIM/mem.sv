@@ -1,5 +1,5 @@
 `define TORVS
-`define GOWIN
+//`define GOWIN
 //`define DUALMEM
 //`define DE10S
 
