@@ -18,6 +18,7 @@ module torv32(
         output [ 3:0] a_mem_wmask,    
         output [31:0] a_mem_addr ,     
         output [31:0] a_mem_wdata,    
+        output        a_mem_cen,
 
 	output        b_imem_en  ,      
         output [31:0] b_imem_addr,    
@@ -27,6 +28,7 @@ module torv32(
         output [ 3:0] b_mem_wmask,    
         output [31:0] b_mem_addr ,     
         output [31:0] b_mem_wdata,    
+        output        b_mem_cen,
 
 	output [31:0] a_IO_mem_addr ,  
 	input  [31:0] a_IO_mem_rdata, 
@@ -67,7 +69,7 @@ module torv32(
 
 	wire control_HAZ = !b_ins_ALL | b_LBC_HAZ | fd_data_HAZ;
 	
-	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR) | isAUIPC(b_fd_IR) | isLUI(b_fd_IR) | isStype(b_fd_IR);
+	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR) | isAUIPC(b_fd_IR) | isLUI(b_fd_IR);
 	wire b_LBC_HAZ = isBtype(a_fd_IR) | isJAL(a_fd_IR) | isJALR(a_fd_IR);
 	wire ba_fd_rs1_HAZ = !b_fd_NOP & reads_rs1(b_fd_IR) & rs1ID(b_fd_IR)!=0 & (
 			   (writes_rd(a_fd_IR) & (rs1ID(b_fd_IR) == rdID(a_fd_IR))));
@@ -369,24 +371,51 @@ module torv32(
         );
         wire [31:0] b_e_RES = isLUI(b_de_IR) ? b_e_IMM : b_e_ALUout;
 
-	wire [31:0] b_e_ADDin1 = (isJAL(b_de_IR) | isBtype(b_de_IR)) ? b_de_PC : b_e_rs1;
-        wire [31:0] b_e_ADDR_RES = b_e_ADDin1 + b_e_IMM;
-        wire [31:0] b_e_ADDR = {b_e_ADDR_RES[31:1], b_e_ADDR_RES[0] & (~isJALR(b_de_IR))};
-
         always@(posedge clk) begin
                 b_em_IR   <= b_de_IR;
                 b_em_PC   <= b_de_PC;
-		b_em_rs2  <= b_e_rs2;
                 b_em_RES  <= b_e_RES;
-                b_em_ADDR <= b_e_ADDR;		
         end
+
+	/*
+	wire [31:0] b_e_IMM;
+
+	imm_mux m1(
+		.instr(b_de_IR),
+		.imm(b_e_IMM)
+	);
+
+	//wire [31:0] b_e_ALUin1 = (isJAL(b_de_IR) | isJALR(b_de_IR) | isAUIPC(b_de_IR)) ? b_de_PC : b_e_rs1;
+	//wire [31:0] b_e_ALUin2 = (isRtype(b_de_IR) | isBtype(b_de_IR))? b_e_rs2 :
+	//       		         (isRimm(b_de_IR)  | isAUIPC(b_de_IR))? b_e_IMM  :
+	//		       		   			         32'd4  ;	
+	wire [31:0] b_e_ALUin1 = b_e_rs1;
+	wire [31:0] b_e_ALUin2 = isRtype(b_de_IR)? b_e_rs2 :
+	       		         		   b_e_IMM ;
+	wire [31:0] b_e_ALUout;
+	wire b_e_takeB;
+
+	alu u1(
+		.in_a(b_e_ALUin1),
+	        .in_b(b_e_ALUin2),
+	        .inst(b_de_IR),
+	        .result(b_e_ALUout),
+	        .take_b(b_e_takeB)
+	);
+	wire [31:0] b_e_RES = b_e_ALUout;
+
+	always@(posedge clk) begin
+		b_em_IR   <= b_de_IR;
+		b_em_PC   <= b_de_PC;
+		b_em_RES  <= b_e_RES;
+	end
+	*/
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	reg[31:0] a_em_IR, a_em_PC, a_em_rs2, a_em_RES, a_em_ADDR, a_em_JoB_ADDR;
 	reg       a_em_JoB_now;
-	reg[31:0] b_em_IR, b_em_PC, b_em_rs2, b_em_RES, b_em_ADDR;
-	//reg[31:0] b_em_IR, b_em_PC, b_em_RES;
+	reg[31:0] b_em_IR, b_em_PC, b_em_RES;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -420,6 +449,7 @@ module torv32(
         assign a_mem_addr = {9'b0,a_em_ADDR[22:0]};
         //assign mem_addr = {11'b0,m_word_ADDR};
         assign a_mem_wdata = a_m_store_DATA;
+        assign a_mem_cen = isLoad(a_em_IR) | isStype(a_em_IR);
 
 	wire [31:0] a_mw_Mdata = a_mem_data;
 
@@ -453,51 +483,7 @@ module torv32(
 	reg [63:0] instret;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-       
-	wire [2:0] b_m_funct3 = funct3(b_em_IR);
-        wire b_m_isB = (b_m_funct3[1:0] == 2'b00);
-        wire b_m_isH = (b_m_funct3[1:0] == 2'b01);
 
-
-        wire [31:0] b_m_store_DATA;
-        assign b_m_store_DATA[ 7:0 ] = b_em_rs2[7:0];
-        assign b_m_store_DATA[15:8 ] = b_em_ADDR[0] ? b_em_rs2[7:0]  : b_em_rs2[15:8 ] ;
-        assign b_m_store_DATA[23:16] = b_em_ADDR[1] ? b_em_rs2[7:0]  : b_em_rs2[23:16] ;
-        assign b_m_store_DATA[31:24] = b_em_ADDR[0] ? b_em_rs2[7:0]  :
-                                       b_em_ADDR[1] ? b_em_rs2[15:8] : b_em_rs2[31:24] ;
-
-        wire [3:0] b_m_store_WMASK = b_m_isB ? (b_em_ADDR[1] ? (b_em_ADDR[0] ? 4'b1000 : 4'b0100)  :
-                                                               (b_em_ADDR[0] ? 4'b0010 : 4'b0001)) :
-                                     b_m_isH ? (b_em_ADDR[1] ?                 4'b1100 : 4'b0011)  :
-                                                                                         4'b1111   ;
-
-        wire [3:0] b_m_WMASK = {4{isStype(b_em_IR) & b_M_isRAM}} & b_m_store_WMASK;
-        wire [20:0] b_m_word_ADDR = b_em_ADDR[22:2];
-        wire b_M_isIO  = b_em_ADDR[22];
-        wire b_M_isRAM = !b_M_isIO;
-
-
-        assign b_IO_mem_addr  = b_em_ADDR;
-        assign b_IO_mem_wr    = isStype(b_em_IR) & b_M_isIO;
-        assign b_IO_mem_wdata = b_em_rs2;
-
-        assign b_mem_wmask = b_m_WMASK & {4{!addr_HAZ}};
-        assign b_mem_addr =  {9'b0,b_em_ADDR[22:0]};
-        assign b_mem_wdata = b_m_store_DATA;
-
-        wire [31:0] b_mw_Mdata = b_mem_data;
-
-        wire addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);
-
-        always@(posedge clk) begin
-                b_mw_IR     <= b_em_IR;
-                b_mw_PC     <= b_em_PC;
-                b_mw_RES    <= b_em_RES;
-                //b_mw_IO_RES <= b_IO_mem_rdata;
-                //b_mw_ADDR   <= b_em_ADDR;
-        end
-	
-	/*
 	assign b_IO_mem_addr  = 0;
 	assign b_IO_mem_wr    = 0;
 	assign b_IO_mem_wdata = 0;
@@ -505,13 +491,13 @@ module torv32(
 	assign b_mem_wmask = 0;
         assign b_mem_addr  = 0;
         assign b_mem_wdata = 0;
+        assign b_mem_cen   = 0;//isLoad(a_em_IR) | isStype(a_em_IR);
 
         always@(posedge clk) begin
                 b_mw_IR     <= b_em_IR;
                 b_mw_PC     <= b_em_PC;
                 b_mw_RES    <= b_em_RES;
-	end*/
-
+	end
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	reg [31:0] a_mw_IR, a_mw_PC, a_mw_RES, a_mw_IO_RES, a_mw_ADDR, a_mw_CSR_RES;
