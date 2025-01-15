@@ -46,3 +46,6 @@ RTL/PRIMER20k/src/*.v
 RTL/PRIMER20k/src/*.sv
 RTL/PRIMER25k/src/gowin_dpb/
 RTL/DONE/primer20k/
+RTL/DONE/primer25k/
+TODO/*
+INFO/BEN/

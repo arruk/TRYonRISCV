@@ -388,8 +388,8 @@ module torv32(
 
         assign a_mem_wmask = a_m_WMASK;
         assign a_mem_addr = {9'b0,a_em_ADDR[22:0]};
-        //assign mem_addr = {11'b0,m_word_ADDR};
         assign a_mem_wdata = a_m_store_DATA;
+        assign a_mem_cen = isLoad(a_em_IR) | isStype(a_em_IR);
 
 	wire [31:0] a_mw_Mdata = a_mem_data;
 

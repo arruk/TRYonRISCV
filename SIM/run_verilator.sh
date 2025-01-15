@@ -2,7 +2,6 @@ PREC="PRECOMPILED"
 #INFO_DIR="../INFO/BENCH"
 INFO_DIR="../INFO/BEN"
 BENCH=$(cut -d. -f 1 firmware.txt)
-echo $BENCH
 IMPL=$(echo $1 | cut -d. -f 1)
 IMPL_T=$IMPL
 CORE=$(echo $1 | cut -d. -f 1 | tr 'a-z' 'A-Z' )
@@ -21,11 +20,15 @@ main() {
 	#(cd obj_dir; make -f VSOC.mk)
 	if [ "$2" = "v" ]
 	then
-		verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -D$CORE -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal 									     --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c soc.v
+		echo $BENCH
+		
+		verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -D$CORE -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
+   			  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c soc.v
 	
 		(cd obj_dir; make -f VSOC.mk)
 		
 		obj_dir/VSOC 
+
 	elif [ "$2" = "a" ]
 	then	
 		
@@ -37,9 +40,11 @@ main() {
 		
 		(cd obj_dir; make -f VSOC.mk)
 		
-		#cp ${PREC}/RAYSTONES/RAM.hex ./ #&& cp ${PREC}/RAYSTONES/PROGROM.hex ./ && rm -f RAM.hex && cat PROGROM.hex DATARAM.hex > RAM.hex
+		cp ${PREC}/RAYSTONES/RAM.hex ./ #&& cp ${PREC}/RAYSTONES/PROGROM.hex ./ && rm -f RAM.hex && cat PROGROM.hex DATARAM.hex > RAM.hex
 		cp ${PREC}/RAYSTONES/DATARAM.hex ./HEX/ && cp ${PREC}/RAYSTONES/PROGROM.hex ./HEX/
 		echo "raystones.pipeline.hex" > firmware.txt
+		BENCH=$(cut -d. -f 1 firmware.txt)
+		echo $BENCH
 		obj_dir/VSOC
 		#obj_dir/VSOC > ${INFO_DIR}/temp
 
@@ -49,6 +54,8 @@ main() {
 		#cp ${PREC}/DHRYSTONES/RAM.hex ./ #&& cp ${PREC}/DHRYSTONES/PROGROM.hex ./ && rm -f RAM.hex && cat PROGROM.hex DATARAM.hex > RAM.hex
 		cp ${PREC}/DHRYSTONES/DATARAM.hex ./HEX/ && cp ${PREC}/DHRYSTONES/PROGROM.hex ./HEX/
 		echo "dhrystones.pipeline.hex" > firmware.txt
+		BENCH=$(cut -d. -f 1 firmware.txt)
+		echo $BENCH
 		obj_dir/VSOC
 		#obj_dir/VSOC > ${INFO_DIR}/temp
 
@@ -58,6 +65,8 @@ main() {
 		#cp ${PREC}/COREMARK/RAM.hex ./ #&& cp ${PREC}/COREMARK/PROGROM.hex ./ && rm -f RAM.hex && cat PROGROM.hex DATARAM.hex > RAM.hex
 		cp ${PREC}/COREMARK/DATARAM.hex ./HEX/ && cp ${PREC}/COREMARK/PROGROM.hex ./HEX/
 		echo "coremark.pipeline.hex" > firmware.txt
+		BENCH=$(cut -d. -f 1 firmware.txt)
+		echo $BENCH
 		obj_dir/VSOC
 		#obj_dir/VSOC > ${INFO_DIR}/temp
 

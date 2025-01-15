@@ -118,7 +118,7 @@ module torv32(
 			a_fd_PC <= a_imem_addr;
 
 			PC <= (control_HAZ & !a_fd_NOP & !(a_d_JoB_now|a_em_JoB_now) & !(b_d_JoB_now|b_em_JoB_now)) ? f_PC + 4:
-						          f_PC + 8;
+								   					              f_PC + 8;
 
 		end
 
@@ -481,7 +481,7 @@ module torv32(
         assign b_mem_wdata = b_m_store_DATA;
         assign b_mem_cen = isLoad(b_em_IR) | isStype(b_em_IR);
 
-        wire [31:0] b_mw_Mdata = b_mem_data;
+        //wire [31:0] b_mw_Mdata = b_mem_data;
 
         wire store_addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);
 
