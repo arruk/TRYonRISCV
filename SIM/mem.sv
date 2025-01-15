@@ -1,6 +1,6 @@
-//`define TORVS
+`define TORVS
 //`define GOWIN
-`define DUALMEM
+//`define DUALMEM
 //`define DE10S
 
 `ifndef BENCH
@@ -232,11 +232,6 @@ module data_mem(
         input      [31:0] a_mem_wdata,
         input             a_mem_we,
 
-	`ifdef DE10S
-	input		  a_mem_we,
-	input		  b_mem_we,
-	`endif
-
 	output reg [31:0] b_mem_data,
         input      [ 3:0] b_mem_wmask,
         input      [31:0] b_mem_addr,
@@ -257,7 +252,7 @@ module data_mem(
 
 	initial begin
 		`ifndef SYN
-                $readmemh("HEX/GWDATARAM.hex", RAM);		
+                $readmemh("HEX/DATARAM.hex", RAM);		
 		`else
                 $readmemh("DATARAM.hex", RAM);		
 		`endif

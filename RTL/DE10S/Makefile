@@ -10,22 +10,21 @@ torvs:
 
 coremark:
 	cp ../../SIM/PRECOMPILED/COREMARK/PROGROM.hex ./src
-	#cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/COREMARK/DATARAM.hex ./src
-	cp mem/CMRAM.mif ./src/RAM.mif
+	cp ../../SIM/PRECOMPILED/COREMARK/DATARAM.hex ./src
+	cp mem/COREMARK.mif ./src/RAM.mif
 	echo "coremark" > firmware.txt
 	make -C impl/ all
 
 dhrystones:
 	cp ../../SIM/PRECOMPILED/DHRYSTONES/PROGROM.hex ./src
-	#cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/DHRYSTONES/DATARAM.hex ./src
-	cp mem/DHRYRAM.mif ./src/RAM.mif
+	cp mem/DHRYSTONES.mif ./src/RAM.mif
 	echo "dhrystones" > firmware.txt
 	make -C impl/ all
 
 raystones:
 	cp ../../SIM/PRECOMPILED/RAYSTONES/PROGROM.hex ./src
-	#cp ../../SIM/FIRMWARE/PRECOMPILED/RV32I/RAYSTONES/DATARAM.hex ./src
-	cp mem/RAYRAM.mif ./src/RAM.mif
+	cp ../../SIM/PRECOMPILED/RAYSTONES/DATARAM.hex ./src
+	cp mem/RAYSTONES.mif ./src/RAM.mif
 	echo "raystones" > firmware.txt
 	make -C impl/ all
 

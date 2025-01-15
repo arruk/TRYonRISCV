@@ -469,7 +469,7 @@ module torv32(
         assign b_mem_wdata = b_m_store_DATA;
         assign b_mem_cen = isLoad(b_em_IR) | isStype(b_em_IR);
 
-        wire [31:0] b_mw_Mdata = b_mem_data;
+        //wire [31:0] b_mw_Mdata = b_mem_data;
 
         wire store_addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);
 

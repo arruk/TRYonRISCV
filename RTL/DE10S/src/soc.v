@@ -1,22 +1,20 @@
 `define TORVS
 //`define COPROC
-`define DE10S
+//`define DE10S
+//`define PRIMER20K
+//`define GOWIN
+
 `ifndef BENCH
 	`define SYN
 `endif
 
 module SOC( 
 	input CLK,
-	`ifndef DE10S
        	input RESET,
-	`endif
-       	output [7:0] LEDS, 
+    	output [7:0] LEDS, 
 	output UART_TX, 
 	output UART_CTS
 );
-	`ifdef DE10S
-	reg RESET=0;
-	`endif
 
         wire resetn, clk;
 	
@@ -87,29 +85,32 @@ module SOC(
         wire [ 3:0] a_mem_wmask;
         wire [31:0] a_mem_addr ;
         wire [31:0] a_mem_wdata;
+	wire        a_mem_cen  ;
 
         wire [31:0] b_mem_data ;
         wire [ 3:0] b_mem_wmask;
         wire [31:0] b_mem_addr ;
         wire [31:0] b_mem_wdata;
-
-	`ifdef DE10S
-	
-	wire a_mem_we = |a_mem_wmask;
-	wire b_mem_we = |b_mem_wmask;
-
-	`endif
+	wire        b_mem_cen  ;
 
 	wire a_IO_mem_wr;
         wire [31:0] a_IO_mem_addr;
         wire [31:0] a_IO_mem_wdata;
+        `ifdef GOWIN
+        wire [31:0] a_IO_mem_rdata = a_IO_wordaddr[2] ? { 22'b0, fifo_full, 9'b0} : 32'b0;
+        `else
         wire [31:0] a_IO_mem_rdata = a_IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
+        `endif
         wire [13:0] a_IO_wordaddr  = a_IO_mem_addr[15:2];
 
 	wire b_IO_mem_wr;
         wire [31:0] b_IO_mem_addr;
         wire [31:0] b_IO_mem_wdata;
+        `ifdef GOWIN
+        wire [31:0] b_IO_mem_rdata = b_IO_wordaddr[2] ? { 22'b0, fifo_full, 9'b0} : 32'b0;
+        `else
         wire [31:0] b_IO_mem_rdata = b_IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
+        `endif
         wire [13:0] b_IO_wordaddr  = b_IO_mem_addr[15:2];
 
 	wire a_uart_valid = a_IO_mem_wr & a_IO_wordaddr[1];
@@ -118,7 +119,8 @@ module SOC(
 	wire uart_valid = a_uart_valid | b_uart_valid;
         wire uart_ready;
         
-	wire [31:0] IO_mem_wdata = a_IO_mem_wdata;
+	wire [31:0] IO_mem_wdata = a_uart_valid ? a_IO_mem_wdata :
+				   		  b_IO_mem_wdata ;
 	
 	wire halt = a_IO_mem_wr & a_IO_wordaddr[3] | b_IO_mem_wr & b_IO_wordaddr[3];
         
@@ -139,7 +141,11 @@ module SOC(
 	wire        IO_mem_wr;
         wire [31:0] IO_mem_addr;
         wire [31:0] IO_mem_wdata;
+	`ifdef GOWIN
+        wire [31:0] IO_mem_rdata = IO_wordaddr[2] ? { 22'b0, fifo_full, 9'b0} : 32'b0;
+	`else
         wire [31:0] IO_mem_rdata = IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
+	`endif
         wire [13:0] IO_wordaddr  = IO_mem_addr[15:2];
 
         wire uart_ready;
@@ -149,7 +155,8 @@ module SOC(
 	wire halt = IO_mem_wr & IO_wordaddr[3];
 
         //assign LEDS = IO_mem_wdata[7:0];
-	assign LEDS = {8{uart_ready}};
+	assign LEDS[6:0] = {7{uart_ready}};
+	assign LEDS[7]   = RESET;
 
 	`endif
 
@@ -166,14 +173,16 @@ module SOC(
                 .b_imem_addr(b_imem_addr), //
                 .b_imem_data(b_imem_data),  //
 
-                .a_mem_data (a_mem_data ),  //
-                .a_mem_wmask(a_mem_wmask), //
-                .a_mem_addr (a_mem_addr ),  //
-                .a_mem_wdata(a_mem_wdata), // DUAL PORT DATA
+		.a_mem_cen  (a_mem_cen  ),  //
+                .a_mem_data (a_mem_data ), //
+                .a_mem_wmask(a_mem_wmask),  //
+                .a_mem_addr (a_mem_addr ), //
+                .a_mem_wdata(a_mem_wdata),  //
+	       	.b_mem_cen  (b_mem_cen  ), // DUAL PORT DATA
                 .b_mem_data (b_mem_data ),  //    MEMORY
                 .b_mem_wmask(b_mem_wmask), //
                 .b_mem_addr (b_mem_addr ),  //
-                .b_mem_wdata(b_mem_wdata),  //
+                .b_mem_wdata(b_mem_wdata), //
 		
 		.a_IO_mem_addr  (a_IO_mem_addr),
                 .a_IO_mem_rdata (a_IO_mem_rdata),
@@ -250,6 +259,7 @@ module SOC(
                 .RAM_SIZE(dm)
         ) MI (
                 .clk        (clk),
+		.reset	    (~resetn),
 
                 .a_imem_en  (a_imem_en  ), //
                 .a_imem_addr(a_imem_addr),  //
@@ -258,19 +268,16 @@ module SOC(
                 .b_imem_addr(b_imem_addr), //
                 .b_imem_data(b_imem_data),  //
 
-		`ifdef DE10S
-	       	.a_mem_we   (a_mem_we   ),  //
-		.b_mem_we   (b_mem_we   ), // DUAL PORT DATA
-		`endif
-
+		.a_mem_cen  (a_mem_cen  ), //
                 .a_mem_data (a_mem_data ),  //
                 .a_mem_wmask(a_mem_wmask), //
                 .a_mem_addr (a_mem_addr ),  //
-                .a_mem_wdata(a_mem_wdata), // DUAL PORT DATA
-                .b_mem_data (b_mem_data ),  //    MEMORY
-                .b_mem_wmask(b_mem_wmask), //
-                .b_mem_addr (b_mem_addr ),  //
-                .b_mem_wdata(b_mem_wdata)  //
+                .a_mem_wdata(a_mem_wdata), //
+	       	.b_mem_cen  (b_mem_cen  ),  // DUAL PORT DATA
+                .b_mem_data (b_mem_data ), //    MEMORY
+                .b_mem_wmask(b_mem_wmask),  //
+                .b_mem_addr (b_mem_addr ), //
+                .b_mem_wdata(b_mem_wdata)   //
         );
 
 	`else
@@ -291,10 +298,46 @@ module SOC(
 	`endif
 
 	
+	`ifdef GOWIN
+	
+	wire [7:0] output_fifo;
+	wire fifo_full, fifo_empty;
+
+	fifo_sc_top fifo_tx(
+		.Data (IO_mem_wdata[7:0]), //input [31:0] Data
+		.Clk  (clk              ), //input Clk
+		.WrEn (uart_valid&!fifo_full ), //input WrEn
+		.RdEn (uart_ready&!fifo_empty), //input RdEn
+		.Reset(!resetn          ), //input Reset
+		.Q    (output_fifo      ), //output [31:0] Q
+		.Empty(fifo_empty        ), //output Empty
+		.Full (fifo_full       )  //output Full
+	);
 
 	corescore_emitter_uart #(
 		.clk_freq_hz (50000000),
+		.baud_rate   (115200)    
+	) UART(
+		.i_clk     (clk),
+		.i_rst     (!resetn),
+		.i_data    (output_fifo),
+		.i_valid   (!fifo_empty),
+		.o_ready   (uart_ready),
+		.o_uart_tx (UART_TX)      			       
+	);
+
+	`else
+
+	corescore_emitter_uart #(
+        `ifdef PRIMER20K
+		.clk_freq_hz (27000000),
 		.baud_rate   (115200)
+        `else
+		//.clk_freq_hz (50000000),
+		//.baud_rate   (115200)    
+		.clk_freq_hz (100000000),
+		.baud_rate   (1000000)    
+        `endif
 	) UART(
 		.i_clk     (clk),
 		.i_rst     (!resetn),
@@ -304,11 +347,15 @@ module SOC(
 		.o_uart_tx (UART_TX)      			       
 	);
 
-	//reg RESET = 0;
+	`endif
 
         Clockworks CW(
                 .CLK(CLK),
+                `ifdef PRIMER20K               
+                .RESET(~RESET),
+                `else
                 .RESET(RESET),
+                `endif
                 .clk(clk),
                 .resetn(resetn)
         );
@@ -320,15 +367,16 @@ module SOC(
 
 			always@(posedge clk) begin
                                 if(a_uart_valid & b_uart_valid) begin
-                                        $write("%c%c", a_IO_mem_wdata[7:0], b_IO_mem_wdata[7:0]);
-                                        $fflush(32'h8000_0001);
+					$display("PUTA PROBLEMa");
+                                        //$write("%c%c", a_IO_mem_wdata[7:0], b_IO_mem_wdata[7:0]);
+                                        //$fflush(32'h8000_0001);
                                 end else if(a_uart_valid) begin
                                         $write("%c", a_IO_mem_wdata[7:0]);
                                         $fflush(32'h8000_0001);
                                 end else if(b_uart_valid) begin
                                         $write("%c", b_IO_mem_wdata[7:0]);
                                         $fflush(32'h8000_0001);
-                                end
+				end
 
 
 				if(halt) begin
@@ -367,19 +415,14 @@ endmodule
 
 	`include "AUX/clockworks.v"
 	`include "AUX/uart_tx.v"
-	`include "COPROC/pico_mul.v"
-	`include "COPROC/pico_div.v"
+	`ifdef COPROC
+		`include "COPROC/pico_mul.v"
+		`include "COPROC/pico_div.v"
+	`endif
 
-	//`ifdef TORVS
-	//	`include "TORVS/mem_dual.sv"
-	//`else
-	//	`include "mem.sv"
-	//`endif
-	
 	`include "mem.sv"
 
 	`ifdef CORE 
-		//`include "core.sv"
 		`include "core.v"
 	`elsif CORE2 
 		`include "core2.v"
@@ -395,8 +438,6 @@ endmodule
 		`include "core7.v"
 	`elsif CORE8
 		`include "core8.v"
-	//`elsif TORV32
-	//        `include "torv32.v"
 	`elsif NEWBYPASS
 		`include "newbypass.v"
 	`elsif NEWBYPASS2
@@ -427,6 +468,39 @@ endmodule
 		`include "torvs8p4.sv"
 	`elsif TORVS8P5
 		`include "torvs8p5.sv"
+	`elsif TORVS7P1
+		`include "torvs7p1.sv"
+	`elsif TORVS7P2
+		`include "torvs7p2.sv"
+	`elsif TORVS7P3
+		`include "torvs7p3.sv"
+	`elsif TORVS7P4
+		`include "torvs7p4.sv"
+	`elsif TORVS7P5
+		`include "torvs7p5.sv"
+	`elsif TORVS6
+		`include "torvs6.sv"
+	`elsif TORVS6P1
+		`include "torvs6p1.sv"
+	`elsif TORVS6P2
+		`include "torvs6p2.sv"
+	`elsif TORVS6P3
+		`include "torvs6p3.sv"
+	`elsif TORVS6P4
+		`include "torvs6p4.sv"
+	`elsif TORVS6P5
+		`include "torvs6p5.sv"
+	`elsif TORVS5P1
+		`include "torvs5p1.sv"
+	`elsif TORVS5P2
+		`include "torvs5p2.sv"
+	`elsif TORVS5P3
+		`include "torvs5p3.sv"
+	`elsif TORVS5P4
+		`include "torvs5p4.sv"
+	`elsif TORVS5P5
+		`include "torvs5p5.sv"
 	`endif
 
 `endif
+
