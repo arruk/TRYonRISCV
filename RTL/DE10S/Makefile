@@ -3,10 +3,20 @@ change:
 	ln -P ../../SIM/CORE/$(v).v src/core.v
 	echo "$(v)" > core.txt
 
+teste:
+
+
 torvs:
 	rm -rf src/core.sv
 	ln -P ../../SIM/TORVS/$(v).sv src/core.sv
 	echo "$(v)" > core.txt
+
+copy:
+	cp ../../SIM/soc.v src/
+	cp ../../SIM/mem.sv src/
+	cp ../../SIM/AUX/alu.v src/
+	cp ../../SIM/AUX/clockworks.v src/
+	cp ../../SIM/AUX/uart_tx.v src/
 
 coremark:
 	cp ../../SIM/PRECOMPILED/COREMARK/PROGROM.hex ./src
@@ -17,9 +27,10 @@ coremark:
 
 dhrystones:
 	cp ../../SIM/PRECOMPILED/DHRYSTONES/PROGROM.hex ./src
-	cp mem/DHRYSTONES.mif ./src/RAM.mif
+	cp ../../SIM/PRECOMPILED/DHRYSTONES/DATARAM.hex ./src
+	#cp mem/DHRYSTONES.mif ./src/RAM.mif
 	echo "dhrystones" > firmware.txt
-	make -C impl/ all
+	#make -C impl/ all
 
 raystones:
 	cp ../../SIM/PRECOMPILED/RAYSTONES/PROGROM.hex ./src

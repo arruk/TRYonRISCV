@@ -96,21 +96,13 @@ module SOC(
 	wire a_IO_mem_wr;
         wire [31:0] a_IO_mem_addr;
         wire [31:0] a_IO_mem_wdata;
-        `ifdef GOWIN
-        wire [31:0] a_IO_mem_rdata = a_IO_wordaddr[2] ? { 22'b0, fifo_full, 9'b0} : 32'b0;
-        `else
         wire [31:0] a_IO_mem_rdata = a_IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
-        `endif
         wire [13:0] a_IO_wordaddr  = a_IO_mem_addr[15:2];
 
 	wire b_IO_mem_wr;
         wire [31:0] b_IO_mem_addr;
         wire [31:0] b_IO_mem_wdata;
-        `ifdef GOWIN
-        wire [31:0] b_IO_mem_rdata = b_IO_wordaddr[2] ? { 22'b0, fifo_full, 9'b0} : 32'b0;
-        `else
         wire [31:0] b_IO_mem_rdata = b_IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
-        `endif
         wire [13:0] b_IO_wordaddr  = b_IO_mem_addr[15:2];
 
 	wire a_uart_valid = a_IO_mem_wr & a_IO_wordaddr[1];
@@ -119,8 +111,10 @@ module SOC(
 	wire uart_valid = a_uart_valid | b_uart_valid;
         wire uart_ready;
         
-	wire [31:0] IO_mem_wdata = a_uart_valid ? a_IO_mem_wdata :
-				   		  b_IO_mem_wdata ;
+	wire [31:0] IO_mem_wdata = a_IO_mem_wdata;
+	
+	//wire [31:0] IO_mem_wdata = a_uart_valid ? a_IO_mem_wdata :
+	// 			   		    b_IO_mem_wdata ;
 	
 	wire halt = a_IO_mem_wr & a_IO_wordaddr[3] | b_IO_mem_wr & b_IO_wordaddr[3];
         
@@ -298,7 +292,7 @@ module SOC(
 	`endif
 
 	
-	`ifdef GOWIN
+	/*`ifdef GOWIN
 	
 	wire [7:0] output_fifo;
 	wire fifo_full, fifo_empty;
@@ -326,18 +320,11 @@ module SOC(
 		.o_uart_tx (UART_TX)      			       
 	);
 
-	`else
+	`else*/
 
 	corescore_emitter_uart #(
-        `ifdef PRIMER20K
-		.clk_freq_hz (27000000),
-		.baud_rate   (115200)
-        `else
-		//.clk_freq_hz (50000000),
-		//.baud_rate   (115200)    
-		.clk_freq_hz (100000000),
-		.baud_rate   (1000000)    
-        `endif
+		.clk_freq_hz (50000000),
+		.baud_rate   (115200)    
 	) UART(
 		.i_clk     (clk),
 		.i_rst     (!resetn),
@@ -347,15 +334,11 @@ module SOC(
 		.o_uart_tx (UART_TX)      			       
 	);
 
-	`endif
+	//`endif
 
         Clockworks CW(
                 .CLK(CLK),
-                `ifdef PRIMER20K               
                 .RESET(~RESET),
-                `else
-                .RESET(RESET),
-                `endif
                 .clk(clk),
                 .resetn(resetn)
         );
@@ -367,15 +350,16 @@ module SOC(
 
 			always@(posedge clk) begin
                                 if(a_uart_valid & b_uart_valid) begin
-					$display("PUTA PROBLEMa");
+					//$display("PUTA PROBLEMa");
                                         //$write("%c%c", a_IO_mem_wdata[7:0], b_IO_mem_wdata[7:0]);
                                         //$fflush(32'h8000_0001);
                                 end else if(a_uart_valid) begin
-                                        $write("%c", a_IO_mem_wdata[7:0]);
+                                        $write("%c", IO_mem_wdata[7:0]);
                                         $fflush(32'h8000_0001);
                                 end else if(b_uart_valid) begin
-                                        $write("%c", b_IO_mem_wdata[7:0]);
-                                        $fflush(32'h8000_0001);
+					//$display("PUTA PROBLEMa");
+                                        //$write("%c", b_IO_mem_wdata[7:0]);
+                                        //$fflush(32'h8000_0001);
 				end
 
 
