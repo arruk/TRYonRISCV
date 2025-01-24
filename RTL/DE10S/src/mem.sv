@@ -1,7 +1,7 @@
 `define TORVS
 //`define GOWIN
 //`define DUALMEM
-//`define DE10S
+`define DE10S
 
 `ifndef BENCH
 	`define SYN
@@ -156,7 +156,7 @@ module mem(
                 .q_a      (a_mem_data),
                 .q_b      (b_mem_data)
         );
-
+	
 	`else
 
 	data_mem #(

@@ -102,7 +102,13 @@ ifeq ($(shell uname -m),x86_64)
 	QUARTUS_ARGS = --64bit
 endif
 
-MAP_ARGS = $(QUARTUS_ARGS) --read_settings_files=on $(addprefix --source=,$(SRCS))
+ifeq ($(shell cat ../core.txt | cut -c1-5),torvs)
+	CORE = TORVS
+else
+	CORE = TORV
+endif
+
+MAP_ARGS = $(QUARTUS_ARGS) --read_settings_files=on $(addprefix --source=,$(SRCS)) #--verilog_macro="DE10S" --verilog_macro="$(CORE)"
 FIT_ARGS = $(QUARTUS_ARGS) --part=$(PART) --read_settings_files=on
 ASM_ARGS = $(QUARTUS_ARGS)
 STA_ARGS = $(QUARTUS_ARGS)
