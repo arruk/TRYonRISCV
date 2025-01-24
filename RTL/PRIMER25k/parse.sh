@@ -31,13 +31,13 @@ main () {
 	fi
 
 	make program
-	cp impl/pnr/PRIMER25k.fs ../DONE/primer25k/"$CPU$BENCH".fs
+	#cp impl/pnr/PRIMER25k.fs ../DONE/primer25k/"$CPU$BENCH".fs
 
 }
 
 echo "STARTING SCRIPT"
 
-for i in {1..5}
+for i in {1..1}
 do
         rm -rf src/core.sv
 	#ln -P ../../SIM/TORVS/torvs8p$i.sv src/core.sv

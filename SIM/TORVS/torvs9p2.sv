@@ -69,7 +69,7 @@ module torv32(
 
 	wire control_HAZ = !b_ins_ALL | b_LBC_HAZ | fd_data_HAZ;
 	
-	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR) | isAUIPC(b_fd_IR) | isLUI(b_fd_IR) | isStype(b_fd_IR);
+	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR) | isAUIPC(b_fd_IR) | isLUI(b_fd_IR);
 	wire b_LBC_HAZ = isBtype(a_fd_IR) | isJAL(a_fd_IR) | isJALR(a_fd_IR);
 	wire ba_fd_rs1_HAZ = !b_fd_NOP & reads_rs1(b_fd_IR) & rs1ID(b_fd_IR)!=0 & (
 			   (writes_rd(a_fd_IR) & (rs1ID(b_fd_IR) == rdID(a_fd_IR))));
@@ -111,6 +111,13 @@ module torv32(
         localparam BHT_SIZE=1<<BHT_ADDR_BITS;
         reg [1:0] BHT [BHT_SIZE-1:0];
 	reg [BP_HIST_BITS-1:0] BH;
+
+        reg [1:0] BHT_data;
+        reg [BHT_ADDR_BITS-1:0] a_BHT_index;
+        always@(posedge clk)begin
+                BHT_data    <= BHT[BHT_index(a_imem_addr)];
+                a_BHT_index <= BHT_index(a_imem_addr);
+        end
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -160,7 +167,8 @@ module torv32(
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        wire a_d_predict = BHT[BHT_index(a_fd_PC)][1]; //a_fd_IR[31];
+        //wire a_d_predict = BHT[BHT_index(a_fd_PC)][1]; //a_fd_IR[31];
+        wire a_d_predict = BHT_data[1];
 	
         wire a_d_JoB_now = !a_fd_NOP & (isJAL(a_fd_IR) | (isBtype(a_fd_IR) & a_d_predict));
 
@@ -192,7 +200,8 @@ module torv32(
 			a_de_IR       <= (a_e_flush | a_fd_NOP) ? NOP : a_fd_IR;
 			a_de_PC       <= a_fd_PC;
 			a_de_predict  <= a_d_predict;
-			a_de_BHTindex <= BHT_index(a_fd_PC);
+			//a_de_BHTindex <= BHT_index(a_fd_PC);
+                        a_de_BHTindex <= a_BHT_index;
 		end
 		
 		if(a_e_flush) begin
@@ -371,24 +380,51 @@ module torv32(
         );
         wire [31:0] b_e_RES = isLUI(b_de_IR) ? b_e_IMM : b_e_ALUout;
 
-	wire [31:0] b_e_ADDin1 = (isJAL(b_de_IR) | isBtype(b_de_IR)) ? b_de_PC : b_e_rs1;
-        wire [31:0] b_e_ADDR_RES = b_e_ADDin1 + b_e_IMM;
-        wire [31:0] b_e_ADDR = {b_e_ADDR_RES[31:1], b_e_ADDR_RES[0] & (~isJALR(b_de_IR))};
-
         always@(posedge clk) begin
                 b_em_IR   <= b_de_IR;
                 b_em_PC   <= b_de_PC;
-		b_em_rs2  <= b_e_rs2;
                 b_em_RES  <= b_e_RES;
-                b_em_ADDR <= b_e_ADDR;		
         end
+
+	/*
+	wire [31:0] b_e_IMM;
+
+	imm_mux m1(
+		.instr(b_de_IR),
+		.imm(b_e_IMM)
+	);
+
+	//wire [31:0] b_e_ALUin1 = (isJAL(b_de_IR) | isJALR(b_de_IR) | isAUIPC(b_de_IR)) ? b_de_PC : b_e_rs1;
+	//wire [31:0] b_e_ALUin2 = (isRtype(b_de_IR) | isBtype(b_de_IR))? b_e_rs2 :
+	//       		         (isRimm(b_de_IR)  | isAUIPC(b_de_IR))? b_e_IMM  :
+	//		       		   			         32'd4  ;	
+	wire [31:0] b_e_ALUin1 = b_e_rs1;
+	wire [31:0] b_e_ALUin2 = isRtype(b_de_IR)? b_e_rs2 :
+	       		         		   b_e_IMM ;
+	wire [31:0] b_e_ALUout;
+	wire b_e_takeB;
+
+	alu u1(
+		.in_a(b_e_ALUin1),
+	        .in_b(b_e_ALUin2),
+	        .inst(b_de_IR),
+	        .result(b_e_ALUout),
+	        .take_b(b_e_takeB)
+	);
+	wire [31:0] b_e_RES = b_e_ALUout;
+
+	always@(posedge clk) begin
+		b_em_IR   <= b_de_IR;
+		b_em_PC   <= b_de_PC;
+		b_em_RES  <= b_e_RES;
+	end
+	*/
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	reg[31:0] a_em_IR, a_em_PC, a_em_rs2, a_em_RES, a_em_ADDR, a_em_JoB_ADDR;
 	reg       a_em_JoB_now;
-	reg[31:0] b_em_IR, b_em_PC, b_em_rs2, b_em_RES, b_em_ADDR;
-	//reg[31:0] b_em_IR, b_em_PC, b_em_RES;
+	reg[31:0] b_em_IR, b_em_PC, b_em_RES;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -422,8 +458,8 @@ module torv32(
         assign a_mem_addr = {9'b0,a_em_ADDR[22:0]};
         //assign mem_addr = {11'b0,m_word_ADDR};
         assign a_mem_wdata = a_m_store_DATA;
-	assign a_mem_cen = isLoad(a_em_IR) | isStype(a_em_IR);
-	
+        assign a_mem_cen = isLoad(a_em_IR) | isStype(a_em_IR);
+
 	wire [31:0] a_mw_Mdata = a_mem_data;
 
 	always@(posedge clk) begin
@@ -456,52 +492,7 @@ module torv32(
 	reg [63:0] instret;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-       
-	wire [2:0] b_m_funct3 = funct3(b_em_IR);
-        wire b_m_isB = (b_m_funct3[1:0] == 2'b00);
-        wire b_m_isH = (b_m_funct3[1:0] == 2'b01);
 
-
-        wire [31:0] b_m_store_DATA;
-        assign b_m_store_DATA[ 7:0 ] = b_em_rs2[7:0];
-        assign b_m_store_DATA[15:8 ] = b_em_ADDR[0] ? b_em_rs2[7:0]  : b_em_rs2[15:8 ] ;
-        assign b_m_store_DATA[23:16] = b_em_ADDR[1] ? b_em_rs2[7:0]  : b_em_rs2[23:16] ;
-        assign b_m_store_DATA[31:24] = b_em_ADDR[0] ? b_em_rs2[7:0]  :
-                                       b_em_ADDR[1] ? b_em_rs2[15:8] : b_em_rs2[31:24] ;
-
-        wire [3:0] b_m_store_WMASK = b_m_isB ? (b_em_ADDR[1] ? (b_em_ADDR[0] ? 4'b1000 : 4'b0100)  :
-                                                               (b_em_ADDR[0] ? 4'b0010 : 4'b0001)) :
-                                     b_m_isH ? (b_em_ADDR[1] ?                 4'b1100 : 4'b0011)  :
-                                                                                         4'b1111   ;
-
-        wire [3:0] b_m_WMASK = {4{isStype(b_em_IR) & b_M_isRAM}} & b_m_store_WMASK;
-        wire [20:0] b_m_word_ADDR = b_em_ADDR[22:2];
-        wire b_M_isIO  = b_em_ADDR[22];
-        wire b_M_isRAM = !b_M_isIO;
-
-
-        assign b_IO_mem_addr  = b_em_ADDR;
-        assign b_IO_mem_wr    = isStype(b_em_IR) & b_M_isIO;
-        assign b_IO_mem_wdata = b_em_rs2;
-
-        assign b_mem_wmask = b_m_WMASK & {4{!addr_HAZ}};
-        assign b_mem_addr =  {9'b0,b_em_ADDR[22:0]};
-        assign b_mem_wdata = b_m_store_DATA;
-	assign b_mem_cen = isLoad(b_em_IR) | isStype(b_em_IR);
-
-        wire [31:0] b_mw_Mdata = b_mem_data;
-
-        wire addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);
-
-        always@(posedge clk) begin
-                b_mw_IR     <= b_em_IR;
-                b_mw_PC     <= b_em_PC;
-                b_mw_RES    <= b_em_RES;
-                //b_mw_IO_RES <= b_IO_mem_rdata;
-                //b_mw_ADDR   <= b_em_ADDR;
-        end
-	
-	/*
 	assign b_IO_mem_addr  = 0;
 	assign b_IO_mem_wr    = 0;
 	assign b_IO_mem_wdata = 0;
@@ -509,13 +500,13 @@ module torv32(
 	assign b_mem_wmask = 0;
         assign b_mem_addr  = 0;
         assign b_mem_wdata = 0;
+        assign b_mem_cen   = 0;//isLoad(a_em_IR) | isStype(a_em_IR);
 
         always@(posedge clk) begin
                 b_mw_IR     <= b_em_IR;
                 b_mw_PC     <= b_em_PC;
                 b_mw_RES    <= b_em_RES;
-	end*/
-
+	end
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	reg [31:0] a_mw_IR, a_mw_PC, a_mw_RES, a_mw_IO_RES, a_mw_ADDR, a_mw_CSR_RES;
@@ -591,38 +582,73 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*	`ifdef BENCH
-	   always @(posedge clk) begin
-		   if(halt) $finish(); 
-	   end
-	`endif*/
         `ifdef BENCH
+                integer a_nbBranch = 0;
+                integer a_nbPredictHit = 0;
+                integer b_nbBranch = 0;
+                integer b_nbPredictHit = 0;
+                integer nbJAL  = 0;
+                integer nbJALR = 0;
 
-		/*
-		integer n_fstall =0;
-
-		always@(posedge clk) begin
-			if(f_stall) begin
-				n_fstall <= n_fstall + 1; 
-			end
-		end		
-		*/
-
-                /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
-			//if(resetn)
-			//	$display("%x", a_mw_IR);
-			//if(b_wb_enable & a_wb_enable & (b_wb_rdID == a_wb_rdID))
-			//	$display("ERRO! %d, %d, %x(pc %x), %x(pc %x)", a_wb_rdID, b_wb_rdID, a_mw_IR, a_mw_PC, b_mw_IR, b_mw_PC);
-			//if(a_fd_IR == 32'h00f585b3 || b_fd_IR == 32'h00f585b3) begin
-			//	$display("FD_HAZ: a=%x | b=%x | haz?%d",a_fd_IR, b_fd_IR, fd_data_HAZ );
-			//end
+                        if(resetn) begin
+                                if(isBtype(a_de_IR)) begin
+                                        a_nbBranch <= a_nbBranch + 1;
+                                        if(a_e_takeB == a_de_predict) begin
+                                                a_nbPredictHit <= a_nbPredictHit + 1;
+                                        end
+                                end
+                                if(isJAL(a_de_IR)) begin
+                                        nbJAL <= nbJAL + 1;
+                                end
+                                if(isJALR(b_de_IR)) begin
+                                        nbJALR <= nbJALR + 1;
+                                end
+                        end
+                end
+
+                integer n_chaz_INS =0;
+                integer n_chaz_FD =0;
+                integer n_datahaz =0;
+                integer n_a_dh =0;
+                integer n_b_dh =0;
+                integer n_ba_dh =0;
+                integer n_ab_dh =0;
+
+                always@(posedge clk) begin
+
+                        if(!b_ins_ALL) begin
+                                n_chaz_INS <= n_chaz_INS + 1;
+                        end
+
+                        if(fd_data_HAZ) begin
+                                n_chaz_FD <= n_chaz_FD + 1;
+                        end
+
+                        if(a_data_HAZ) begin
+                                n_a_dh <= n_a_dh + 1;
+                        end
+                        if(ba_data_HAZ) begin
+                                n_ba_dh <= n_ba_dh + 1;
+                        end
+                end
+
+		always @(posedge clk) begin
                         if(halt) begin
-                                /*$display("Simulated processor's report");
                                 $display("----------------------------");
-				//$display("Numbers of stalls in F stage: %d", n_fstall);
+                                $display("A Branch hits= %3.3f\%%", a_nbPredictHit*100.0/a_nbBranch);
+                                //$display("Instr. mix = (Branch:%3.3f\%% JAL:%3.3f\%% JALR:%3.3f\%%)",
+                                //         nbBranch*100.0/instret,
+                                //             nbJAL*100.0/instret,
+                                //            nbJALR*100.0/instret);                            
+                                //$display("Numbers of stalls in F stage: %d", n_fstall);
+                                $display("Numbers of control HAZs ins: %d", n_chaz_INS);
+                                $display("Numbers of control HAZs fd: %d", n_chaz_FD);
+                                $display("Numbers of a data HAZs: %d", n_a_dh);
+                                $display("Numbers of b data HAZs: %d", n_b_dh);
+                                $display("Numbers of ba data HAZs: %d", n_ba_dh);
+                                $display("Numbers of ab data HAZs: %d", n_ab_dh);
                                 $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
-                                $display("CPI = %3.3f" , cycle/instret);*/
 				$finish();
                         end
                 end

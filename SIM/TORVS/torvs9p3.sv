@@ -107,12 +107,18 @@ module torv32(
         endfunction
 	*/
 
-	localparam BP_HIST_BITS = 4;
-        parameter BHT_ADDR_BITS = 8;
+	localparam BP_HIST_BITS = 12;
+        parameter BHT_ADDR_BITS = 15;
         localparam BHT_SIZE=1<<BHT_ADDR_BITS;
         reg [1:0] BHT [BHT_SIZE-1:0];
 	reg [BP_HIST_BITS-1:0] BH;
 
+        reg [1:0] BHT_data;
+        reg [BHT_ADDR_BITS-1:0] a_BHT_index;
+        always@(posedge clk)begin
+                BHT_data    <= BHT[BHT_index(a_imem_addr)];
+                a_BHT_index <= BHT_index(a_imem_addr);
+        end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -161,7 +167,8 @@ module torv32(
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        wire a_d_predict = BHT[BHT_index(a_fd_PC)][1]; //a_fd_IR[31];
+        //wire a_d_predict = BHT[BHT_index(a_fd_PC)][1]; //a_fd_IR[31];
+        wire a_d_predict = BHT_data[1];
 	
         wire a_d_JoB_now = !a_fd_NOP & (isJAL(a_fd_IR) | (isBtype(a_fd_IR) & a_d_predict));
 
@@ -185,7 +192,8 @@ module torv32(
 			a_de_IR       <= (a_e_flush | a_fd_NOP) ? NOP : a_fd_IR;
 			a_de_PC       <= a_fd_PC;
 			a_de_predict  <= a_d_predict;
-			a_de_BHTindex <= BHT_index(a_fd_PC);
+                        //a_de_BHTindex <= BHT_index(a_fd_PC);
+                        a_de_BHTindex <= a_BHT_index;
 		end
 		
 		if(a_e_flush) begin
@@ -295,6 +303,9 @@ module torv32(
 		if(isBtype(a_de_IR)) begin
 			BH <= {a_e_takeB, BH[BP_HIST_BITS-1:1]};
                         BHT[a_de_BHTindex] <= incdec_sat(BHT[a_de_BHTindex], a_e_takeB);
+			if(a_de_BHTindex == a_fd_PC[14:0]) begin
+				//$display("ERRO!!!!!!");
+			end
 		end
 		
 	end
@@ -612,8 +623,33 @@ module torv32(
 			if(data_HAZ) begin
 				n_datahaz <= n_datahaz + 1; 
 			end
-		end		
-		
+		end
+
+                integer n_fstalls = 0;
+                integer nbBranch = 0;
+                integer nbPredictHit = 0;
+                integer nbJAL  = 0;
+                integer nbJALR = 0;
+
+                always @(posedge clk) begin
+                        if(resetn) begin
+                                if(a_f_stall) begin
+                                        n_fstalls <= n_fstalls + 1;
+                                end
+                                if(isBtype(a_de_IR)) begin
+                                        nbBranch <= nbBranch + 1;
+                                        if(a_e_takeB == a_de_predict) begin
+                                                nbPredictHit <= nbPredictHit + 1;
+                                        end
+                                end
+                                if(isJAL(a_de_IR)) begin
+                                        nbJAL <= nbJAL + 1;
+                                end
+                                if(isJALR(a_de_IR)) begin
+                                        nbJALR <= nbJALR + 1;
+                                end
+                        end
+                end		
 
                 /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
@@ -625,6 +661,16 @@ module torv32(
 				$display("Numbers of control HAZs fd: %d", n_chaz_FD);
 				$display("Numbers of data HAZs: %d", n_datahaz);
                                 $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
+                                $display("Branch hits= %3.3f\%%", nbPredictHit*100.0/nbBranch);
+                                $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
+                                $display("Instr. mix = (Branch:%3.3f\%% JAL:%3.3f\%% JALR:%3.3f\%%)",
+                                          nbBranch*100.0/instret,
+                                             nbJAL*100.0/instret,
+                                            nbJALR*100.0/instret);
+                                $display("Numbers of = (Branch: %d, JAL: %d, JALR: %d)", nbBranch, nbJAL, nbJALR);
+                                $display("Numbers of stalls in F stage = %d", n_fstalls);
+                                $display("Size of BHT = %d", BHT_ADDR_BITS);
+                                $display("Size of BPH = %d" , BP_HIST_BITS);				
                                 //$display("CPI = %3.3f" , cycle/instret);
 				$finish();
                         end

@@ -116,12 +116,18 @@ module torv32(
         endfunction
 	*/
 
-	localparam BP_HIST_BITS = 4;
-        parameter BHT_ADDR_BITS = 8;
+	localparam BP_HIST_BITS = 12;
+        parameter BHT_ADDR_BITS = 15;
         localparam BHT_SIZE=1<<BHT_ADDR_BITS;
         reg [1:0] BHT [BHT_SIZE-1:0];
 	reg [BP_HIST_BITS-1:0] BH;
 
+        reg [1:0] BHT_data;
+        reg [BHT_ADDR_BITS-1:0] a_BHT_index;	
+        always@(posedge clk)begin
+                BHT_data    <= BHT[BHT_index(a_imem_addr)];
+	        a_BHT_index <= BHT_index(a_imem_addr);		
+        end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -181,8 +187,10 @@ module torv32(
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        wire a_d_predict = BHT[BHT_index(a_fd_PC)][1]; //a_fd_IR[31];
-        wire a_d_JoB_now = !a_fd_NOP & (isJAL(a_fd_IR) | (isBtype(a_fd_IR) & a_d_predict));
+        //wire a_d_predict = BHT[BHT_index(a_fd_PC)][1]; //a_fd_IR[31];
+        wire a_d_predict = BHT_data[1];
+
+	wire a_d_JoB_now = !a_fd_NOP & (isJAL(a_fd_IR) | (isBtype(a_fd_IR) & a_d_predict));
         wire [31:0] a_d_JoB_ADDR = a_fd_PC + (isJAL(a_fd_IR) ? Jimm(a_fd_IR) : Bimm(a_fd_IR));
 
 	wire b_d_predict = BHT[BHT_index(b_fd_PC)][1]; //a_fd_IR[31];
@@ -207,7 +215,8 @@ module torv32(
 			a_de_IR       <= (a_e_flush | a_fd_NOP) ? NOP : a_fd_IR;
 			a_de_PC       <= a_fd_PC;
 			a_de_predict  <= a_d_predict;
-			a_de_BHTindex <= BHT_index(a_fd_PC);
+			//a_de_BHTindex <= BHT_index(a_fd_PC);
+			a_de_BHTindex <= a_BHT_index;
 		end
 		
 		if(a_e_flush) begin

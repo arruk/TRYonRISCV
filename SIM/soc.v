@@ -458,6 +458,10 @@ endmodule
 		`include "torvs9p5.sv"
 	`elsif TORVS9P1
 		`include "torvs9p1.sv"
+	`elsif TORVS9P2
+		`include "torvs9p2.sv"
+	`elsif TORVS9P3
+		`include "torvs9p3.sv"
 	`elsif TORVS8P1
 		`include "torvs8p1.sv"
 	`elsif TORVS8P2

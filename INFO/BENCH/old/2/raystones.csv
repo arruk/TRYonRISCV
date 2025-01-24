@@ -1,7 +1,0 @@
-MODELO,CPI,RAYS,HITS
-taken,1.422,5.666,31.507
-BTFNT,1.214,6.635,63.952
-bimodal/1bit,1.160,6.948,74.630
-bimodal/2bits,1.147,7.024,77.048
-gselect,1.123,7.176,81.798
-gshare,1.103,7.304,85.621

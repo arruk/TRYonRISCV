@@ -14,10 +14,7 @@ M=0
 main() {
 
 	(cd obj_dir; rm -f *.cpp *.o *.a VSOC)
-	#verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -Gsz=$SZ -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
-	#	  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c $1
-	
-	#(cd obj_dir; make -f VSOC.mk)
+
 	if [ "$2" = "v" ]
 	then
 		echo $BENCH
@@ -32,72 +29,38 @@ main() {
 	elif [ "$2" = "a" ]
 	then	
 		
-		#verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -D$CORE -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
-		#	  -GBHT=$SZ --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c soc.v
-
 		verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -D$CORE -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
 			  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c soc.v
 		
 		(cd obj_dir; make -f VSOC.mk)
 		
-		cp ${PREC}/RAYSTONES/RAM.hex ./ #&& cp ${PREC}/RAYSTONES/PROGROM.hex ./ && rm -f RAM.hex && cat PROGROM.hex DATARAM.hex > RAM.hex
-		cp ${PREC}/RAYSTONES/DATARAM.hex ./HEX/ && cp ${PREC}/RAYSTONES/PROGROM.hex ./HEX/
+		cp ${PREC}/RAYSTONES/DATARAM.hex HEX/ && cp ${PREC}/RAYSTONES/PROGROM.hex HEX/
 		echo "raystones.pipeline.hex" > firmware.txt
 		BENCH=$(cut -d. -f 1 firmware.txt)
 		echo $BENCH
-		obj_dir/VSOC
-		#obj_dir/VSOC > ${INFO_DIR}/temp
+		obj_dir/VSOC > ${INFO_DIR}/temp
+		rayst_parse	
 
-		#branch_info
-		#rayst_parse	
-
-		#cp ${PREC}/DHRYSTONES/RAM.hex ./ #&& cp ${PREC}/DHRYSTONES/PROGROM.hex ./ && rm -f RAM.hex && cat PROGROM.hex DATARAM.hex > RAM.hex
-		cp ${PREC}/DHRYSTONES/DATARAM.hex ./HEX/ && cp ${PREC}/DHRYSTONES/PROGROM.hex ./HEX/
+		cp ${PREC}/DHRYSTONES/DATARAM.hex HEX/ && cp ${PREC}/DHRYSTONES/PROGROM.hex HEX/
 		echo "dhrystones.pipeline.hex" > firmware.txt
 		BENCH=$(cut -d. -f 1 firmware.txt)
 		echo $BENCH
-		obj_dir/VSOC
-		#obj_dir/VSOC > ${INFO_DIR}/temp
+		obj_dir/VSOC > ${INFO_DIR}/temp
+		dhry_parse
 
-		#branch_info
-		#dhry_parse
-
-		#cp ${PREC}/COREMARK/RAM.hex ./ #&& cp ${PREC}/COREMARK/PROGROM.hex ./ && rm -f RAM.hex && cat PROGROM.hex DATARAM.hex > RAM.hex
-		cp ${PREC}/COREMARK/DATARAM.hex ./HEX/ && cp ${PREC}/COREMARK/PROGROM.hex ./HEX/
+		cp ${PREC}/COREMARK/DATARAM.hex HEX/ && cp ${PREC}/COREMARK/PROGROM.hex HEX/
 		echo "coremark.pipeline.hex" > firmware.txt
 		BENCH=$(cut -d. -f 1 firmware.txt)
 		echo $BENCH
-		obj_dir/VSOC
-		#obj_dir/VSOC > ${INFO_DIR}/temp
-
-		#branch_info
-		#cmark_parse
+		obj_dir/VSOC > ${INFO_DIR}/temp
+		cmark_parse
 
 	else
-		# DIRECIONA A SAIDA PARA UM ARQUIVO TEMPORARIO
-		obj_dir/VSOC > ${INFO_DIR}/temp
 
-		branch_info
-		echo $BIN
+		echo "WRONG ARGUMENTS"
 
-		# SELECAO DE QUAL BENCHMARK ESTA SENDO SIMULADO
-		# A PARTIR DA IMPLEMENTACAO 5 EH NECESSARIO NAO SO DIFERENCIAR PELO NUMERO DA IMPLEMENTACAO, MAS COMO ELA ESTA CONFIGURADA (BIN)
-		if [ "$BENCH" = "dhrystones" ]
-		then
-			dhry_parse
-		elif [ "$BENCH" = "raystones" ]
-		then
-			rayst_parse
-		elif [ "$BENCH" = "coremark" ]
-		then
-			cmark_parse
-		else
-			obj_dir/VSOC
-		fi
 	fi
 }
-
-
 
 branch_info(){
         # ARMAZENA EM BIN(BRANCH INFORMATION) OS VALORES DO TAMANHO DA BRANCH HISTORY TABLE E DO VETOR DO BRANCH HISTORY
@@ -116,37 +79,36 @@ branch_info(){
 }
 
 rayst_parse(){
-	if [ $NO -gt 2 ]
-	then
-		cat ${INFO_DIR}/temp | grep -e CPI -e RAYSTONES -e Branch -e JAL -e JALR -e BHT -e BPH -e Cycles -e Instret \
-				     | grep -Eo [0-9]+[.]?[0-9]* | sed '1,2d' | sed '1i\'$IMPL'' | paste -sd, >> ${INFO_DIR}/"$IMPL"/raystones.csv
-		IMPL_T=$BIN
-	fi
+	#if [ $NO -gt 2 ]
+	#then
+	#	cat ${INFO_DIR}/temp | grep -e CPI -e RAYSTONES -e Branch -e JAL -e JALR -e BHT -e BPH -e Cycles -e Instret \
+	#			     | grep -Eo [0-9]+[.]?[0-9]* | sed '1,2d' | sed '1i\'$IMPL'' | paste -sd, >> ${INFO_DIR}/"$IMPL"/raystones.csv
+	#	IMPL_T=$BIN
+	#fi
 	cat ${INFO_DIR}/temp | grep -e CPI -e RAYSTONES | grep -Eo [0-9]+[.]?[0-9]* \
 			     | sed '1,2d' | sed '1i\'$IMPL_T'' | paste -sd, >> ${INFO_DIR}/raystones.csv
 	IMPL_T=$IMPL
 }
 
 dhry_parse(){
-	if [ $NO -gt 2 ]
-	then
-		cat ${INFO_DIR}/temp | grep -e CPI -e MIPS -e cycles -e instret -e Branch -e JAL -e JALR -e BHT -e BPH \
-				     | grep -E -o [0-9]+[.]?[0-9]*  | sed '1,2d' | sed '1i\'$IMPL'' | paste -sd, >> ${INFO_DIR}/"$IMPL"/dhrystones.csv
-		IMPL_T=$BIN
-
-	fi
+	#if [ $NO -gt 2 ]
+	#then
+	#	cat ${INFO_DIR}/temp | grep -e CPI -e MIPS -e cycles -e instret -e Branch -e JAL -e JALR -e BHT -e BPH \
+	#			     | grep -E -o [0-9]+[.]?[0-9]*  | sed '1,2d' | sed '1i\'$IMPL'' | paste -sd, >> ${INFO_DIR}/"$IMPL"/dhrystones.csv
+	#	IMPL_T=$BIN
+	#fi
 	cat ${INFO_DIR}/temp | grep -e CPI -e MIPS -e cycles -e instret | grep -Eo [0-9]+[.]?[0-9]* \
 			     | sed '1,2d' | sed '1i\'$IMPL_T'' | paste -sd, >> ${INFO_DIR}/dhrystones.csv
 	IMPL_T=$IMPL
 }
 
 cmark_parse(){
-	if [ $NO -gt 2 ]
-	then
-		cat ${INFO_DIR}/temp | grep -e CPI -e Coremark/MHz -e Branch -e JAL -e JALR -e BHT -e BPH -e Cycles -e Instret \
-				     | grep -Eo [0-9]+[.]?[0-9]* | sed '2d' | sed '1i\'$IMPL'' | paste -sd, >> ${INFO_DIR}/"$IMPL"/coremark.csv
-		IMPL_T=$BIN
-	fi
+	#if [ $NO -gt 2 ]
+	#then
+	#	cat ${INFO_DIR}/temp | grep -e CPI -e Coremark/MHz -e Branch -e JAL -e JALR -e BHT -e BPH -e Cycles -e Instret \
+	#			     | grep -Eo [0-9]+[.]?[0-9]* | sed '2d' | sed '1i\'$IMPL'' | paste -sd, >> ${INFO_DIR}/"$IMPL"/coremark.csv
+	#	IMPL_T=$BIN
+	#fi
 	cat ${INFO_DIR}/temp | grep -e CPI -e Coremark/MHz | grep -Eo [0-9]+[.]?[0-9]* \
 			     | sed '2d' | sed '1i\'$IMPL_T'' | paste -sd, >> ${INFO_DIR}/coremark.csv
 	IMPL_T=$IMPL	
@@ -157,13 +119,10 @@ then
 	for i in {5..16}
 	do
 		SZ=$i
-		#N=$i
 		main "$@"
 		echo "FINISHED WITH $SZ bits\n"
 	done
 else
-	SZ=5
-	ADJ=6
 	main "$@"
 fi
 

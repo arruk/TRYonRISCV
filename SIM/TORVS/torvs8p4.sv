@@ -100,6 +100,12 @@ module torv32(
         localparam BHT_SIZE=1<<BHT_ADDR_BITS;
         reg [1:0] BHT [BHT_SIZE-1:0];
 
+        reg [1:0] BHT_data;
+        reg [BHT_ADDR_BITS-1:0] a_BHT_index;
+        always@(posedge clk)begin
+                BHT_data    <= BHT[BHT_index(a_imem_addr)];
+                a_BHT_index <= BHT_index(a_imem_addr);
+        end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -148,7 +154,8 @@ module torv32(
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        wire a_d_predict = BHT[BHT_index(a_fd_PC)][1]; //a_fd_IR[31];
+        //wire a_d_predict = BHT[BHT_index(a_fd_PC)][1]; //a_fd_IR[31];
+        wire a_d_predict = BHT_data[1]; //a_fd_IR[31];
 	
         wire a_d_JoB_now = !a_fd_NOP & (isJAL(a_fd_IR) | (isBtype(a_fd_IR) & a_d_predict));
 
@@ -173,6 +180,8 @@ module torv32(
 			a_de_PC       <= a_fd_PC;
 			a_de_predict  <= a_d_predict;
 			a_de_BHTindex <= BHT_index(a_fd_PC);
+                        //a_de_BHTindex <= BHT_index(a_fd_PC);
+                        a_de_BHTindex <= a_BHT_index;
 		end
 		
 		if(a_e_flush) begin

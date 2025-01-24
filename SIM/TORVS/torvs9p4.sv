@@ -108,20 +108,18 @@ module torv32(
 	/* verilator lint_on WIDTH */      
 	endfunction
 
-
-	/*
-        function [BHT_ADDR_BITS-1:0] BHT_index;
-                input [31:0] PC;
-                BHT_index = PC[BHT_ADDR_BITS+1:2];
-        endfunction
-	*/
-
-	localparam BP_HIST_BITS = 4;
-        parameter BHT_ADDR_BITS = 8;
+	localparam BP_HIST_BITS = 12;
+        parameter BHT_ADDR_BITS = 15;
         localparam BHT_SIZE=1<<BHT_ADDR_BITS;
         reg [1:0] BHT [BHT_SIZE-1:0];
 	reg [BP_HIST_BITS-1:0] BH;
 
+        reg [1:0] BHT_data;
+        reg [BHT_ADDR_BITS-1:0] a_BHT_index;
+        always@(posedge clk)begin
+                BHT_data    <= BHT[BHT_index(a_imem_addr)];
+                a_BHT_index <= BHT_index(a_imem_addr);
+        end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -171,6 +169,7 @@ module torv32(
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         wire a_d_predict = BHT[BHT_index(a_fd_PC)][1]; //a_fd_IR[31];
+        //wire a_d_predict = BHT_data[1];
 	
         wire a_d_JoB_now = !a_fd_NOP & (isJAL(a_fd_IR) | (isBtype(a_fd_IR) & a_d_predict));
 
@@ -194,7 +193,8 @@ module torv32(
 			a_de_IR       <= (a_e_flush | a_fd_NOP) ? NOP : a_fd_IR;
 			a_de_PC       <= a_fd_PC;
 			a_de_predict  <= a_d_predict;
-			a_de_BHTindex <= BHT_index(a_fd_PC);
+                        a_de_BHTindex <= BHT_index(a_fd_PC);
+                        //a_de_BHTindex <= a_BHT_index;
 		end
 		
 		if(a_e_flush) begin
@@ -603,43 +603,92 @@ module torv32(
 	   end
 	`endif*/
         `ifdef BENCH
-        	//wire control_HAZ = !b_ins_ALL | fd_data_HAZ;
+                //wire control_HAZ = !b_ins_ALL | fd_data_HAZ;
 
-		
-		integer n_chaz_INS =0;
-		integer n_chaz_FD =0;
-		integer n_datahaz =0;
+                integer a_nbBranch = 0;
+                integer a_nbPredictHit = 0;
+                integer b_nbBranch = 0;
+                integer b_nbPredictHit = 0;
+                integer nbJAL  = 0;
+                integer nbJALR = 0;
 
-		always@(posedge clk) begin
-			if(a_store_b_load_HAZ)
-				$display("HAZ a_mem_wmask %4b", a_mem_wmask);
+                always @(posedge clk) begin
+                        if(resetn) begin
+                                if(isBtype(a_de_IR)) begin
+                                        a_nbBranch <= a_nbBranch + 1;
+                                        if(a_e_takeB == a_de_predict) begin
+                                                a_nbPredictHit <= a_nbPredictHit + 1;
+                                        end
+                                end
 
-			if(!b_ins_ALL) begin
-				n_chaz_INS <= n_chaz_INS + 1; 
-			end
+                                if(isJAL(a_de_IR)) begin
+                                        nbJAL <= nbJAL + 1;
+                                end
+                                if(isJALR(b_de_IR)) begin
+                                        nbJALR <= nbJALR + 1;
+                                end
+                        end
+                end
+                // wire data_HAZ = a_data_HAZ | ba_data_HAZ | b_data_HAZ | ab_data_HAZ;
 
-			if(fd_data_HAZ) begin
-				n_chaz_FD <= n_chaz_FD + 1; 
-			end
-			
-			if(data_HAZ) begin
-				n_datahaz <= n_datahaz + 1; 
-			end
-		end		
-		
+                integer n_chaz_INS =0;
+                integer n_chaz_FD =0;
+                integer n_datahaz =0;
+                integer n_a_dh =0;
+                integer n_b_dh =0;
+                integer n_ba_dh =0;
+                integer n_ab_dh =0;
+
+                always@(posedge clk) begin
+                        if(a_store_b_load_HAZ)
+                                $display("HAZ a_mem_wmask %4b", a_mem_wmask);
+
+                        if(!b_ins_ALL) begin
+                                n_chaz_INS <= n_chaz_INS + 1;
+                        end
+
+                        if(fd_data_HAZ) begin
+                                n_chaz_FD <= n_chaz_FD + 1;
+                        end
+
+                        if(a_data_HAZ) begin
+                                n_a_dh <= n_a_dh + 1;
+                        end
+                        if(b_data_HAZ) begin
+                                n_b_dh <= n_b_dh + 1;
+                        end
+                        if(ba_data_HAZ) begin
+                                n_ba_dh <= n_ba_dh + 1;
+                        end
+                        if(ab_data_HAZ) begin
+                                n_ab_dh <= n_ab_dh + 1;
+                        end
+                end
+
 
                 /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
-
+                        if(isBtype(a_de_IR) & isBtype(b_de_IR)) begin
+                                //$display("aconteceu");
+                        end
                         if(halt) begin
                                 $display("----------------------------");
-				//$display("Numbers of stalls in F stage: %d", n_fstall);
-				$display("Numbers of control HAZs ins: %d", n_chaz_INS);
-				$display("Numbers of control HAZs fd: %d", n_chaz_FD);
-				$display("Numbers of data HAZs: %d", n_datahaz);
+                                $display("A Branch hits= %3.3f\%%", a_nbPredictHit*100.0/a_nbBranch);
+                                $display("B Branch hits= %3.3f\%%", b_nbPredictHit*100.0/b_nbBranch);
+                                //$display("Instr. mix = (Branch:%3.3f\%% JAL:%3.3f\%% JALR:%3.3f\%%)",
+                                //         nbBranch*100.0/instret,
+                                //             nbJAL*100.0/instret,
+                                //            nbJALR*100.0/instret);                            
+                                //$display("Numbers of stalls in F stage: %d", n_fstall);
+                                $display("Numbers of control HAZs ins: %d", n_chaz_INS);
+                                $display("Numbers of control HAZs fd: %d", n_chaz_FD);
+                                $display("Numbers of a data HAZs: %d", n_a_dh);
+                                $display("Numbers of b data HAZs: %d", n_b_dh);
+                                $display("Numbers of ba data HAZs: %d", n_ba_dh);
+                                $display("Numbers of ab data HAZs: %d", n_ab_dh);
                                 $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
                                 //$display("CPI = %3.3f" , cycle/instret);
-				$finish();
+                                $finish();
                         end
                 end
                 /* verilator lint_on WIDTH */

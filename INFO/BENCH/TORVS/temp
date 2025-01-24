@@ -1,0 +1,18 @@
+build: testbench for petituyau
+
+
+
+2K performance run parameters for coremark.
+CoreMark Size    : lu
+Total ticks      : lu
+*** Ticks        : 206180594
+*** Coremark/MHz : 1.455
+*** CPI (2)      : 0.925
+Memory location  : STACK
+seedcrc          : 0x04x
+[0]crclist       : 0x04x
+[0]crcmatrix     : 0x04x
+[0]crcstate      : 0x04x
+[0]crcfinal      : 0x04x
+Correct operation validated. See README.md for run and reporting rules.
+- torvs8p5.sv:631: Verilog $finish
