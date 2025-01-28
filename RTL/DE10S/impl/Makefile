@@ -108,7 +108,7 @@ else
 	CORE = TORV
 endif
 
-MAP_ARGS = $(QUARTUS_ARGS) --read_settings_files=on $(addprefix --source=,$(SRCS)) #--verilog_macro="DE10S" --verilog_macro="$(CORE)"
+MAP_ARGS = $(QUARTUS_ARGS) --read_settings_files=on $(addprefix --source=,$(SRCS)) --verilog_macro="DE10S" --verilog_macro="$(CORE)"
 FIT_ARGS = $(QUARTUS_ARGS) --part=$(PART) --read_settings_files=on
 ASM_ARGS = $(QUARTUS_ARGS)
 STA_ARGS = $(QUARTUS_ARGS)

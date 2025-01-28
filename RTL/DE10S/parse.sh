@@ -2,7 +2,7 @@ INFO="../../INFO/BOARDS/DE10S"
 
 main () {
 
-	#make clean all
+	make clean all
 
 	BENCH=$(cat firmware.txt)
 	CPU=$(cat core.txt)
@@ -38,10 +38,10 @@ echo "STARTING SCRIPT"
 
 for i in {1..5}
 do
-        # rm -rf src/core.sv
+        rm -rf src/core.sv
 	#ln -P ../../SIM/TORVS/torvs8p$i.sv src/core.sv
-	# cp ../../SIM/TORVS/torvs8p$i.sv src/core.sv
-        # echo "torvs8p$i" > core.txt
+	cp ../../SIM/TORVS/torvs5p$i.sv src/core.sv
+        echo "torvs5p$i" > core.txt
 
 	#cp ../../SIM/PRECOMPILED/DHRYSTONES/PROGROM.hex src/
 	#cp mem/DHRYSTONES.mif ./src/RAM.mif

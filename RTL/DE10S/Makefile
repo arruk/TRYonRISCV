@@ -25,7 +25,7 @@ coremark:
 dhrystones:
 	cp ../../SIM/PRECOMPILED/DHRYSTONES/PROGROM.hex ./src
 	cp ../../SIM/PRECOMPILED/DHRYSTONES/DATARAM.hex ./src
-	#cp mem/DHRYSTONES.mif ./src/RAM.mif
+	cp mem/DHRYSTONES.mif ./src/RAM.mif
 	echo "dhrystones" > firmware.txt
 	#make -C impl/ all
 
