@@ -88,7 +88,7 @@ module torv32(
                 BHT_index = PC[BHT_ADDR_BITS+1:2];
         endfunction
 
-        parameter BHT_ADDR_BITS=8;
+        parameter BHT_ADDR_BITS=15;
         localparam BHT_SIZE=1<<BHT_ADDR_BITS;
         reg [1:0] BHT [BHT_SIZE-1:0];
 
@@ -550,38 +550,12 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*	`ifdef BENCH
-	   always @(posedge clk) begin
-		   if(halt) $finish(); 
-	   end
-	`endif*/
         `ifdef BENCH
-
-		/*
-		integer n_fstall =0;
-
-		always@(posedge clk) begin
-			if(f_stall) begin
-				n_fstall <= n_fstall + 1; 
-			end
-		end		
-		*/
 
                 /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
-			//if(resetn)
-			//	$display("%x", a_mw_IR);
-			//if(b_wb_enable & a_wb_enable & (b_wb_rdID == a_wb_rdID))
-			//	$display("ERRO! %d, %d, %x(pc %x), %x(pc %x)", a_wb_rdID, b_wb_rdID, a_mw_IR, a_mw_PC, b_mw_IR, b_mw_PC);
-			//if(a_fd_IR == 32'h00f585b3 || b_fd_IR == 32'h00f585b3) begin
-			//	$display("FD_HAZ: a=%x | b=%x | haz?%d",a_fd_IR, b_fd_IR, fd_data_HAZ );
-			//end
                         if(halt) begin
-                                /*$display("Simulated processor's report");
-                                $display("----------------------------");
-				//$display("Numbers of stalls in F stage: %d", n_fstall);
-                                $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
-                                $display("CPI = %3.3f" , cycle/instret);*/
+                        	$display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
 				$finish();
                         end
                 end

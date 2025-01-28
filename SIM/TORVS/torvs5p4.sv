@@ -426,8 +426,6 @@ module torv32(
         assign b_mem_wdata = b_m_store_DATA;
         assign b_mem_cen = isLoad(b_em_IR) | isStype(b_em_IR);
 
-        wire [31:0] b_mw_Mdata = b_mem_data;
-
 	wire store_addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);
 
         wire a_store_b_load_HAZ = isStype(a_em_IR) & (|a_mem_wmask) & isLoad(b_em_IR) & (a_mem_addr == b_mem_addr);
@@ -529,39 +527,12 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*	`ifdef BENCH
-	   always @(posedge clk) begin
-		   if(halt) $finish(); 
-	   end
-	`endif*/
         `ifdef BENCH
-
-		/*
-		integer n_fstall =0;
-
-		always@(posedge clk) begin
-			if(f_stall) begin
-				n_fstall <= n_fstall + 1; 
-			end
-		end		
-		*/
-
                 /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
-			//if(resetn)
-			//	$display("%x", a_mw_IR);
-			//if(b_wb_enable & a_wb_enable & (b_wb_rdID == a_wb_rdID))
-			//	$display("ERRO! %d, %d, %x(pc %x), %x(pc %x)", a_wb_rdID, b_wb_rdID, a_mw_IR, a_mw_PC, b_mw_IR, b_mw_PC);
-			//if(a_fd_IR == 32'h00f585b3 || b_fd_IR == 32'h00f585b3) begin
-			//	$display("FD_HAZ: a=%x | b=%x | haz?%d",a_fd_IR, b_fd_IR, fd_data_HAZ );
-			//end
                         if(halt) begin
-                                /*$display("Simulated processor's report");
-                                $display("----------------------------");
-				//$display("Numbers of stalls in F stage: %d", n_fstall);
                                 $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
-                                $display("CPI = %3.3f" , cycle/instret);*/
-				$finish();
+                                $finish();
                         end
                 end
                 /* verilator lint_on WIDTH */

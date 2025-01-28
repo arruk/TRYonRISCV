@@ -68,18 +68,18 @@ module torv32(
 	wire a_f_stall = halt | data_HAZ;
 	wire a_d_stall = halt | data_HAZ;
 
-	wire a_e_flush = a_e_JoB | data_HAZ;
-	wire a_d_flush = a_e_JoB ;
+	wire a_e_flush = a_e_JoB | b_e_JoB | data_HAZ;
+	wire a_d_flush = a_e_JoB | b_e_JoB ;
 
 	wire b_f_stall = halt | data_HAZ;
 	wire b_d_stall = halt | data_HAZ;
 
-	wire b_e_flush = a_e_JoB | data_HAZ;
-	wire b_d_flush = a_e_JoB;
+	wire b_e_flush = a_e_JoB | b_e_JoB | data_HAZ;
+	wire b_d_flush = a_e_JoB | b_e_JoB ;
 
 	wire control_HAZ = !b_ins_ALL | fd_data_HAZ;
 	
-	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR) | isLUI(b_fd_IR) | isAUIPC(b_fd_IR) | isStype(b_fd_IR) | isLoad(b_fd_IR);
+	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR) | isLUI(b_fd_IR) | isAUIPC(b_fd_IR) | isStype(b_fd_IR) | isLoad(b_fd_IR) | isJAL(b_fd_IR) | isJALR(b_fd_IR) | isBtype(b_fd_IR);
 	
 	wire ba_fd_rs1_HAZ = !b_fd_NOP & reads_rs1(b_fd_IR) & rs1ID(b_fd_IR)!=0 & (
 			   (writes_rd(a_fd_IR) & (rs1ID(b_fd_IR) == rdID(a_fd_IR))));
@@ -92,9 +92,11 @@ module torv32(
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	reg [31:0] PC;
-	wire [31:0] f_PC = a_d_JoB_now  ? a_d_JoB_ADDR  :
-			   a_em_JoB_now ? a_em_JoB_ADDR :
-	       			     	             PC ;
+        wire [31:0] f_PC = a_em_JoB_now ? a_em_JoB_ADDR :
+                           b_em_JoB_now ? b_em_JoB_ADDR :
+                           a_d_JoB_now  ? a_d_JoB_ADDR  :
+                           b_d_JoB_now  ? b_d_JoB_ADDR  :
+                                                     PC ;
 
 	wire [31:0] a_fd_IR = a_imem_data;
 	wire [31:0] b_fd_IR = b_imem_data;
@@ -103,8 +105,8 @@ module torv32(
 		if(!a_f_stall) begin
 			a_fd_PC <= a_imem_addr;
 
-			PC <= (control_HAZ & !a_fd_NOP & !a_d_JoB_now) ? f_PC + 4:
-						          f_PC + 8;
+			PC <= (control_HAZ & !a_fd_NOP & !(a_d_JoB_now|a_em_JoB_now) & !(b_d_JoB_now|b_em_JoB_now)) ? f_PC + 4:
+						         							      f_PC + 8;
 
 		end
 
@@ -124,10 +126,10 @@ module torv32(
 	end
 	
 	assign a_imem_en   = !a_f_stall;
-	assign a_imem_addr = (control_HAZ & !a_fd_NOP & !a_d_JoB_now) ? f_PC-4 : f_PC;
+	assign a_imem_addr = (control_HAZ & !a_fd_NOP & !(a_d_JoB_now|a_em_JoB_now) & !(b_d_JoB_now|b_em_JoB_now)) ? f_PC-4 : f_PC;
 
 	assign b_imem_en   = !b_f_stall;
-	assign b_imem_addr = (control_HAZ & !a_fd_NOP & !a_d_JoB_now) ? f_PC :  f_PC+4 ;
+	assign b_imem_addr = (control_HAZ & !a_fd_NOP & !(a_d_JoB_now|a_em_JoB_now) & !(b_d_JoB_now|b_em_JoB_now)) ? f_PC :  f_PC+4 ;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -140,6 +142,9 @@ module torv32(
         wire a_d_JoB_now = !a_fd_NOP & (isJAL(a_fd_IR));// | (isBtype(a_fd_IR) & a_d_predict));
         wire [31:0] a_d_JoB_ADDR = a_fd_PC + Jimm(a_fd_IR); //(isJAL(a_fd_IR) ? Jimm(a_fd_IR) : Bimm(a_fd_IR));
 
+        wire b_d_JoB_now = !b_fd_NOP & (isJAL(b_fd_IR));// | (isBtype(a_fd_IR) & a_d_predict));
+        wire [31:0] b_d_JoB_ADDR = b_fd_PC + Jimm(b_fd_IR); //(isJAL(a_fd_IR) ? Jimm(a_fd_IR) : Bimm(a_fd_IR));
+	
 	localparam NOP = 32'b0000000_00000_00000_000_00000_0110011;
 	
 	wire        a_wb_enable;
@@ -249,9 +254,7 @@ module torv32(
 	wire [31:0] a_e_ADDR_RES = a_e_ADDin1 + a_e_IMM;
 	wire [31:0] a_e_ADDR = {a_e_ADDR_RES[31:1], a_e_ADDR_RES[0] & (~isJALR(a_de_IR))}; 
 
-	//wire a_e_JoB = isJAL(a_de_IR) | isJALR(a_de_IR) | (isBtype(a_de_IR) & a_e_takeB);
 	wire a_e_JoB = isJALR(a_de_IR) | (isBtype(a_de_IR) & a_e_takeB);
-	//wire a_e_JoB = isJALR(a_de_IR) | (isBtype(a_de_IR) & (a_e_takeB^a_de_predict));
 	wire [31:0] a_e_JoB_ADDR = a_e_ADDR;
 
 	always@(posedge clk) begin
@@ -320,20 +323,25 @@ module torv32(
         wire [31:0] b_e_ADDR_RES = b_e_ADDin1 + b_e_IMM;
         wire [31:0] b_e_ADDR = {b_e_ADDR_RES[31:1], b_e_ADDR_RES[0] & (~isJALR(b_de_IR))};
 
+        wire b_e_JoB = isJALR(b_de_IR) | (isBtype(b_de_IR) & b_e_takeB);
+        wire [31:0] b_e_JoB_ADDR = b_e_ADDR;
+
 	always@(posedge clk) begin
                 if(a_e_JoB)
                         b_em_IR <= NOP;
                 else
                         b_em_IR <= b_de_IR;
-                b_em_PC   <= b_de_PC;
-                b_em_rs2  <= b_e_rs2;
-                b_em_RES  <= b_e_RES;
-                b_em_ADDR <= b_e_ADDR;
+                b_em_PC         <= b_de_PC;
+                b_em_rs2        <= b_e_rs2;
+                b_em_RES        <= b_e_RES;
+                b_em_ADDR       <= b_e_ADDR;
+                b_em_JoB_now    <= b_e_JoB;
+                b_em_JoB_ADDR   <= b_e_JoB_ADDR;		
 	end
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	reg[31:0] a_em_IR, a_em_PC, a_em_rs2, a_em_RES, a_em_ADDR, a_em_JoB_ADDR; reg a_em_JoB_now;
-        reg[31:0] b_em_IR, b_em_PC, b_em_rs2, b_em_RES, b_em_ADDR;
+        reg[31:0] a_em_IR, a_em_PC, a_em_rs2, a_em_RES, a_em_ADDR, a_em_JoB_ADDR; reg a_em_JoB_now;
+        reg[31:0] b_em_IR, b_em_PC, b_em_rs2, b_em_RES, b_em_ADDR, b_em_JoB_ADDR; reg b_em_JoB_now;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -539,39 +547,12 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*	`ifdef BENCH
-	   always @(posedge clk) begin
-		   if(halt) $finish(); 
-	   end
-	`endif*/
         `ifdef BENCH
-
-		/*
-		integer n_fstall =0;
-
-		always@(posedge clk) begin
-			if(f_stall) begin
-				n_fstall <= n_fstall + 1; 
-			end
-		end		
-		*/
-
                 /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
-			//if(resetn)
-			//	$display("%x", a_mw_IR);
-			//if(b_wb_enable & a_wb_enable & (b_wb_rdID == a_wb_rdID))
-			//	$display("ERRO! %d, %d, %x(pc %x), %x(pc %x)", a_wb_rdID, b_wb_rdID, a_mw_IR, a_mw_PC, b_mw_IR, b_mw_PC);
-			//if(a_fd_IR == 32'h00f585b3 || b_fd_IR == 32'h00f585b3) begin
-			//	$display("FD_HAZ: a=%x | b=%x | haz?%d",a_fd_IR, b_fd_IR, fd_data_HAZ );
-			//end
                         if(halt) begin
-                                /*$display("Simulated processor's report");
-                                $display("----------------------------");
-				//$display("Numbers of stalls in F stage: %d", n_fstall);
                                 $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
-                                $display("CPI = %3.3f" , cycle/instret);*/
-				$finish();
+                                $finish();
                         end
                 end
                 /* verilator lint_on WIDTH */

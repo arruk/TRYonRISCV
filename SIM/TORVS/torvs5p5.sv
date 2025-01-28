@@ -107,7 +107,7 @@ module torv32(
 		if(a_e_JoB) begin
 			f_PC <= a_e_JoB_ADDR;
 		end else if(b_e_JoB) begin
-			f_PC <= b_e_JoB_ADDR:
+			f_PC <= b_e_JoB_ADDR;
 		end
 
 		a_fd_NOP <= a_d_flush | !resetn;
@@ -285,8 +285,7 @@ module torv32(
                                                b_de_rs2  ; //
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	wire [31:0] b_e_IMM;
+        wire [31:0] b_e_IMM;
 
         imm_mux m1(
                 .instr(b_de_IR),
@@ -295,8 +294,8 @@ module torv32(
 
         wire [31:0] b_e_ALUin1 = (isJAL(b_de_IR) | isJALR(b_de_IR) | isAUIPC(b_de_IR)) ? b_de_PC : b_e_rs1;
         wire [31:0] b_e_ALUin2 = (isRtype(b_de_IR) | isBtype(b_de_IR))? b_e_rs2 :
-                                 (isRimm(b_de_IR)  | isAUIPC(b_de_IR))? b_e_IMM :
-                                                                          32'd4 ;
+                                 (isRimm(b_de_IR)  | isAUIPC(b_de_IR))? b_e_IMM  :
+                                                                          32'd4  ;
         wire [31:0] b_e_ALUout;
         wire b_e_takeB;
 
@@ -307,22 +306,24 @@ module torv32(
                 .result(b_e_ALUout),
                 .take_b(b_e_takeB)
         );
-
         wire [31:0] b_e_RES = isLUI(b_de_IR) ? b_e_IMM : b_e_ALUout;
 
         wire [31:0] b_e_ADDin1 = (isJAL(b_de_IR) | isBtype(b_de_IR)) ? b_de_PC : b_e_rs1;
         wire [31:0] b_e_ADDR_RES = b_e_ADDin1 + b_e_IMM;
         wire [31:0] b_e_ADDR = {b_e_ADDR_RES[31:1], b_e_ADDR_RES[0] & (~isJALR(b_de_IR))};
 
+        wire b_e_JoB = isJAL(b_de_IR) | isJALR(b_de_IR) | (isBtype(b_de_IR) & b_e_takeB);
+        wire [31:0] b_e_JoB_ADDR = b_e_ADDR;
+
         always@(posedge clk) begin
                 if(a_e_JoB)
                         b_em_IR <= NOP;
                 else
                         b_em_IR <= b_de_IR;
-                b_em_PC   <= b_de_PC;
-                b_em_rs2  <= b_e_rs2;
-                b_em_RES  <= b_e_RES;
-                b_em_ADDR <= b_e_ADDR;
+                b_em_PC       <= b_de_PC;
+                b_em_rs2      <= b_e_rs2;
+                b_em_RES      <= b_e_RES;
+                b_em_ADDR     <= b_e_ADDR;
         end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -428,8 +429,6 @@ module torv32(
         assign b_mem_wdata = b_m_store_DATA;
         assign b_mem_cen = isLoad(b_em_IR) | isStype(b_em_IR);
 
-        wire [31:0] b_mw_Mdata = b_mem_data;
-
 	wire store_addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);
 
         wire a_store_b_load_HAZ = isStype(a_em_IR) & (|a_mem_wmask) & isLoad(b_em_IR) & (a_mem_addr == b_mem_addr);
@@ -531,39 +530,12 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*	`ifdef BENCH
-	   always @(posedge clk) begin
-		   if(halt) $finish(); 
-	   end
-	`endif*/
         `ifdef BENCH
-
-		/*
-		integer n_fstall =0;
-
-		always@(posedge clk) begin
-			if(f_stall) begin
-				n_fstall <= n_fstall + 1; 
-			end
-		end		
-		*/
-
                 /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
-			//if(resetn)
-			//	$display("%x", a_mw_IR);
-			//if(b_wb_enable & a_wb_enable & (b_wb_rdID == a_wb_rdID))
-			//	$display("ERRO! %d, %d, %x(pc %x), %x(pc %x)", a_wb_rdID, b_wb_rdID, a_mw_IR, a_mw_PC, b_mw_IR, b_mw_PC);
-			//if(a_fd_IR == 32'h00f585b3 || b_fd_IR == 32'h00f585b3) begin
-			//	$display("FD_HAZ: a=%x | b=%x | haz?%d",a_fd_IR, b_fd_IR, fd_data_HAZ );
-			//end
                         if(halt) begin
-                                /*$display("Simulated processor's report");
-                                $display("----------------------------");
-				//$display("Numbers of stalls in F stage: %d", n_fstall);
                                 $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
-                                $display("CPI = %3.3f" , cycle/instret);*/
-				$finish();
+                                $finish();
                         end
                 end
                 /* verilator lint_on WIDTH */

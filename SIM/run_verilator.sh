@@ -1,10 +1,6 @@
 PREC="PRECOMPILED"
-#INFO_DIR="../INFO/BENCH"
-INFO_DIR="../INFO/BEN"
+INFO_DIR="../INFO/BENCH/TORVS"
 BENCH=$(cut -d. -f 1 firmware.txt)
-IMPL=$(echo $1 | cut -d. -f 1)
-IMPL_T=$IMPL
-CORE=$(echo $1 | cut -d. -f 1 | tr 'a-z' 'A-Z' )
 NO=$(echo "$1" | grep -Eo [0-9]+)
 SZ=4
 N=0
@@ -41,12 +37,12 @@ main() {
 		obj_dir/VSOC > ${INFO_DIR}/temp
 		rayst_parse	
 
-		cp ${PREC}/DHRYSTONES/DATARAM.hex HEX/ && cp ${PREC}/DHRYSTONES/PROGROM.hex HEX/
-		echo "dhrystones.pipeline.hex" > firmware.txt
-		BENCH=$(cut -d. -f 1 firmware.txt)
-		echo $BENCH
-		obj_dir/VSOC > ${INFO_DIR}/temp
-		dhry_parse
+		#cp ${PREC}/DHRYSTONES/DATARAM.hex HEX/ && cp ${PREC}/DHRYSTONES/PROGROM.hex HEX/
+		#echo "dhrystones.pipeline.hex" > firmware.txt
+		#BENCH=$(cut -d. -f 1 firmware.txt)
+		#echo $BENCH
+		#obj_dir/VSOC > ${INFO_DIR}/temp
+		#dhry_parse
 
 		cp ${PREC}/COREMARK/DATARAM.hex HEX/ && cp ${PREC}/COREMARK/PROGROM.hex HEX/
 		echo "coremark.pipeline.hex" > firmware.txt
@@ -85,8 +81,8 @@ rayst_parse(){
 	#			     | grep -Eo [0-9]+[.]?[0-9]* | sed '1,2d' | sed '1i\'$IMPL'' | paste -sd, >> ${INFO_DIR}/"$IMPL"/raystones.csv
 	#	IMPL_T=$BIN
 	#fi
-	cat ${INFO_DIR}/temp | grep -e CPI -e RAYSTONES | grep -Eo [0-9]+[.]?[0-9]* \
-			     | sed '1,2d' | sed '1i\'$IMPL_T'' | paste -sd, >> ${INFO_DIR}/raystones.csv
+	cat ${INFO_DIR}/temp | grep -e CPI -e RAYSTONES -e Cycles -e Instret | grep -Eo [0-9]+[.]?[0-9]* \
+			     | sed '1,2d' | sed '3,4d' | sed '3,4d' | sed '3,4d' | sed '1i\'$IMPL_T'' | paste -sd, >> ${INFO_DIR}/raystones.csv
 	IMPL_T=$IMPL
 }
 
@@ -109,20 +105,26 @@ cmark_parse(){
 	#			     | grep -Eo [0-9]+[.]?[0-9]* | sed '2d' | sed '1i\'$IMPL'' | paste -sd, >> ${INFO_DIR}/"$IMPL"/coremark.csv
 	#	IMPL_T=$BIN
 	#fi
-	cat ${INFO_DIR}/temp | grep -e CPI -e Coremark/MHz | grep -Eo [0-9]+[.]?[0-9]* \
+	cat ${INFO_DIR}/temp | grep -e CPI -e Coremark/MHz -e Cycles -e Instret | grep -Eo [0-9]+[.]?[0-9]* \
 			     | sed '2d' | sed '1i\'$IMPL_T'' | paste -sd, >> ${INFO_DIR}/coremark.csv
 	IMPL_T=$IMPL	
 }
 
-if [ "$2" = "x" ]
+if [ "$2" = "a" ]
 then
-	for i in {5..16}
+	for i in {5..5}
 	do
-		SZ=$i
+		CORE="TORVS6P$i" #$(echo $1 | cut -d. -f 1 | tr 'a-z' 'A-Z' )
+		IMPL="torvs6p$i"
+	        IMPL_T=$IMPL	
+		echo "STARTING $CORE"
 		main "$@"
-		echo "FINISHED WITH $SZ bits\n"
+		echo "FINISHED IN $CORE"
 	done
 else
+	CORE=$(echo $1 | cut -d. -f 1 | tr 'a-z' 'A-Z' )
+	IMPL=$(echo $1 | cut -d. -f 1)
+	IMPL_T=$IMPL
 	main "$@"
 fi
 
