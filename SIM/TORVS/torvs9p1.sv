@@ -106,7 +106,7 @@ module torv32(
         endfunction
 	*/
 
-	localparam BP_HIST_BITS = 15;
+	localparam BP_HIST_BITS = 12;
         parameter BHT_ADDR_BITS = 15;
         localparam BHT_SIZE=1<<BHT_ADDR_BITS;
         reg [1:0] BHT [BHT_SIZE-1:0];
