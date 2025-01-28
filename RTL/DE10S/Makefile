@@ -3,9 +3,6 @@ change:
 	ln -P ../../SIM/CORE/$(v).v src/core.v
 	echo "$(v)" > core.txt
 
-teste:
-
-
 torvs:
 	rm -rf src/core.sv
 	ln -P ../../SIM/TORVS/$(v).sv src/core.sv
