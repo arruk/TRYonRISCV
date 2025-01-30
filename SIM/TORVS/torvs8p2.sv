@@ -266,8 +266,6 @@ module torv32(
 	wire [31:0] a_e_ADDR_RES = a_e_ADDin1 + a_e_ADDin2;
 	wire [31:0] a_e_ADDR = {a_e_ADDR_RES[31:1], a_e_ADDR_RES[0] & (~isJALR(a_de_IR))}; 
 
-	//wire a_e_JoB = isJAL(a_de_IR) | isJALR(a_de_IR) | (isBtype(a_de_IR) & a_e_takeB);
-	//wire a_e_JoB = isJALR(a_de_IR) | (isBtype(a_de_IR) & a_e_takeB);
 	wire a_e_JoB = isJALR(a_de_IR) | (isBtype(a_de_IR) & (a_e_takeB^a_de_predict));
 	wire [31:0] a_e_JoB_ADDR = a_e_ADDR;
 
@@ -366,7 +364,6 @@ module torv32(
 	reg[31:0] a_em_IR, a_em_PC, a_em_rs2, a_em_RES, a_em_ADDR, a_em_JoB_ADDR;
 	reg       a_em_JoB_now;
 	reg[31:0] b_em_IR, b_em_PC, b_em_rs2, b_em_RES, b_em_ADDR;
-	//reg[31:0] b_em_IR, b_em_PC, b_em_RES;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -475,15 +472,11 @@ module torv32(
                 b_mw_IR     <= b_em_IR;
                 b_mw_PC     <= b_em_PC;
                 b_mw_RES    <= b_em_RES;
-                //b_mw_IO_RES <= b_IO_mem_rdata;
-                //b_mw_ADDR   <= b_em_ADDR;
         end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	reg [31:0] a_mw_IR, a_mw_PC, a_mw_RES, a_mw_IO_RES, a_mw_ADDR, a_mw_CSR_RES;
-	
-	//reg [31:0] b_mw_IR, b_mw_PC, b_mw_RES, b_mw_IO_RES, b_mw_ADDR, b_mw_CSR_RES;
 	reg [31:0] b_mw_IR, b_mw_PC, b_mw_RES;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

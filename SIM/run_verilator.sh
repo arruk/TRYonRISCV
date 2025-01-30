@@ -30,12 +30,12 @@ main() {
 		
 		(cd obj_dir; make -f VSOC.mk)
 		
-		#cp ${PREC}/RAYSTONES/DATARAM.hex HEX/ && cp ${PREC}/RAYSTONES/PROGROM.hex HEX/
-		#echo "raystones.pipeline.hex" > firmware.txt
-		#BENCH=$(cut -d. -f 1 firmware.txt)
-		#echo $BENCH
-		#obj_dir/VSOC > ${INFO_DIR}/temp
-		#rayst_parse	
+		cp ${PREC}/RAYSTONES/DATARAM.hex HEX/ && cp ${PREC}/RAYSTONES/PROGROM.hex HEX/
+		echo "raystones.pipeline.hex" > firmware.txt
+		BENCH=$(cut -d. -f 1 firmware.txt)
+		echo $BENCH
+		obj_dir/VSOC > ${INFO_DIR}/temp
+		rayst_parse	
 
 		cp ${PREC}/DHRYSTONES/DATARAM.hex HEX/ && cp ${PREC}/DHRYSTONES/PROGROM.hex HEX/
 		echo "dhrystones.pipeline.hex" > firmware.txt
@@ -44,12 +44,12 @@ main() {
 		obj_dir/VSOC > ${INFO_DIR}/temp
 		dhry_parse
 
-		#cp ${PREC}/COREMARK/DATARAM.hex HEX/ && cp ${PREC}/COREMARK/PROGROM.hex HEX/
-		#echo "coremark.pipeline.hex" > firmware.txt
-		#BENCH=$(cut -d. -f 1 firmware.txt)
-		#echo $BENCH
-		#obj_dir/VSOC > ${INFO_DIR}/temp
-		#cmark_parse
+		cp ${PREC}/COREMARK/DATARAM.hex HEX/ && cp ${PREC}/COREMARK/PROGROM.hex HEX/
+		echo "coremark.pipeline.hex" > firmware.txt
+		BENCH=$(cut -d. -f 1 firmware.txt)
+		echo $BENCH
+		obj_dir/VSOC > ${INFO_DIR}/temp
+		cmark_parse
 
 	else
 
@@ -112,16 +112,19 @@ cmark_parse(){
 
 if [ "$2" = "a" ]
 then
-	for i in {1..5}
+	for i in {1..1}
 	do
-		CORE="TORVS5P$i" #$(echo $1 | cut -d. -f 1 | tr 'a-z' 'A-Z' )
-		IMPL="torvs5p$i"
-	        IMPL_T=$IMPL	
-		ln -s TORVS/$IMPL.sv
-		echo "STARTING $CORE"
-		main "$@"
-		rm -rf $IMPL.sv
-		echo "FINISHED IN $CORE"
+		for j in {1..5}
+		do
+			CORE="TORVS"$i"P"$j #$(echo $1 | cut -d. -f 1 | tr 'a-z' 'A-Z' )
+			IMPL="torvs"$i"p"$j
+			IMPL_T=$IMPL	
+			ln -s TORVS/$IMPL.sv
+			echo "STARTING $CORE"
+			main "$@"
+			rm -rf $IMPL.sv
+			echo "FINISHED IN $CORE"
+		done
 	done
 else
 	CORE=$(echo $1 | cut -d. -f 1 | tr 'a-z' 'A-Z' )

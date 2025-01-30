@@ -506,37 +506,12 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*	`ifdef BENCH
-	   always @(posedge clk) begin
-		   if(halt) $finish(); 
-	   end
-	`endif*/
         `ifdef BENCH
-
-		/*
-		integer n_fstall =0;
-
-		always@(posedge clk) begin
-			if(f_stall) begin
-				n_fstall <= n_fstall + 1; 
-			end
-		end		
-		*/
-
                 /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
-			
-			if(addr_HAZ & (|b_mem_wmask) & (|a_mem_wmask) & (a_em_PC > b_em_PC)) begin
-				$display("HAZ, a_PC %x | b_PC %x", a_em_PC, b_em_PC);
-			end
-
                         if(halt) begin
-                                /*$display("Simulated processor's report");
-                                $display("----------------------------");
-				//$display("Numbers of stalls in F stage: %d", n_fstall);
                                 $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
-                                $display("CPI = %3.3f" , cycle/instret);*/
-				$finish();
+                                $finish();
                         end
                 end
                 /* verilator lint_on WIDTH */

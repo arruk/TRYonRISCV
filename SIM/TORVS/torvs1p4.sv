@@ -506,56 +506,12 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*	`ifdef BENCH
-	   always @(posedge clk) begin
-		   if(halt) $finish(); 
-	   end
-	`endif*/
         `ifdef BENCH
-
-		/*
-		integer n_fstall =0;
-
-		always@(posedge clk) begin
-			if(f_stall) begin
-				n_fstall <= n_fstall + 1; 
-			end
-		end		
-		*/
-
                 /* verilator lint_off WIDTH */
-		
-		integer n_chaz_INS =0;
-		integer n_chaz_FD =0;
-		integer n_datahaz =0;
-                
-		always @(posedge clk) begin
-
-			//if(a_store_b_load_HAZ)
-			//	$display("HAZ");
-
-			if(!b_ins_ALL) begin
-				n_chaz_INS <= n_chaz_INS + 1;
-			end
-
-			if(fd_data_HAZ) begin
-				n_chaz_FD <= n_chaz_FD + 1;
-			end
-
-			if(data_HAZ) begin
-				n_datahaz <= n_datahaz + 1;
-			end
-
+                always @(posedge clk) begin
                         if(halt) begin
-                                //$display("Simulated processor's report");
-                                $display("----------------------------");
-				//$display("Numbers of stalls in F stage: %d", n_fstall);
                                 $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
-                                $display("Numbers of control HAZs ins: %d", n_chaz_INS);
-                                $display("Numbers of control HAZs fd: %d", n_chaz_FD);
-                                $display("Numbers of data HAZs: %d", n_datahaz);
-                                //$display("CPI = %3.3f" , cycle/instret);*/
-				$finish();
+                                $finish();
                         end
                 end
                 /* verilator lint_on WIDTH */

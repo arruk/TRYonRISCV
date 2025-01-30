@@ -99,7 +99,8 @@ module SOC(
         `ifdef GOWIN
         wire [31:0] a_IO_mem_rdata = a_IO_wordaddr[2] ? { 22'b0, fifo_full, 9'b0} : 32'b0;
         `else
-        wire [31:0] a_IO_mem_rdata = a_IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
+        //wire [31:0] a_IO_mem_rdata = a_IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
+        wire [31:0] a_IO_mem_rdata = a_IO_wordaddr[2] ? { 22'b0, 1'b0, 9'b0} : 32'b0;
         `endif
         wire [13:0] a_IO_wordaddr  = a_IO_mem_addr[15:2];
 
@@ -462,6 +463,16 @@ endmodule
 		`include "torvs9p2.sv"
 	`elsif TORVS9P3
 		`include "torvs9p3.sv"
+	`elsif TORVS1P1
+		`include "torvs1p1.sv"
+	`elsif TORVS1P2
+		`include "torvs1p2.sv"
+	`elsif TORVS1P3
+		`include "torvs1p3.sv"
+	`elsif TORVS1P4
+		`include "torvs1p4.sv"
+	`elsif TORVS1P5
+		`include "torvs1p5.sv"
 	`elsif TORVS8P1
 		`include "torvs8p1.sv"
 	`elsif TORVS8P2

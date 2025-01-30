@@ -460,37 +460,12 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*	`ifdef BENCH
-	   always @(posedge clk) begin
-		   if(halt) $finish(); 
-	   end
-	`endif*/
         `ifdef BENCH
-
-		/*
-		integer n_fstall =0;
-
-		always@(posedge clk) begin
-			if(f_stall) begin
-				n_fstall <= n_fstall + 1; 
-			end
-		end		
-		*/
-
                 /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
-			
-			if(isLUI(b_mw_IR)) begin
-				//$display("lui no de");
-			end
-
                         if(halt) begin
-                                /*$display("Simulated processor's report");
-                                $display("----------------------------");
-				//$display("Numbers of stalls in F stage: %d", n_fstall);
                                 $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
-                                $display("CPI = %3.3f" , cycle/instret);*/
-				$finish();
+                                $finish();
                         end
                 end
                 /* verilator lint_on WIDTH */
