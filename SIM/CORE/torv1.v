@@ -1,9 +1,9 @@
-`default_nettype none
+`ifndef BENCH
+	`define SYN
+`endif
 
-`ifdef ALU
-	`include "alu2.v"
-`else
-	`include "alu.v"
+`ifndef SYN
+	`include "AUX/alu.v"
 `endif
 
 module torv32(
@@ -22,54 +22,29 @@ module torv32(
 	output [31:0] IO_mem_addr,  // IO mem address
 	input  [31:0] IO_mem_rdata, // data read from IO
 	output [31:0] IO_mem_wdata, // data written to IO
-	output        IO_mem_wr,    // IO write flag
-	
-	output        pcpi_valid,
-	output [31:0] pcpi_insn,
-	output [31:0] pcpi_rs1,
-	output [31:0] pcpi_rs2,
-	input         pcpi_wr,
-	input  [31:0] pcpi_rd,
-	input         pcpi_wait,
-	input         pcpi_ready
-
+	output        IO_mem_wr    // IO write flag
 );
 
-
-	localparam IMMEDIATE_OPS = 7'b0010011;
-	localparam REGISTER_OPS  = 7'b0110011;
-	localparam STORE_OPS     = 7'b0100011;
-	localparam LOAD_OPS      = 7'b0000011;
-	localparam BRANCH_OPS    = 7'b1100011;
-	localparam JALR          = 7'b1100111;
-	localparam JAL           = 7'b1101111;
-	localparam AUIPC         = 7'b0010111;
-	localparam LUI           = 7'b0110111;
-	localparam FENCE         = 7'b0001111;
-       	localparam CALL_BREAK    = 7'b1110011;
-	
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	
 
-	wire rs1_HAZ = !fd_NOP & reads_rs1(fd_IR) & rs1ID(fd_IR)!=0 &      (
+	wire rs1_HAZ = !fd_NOP & reads_rs1(fd_IR) & rs1ID(fd_IR)!=0 &    (
 		       	(writes_rd(de_IR) & (rs1ID(fd_IR) == rdID(de_IR))) |
-		        (writes_rd(em_IR) & (rs1ID(fd_IR) == rdID(em_IR))) );
+		        (writes_rd(em_IR) & (rs1ID(fd_IR) == rdID(em_IR))) ); 
 	
-	wire rs2_HAZ = !fd_NOP & reads_rs2(fd_IR) & rs2ID(fd_IR)!=0 &      (
+	wire rs2_HAZ = !fd_NOP & reads_rs2(fd_IR) & rs2ID(fd_IR)!=0 &    (
 		       	(writes_rd(de_IR) & (rs2ID(fd_IR) == rdID(de_IR))) |
-		        (writes_rd(em_IR) & (rs2ID(fd_IR) == rdID(em_IR))) );
-
-	wire mul_HAZ = isMulDiv(de_IR) & ~pcpi_ready;
+		        (writes_rd(em_IR) & (rs2ID(fd_IR) == rdID(em_IR))) ); 
 	
-	wire halt = 0;//resetn & isEBREAK(de_IR);	
+	wire halt = resetn & isEBREAK(de_IR);	
 
 	wire data_HAZ = rs1_HAZ | rs2_HAZ;
 
-	wire f_stall = data_HAZ | mul_HAZ | halt;
-	wire d_stall = data_HAZ | mul_HAZ | halt;
+	wire f_stall = data_HAZ | halt;
+	wire d_stall = data_HAZ | halt;
 
-	wire m_flush = mul_HAZ;
-	wire e_flush = e_JoB | (data_HAZ & !mul_HAZ);
+	wire e_flush = e_JoB | data_HAZ;
 	wire d_flush = e_JoB;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,29 +52,20 @@ module torv32(
 	reg [31:0] f_PC;
 	wire [31:0] fd_IR = imem_data;
 
-	// INSTRUCTION SEGMENT
-	// 0x00000 - 0x10000
-
 	always@(posedge clk) begin
 		if(!f_stall) begin
-			if(|f_PC[1:0]) begin
-				MCAUSE <= {1'b0, 20'b0, 11'd1};
-				MEPC   <= f_PC;
-				f_PC   <= MTVEC;
-			end else begin
-				fd_PC <= f_PC;
-				f_PC  <= f_PC+4;
-			end
+			fd_PC <= f_PC;
+			f_PC  <= f_PC+4;
 		end
 
 		if(JoB) 
 			f_PC <= JoB_ADDR;
 
-		fd_NOP <= d_flush | !resetn ;
+		fd_NOP <= d_flush | !resetn;
 
 		if(!resetn) begin
+			f_PC <=0;
 			//f_PC  <=32'h20000;
-			f_PC <= 32'h30000;
 		end
 	
 	end
@@ -121,11 +87,12 @@ module torv32(
 	wire [4:0]  wb_rdID;
 
 	reg [31:0] reg_file [0:31];
+	//reg [3:0][7:0] reg_file [0:31];
 	
 	always@(posedge clk) begin
 		if(!d_stall) begin
 			de_IR <= (e_flush | fd_NOP) ? NOP : fd_IR;
-			de_PC <= fd_PC;
+			de_PC <= fd_PC;	
 		end	
 
 		if(e_flush)
@@ -136,28 +103,6 @@ module torv32(
 		end
 
 	end	
-
-	always@(posedge clk) begin
-
-		if((de_IR[6:0]!=IMMEDIATE_OPS) & (de_IR[6:0]!=REGISTER_OPS) &
-		   (de_IR[6:0]!=LOAD_OPS)      & (de_IR[6:0]!=STORE_OPS)    & 
-		   (de_IR[6:0]!=BRANCH_OPS)    & (de_IR[6:0]!=JALR)         & 
-		   (de_IR[6:0]!=JAL)           & (de_IR[6:0]!=AUIPC)        & 
-		   (de_IR[6:0]!=LUI)           & (de_IR[6:0]!=FENCE)        & 
-		   (de_IR[6:0]!=CALL_BREAK)) begin
-
-			MCAUSE <= {1'b0, 20'b0, 11'd2};
-			MEPC   <= f_PC;
-			f_PC   <= MTVEC;
-
-		end else if (isEBREAK(de_IR)) begin
-                        MCAUSE <= {1'b0, 20'b0, 11'd3};
-                        MEPC   <= f_PC;
-                        f_PC   <= MTVEC;
-
-		end
-
-	end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -177,19 +122,7 @@ module torv32(
 	wire [31:0] e_ALUin1 = (isJAL(de_IR) | isJALR(de_IR) | isAUIPC(de_IR)) ? de_PC : de_rs1;
 	wire [31:0] e_ALUin2 = (isRtype(de_IR) | isBtype(de_IR))? de_rs2 :
 	       		       (isRimm(de_IR)  | isAUIPC(de_IR))? e_IMM  :
-			       					  32'd4  ;
-
-	assign pcpi_insn  = de_IR;
-	assign pcpi_rs1   = e_ALUin1;
-	assign pcpi_rs2   = e_ALUin2;
-	assign pcpi_valid = isMulDiv(de_IR);
-	
-	always@(posedge clk) begin
-		if(pcpi_valid) begin
-			//$display("is mul/div in de_IR %1d ? PC = %x | pcpi_ready = %1x", isMulDiv(de_IR), de_PC, pcpi_ready);
-		end
-	end
-
+			       					  32'd4  ;	
 	wire [31:0] e_ALUout;
 	wire e_takeB;
 
@@ -200,9 +133,7 @@ module torv32(
 	        .result(e_ALUout),
 	        .take_b(e_takeB)
 	);
-	wire [31:0] e_RES = isLUI(de_IR)    ? e_IMM  :
-			    isMulDiv(de_IR) ? pcpi_rd:
-			    	            e_ALUout ;
+	wire [31:0] e_RES = isLUI(de_IR) ? e_IMM : e_ALUout;
 
 	wire [31:0] e_ADDin1 = (isJAL(de_IR) | isBtype(de_IR)) ? de_PC : de_rs1;
 	wire [31:0] e_ADDR_RES = e_ADDin1 + e_IMM;
@@ -211,16 +142,10 @@ module torv32(
 	wire e_JoB = isJAL(de_IR) | isJALR(de_IR) | (isBtype(de_IR) & e_takeB);
 	wire [31:0] e_JoB_ADDR = e_ADDR;
 
-	wire [31:0] e_rs2 = (isCSRRS(de_IR)) ? ( de_IR[14] ? {27'b0, de_IR[19:15]} : de_rs1 ):
-					     					       de_rs2;
-
 	always@(posedge clk) begin
-		if(m_flush)
-			em_IR <= NOP;
-		else
-			em_IR   <= de_IR;
+		em_IR   <= de_IR;
 		em_PC   <= de_PC;
-		em_rs2  <= e_rs2;
+		em_rs2  <= de_rs2;
 		em_RES  <= e_RES;
 		em_ADDR <= e_ADDR;
 	end
@@ -237,7 +162,7 @@ module torv32(
 
 
 	wire [31:0] m_store_DATA;
-		assign m_store_DATA[ 7:0 ] = em_rs2[7:0];
+	assign m_store_DATA[ 7:0 ] = em_rs2[7:0];
 	assign m_store_DATA[15:8 ] = em_ADDR[0] ? em_rs2[7:0]  : em_rs2[15:8 ] ;
 	assign m_store_DATA[23:16] = em_ADDR[1] ? em_rs2[7:0]  : em_rs2[23:16] ;
 	assign m_store_DATA[31:24] = em_ADDR[0] ? em_rs2[7:0]  :
@@ -252,7 +177,6 @@ module torv32(
 	wire [20:0] m_word_ADDR = em_ADDR[22:2]; 
 	wire M_isIO  = em_ADDR[22];
 	wire M_isRAM = !M_isIO;
-	wire [31:0] mw_Mdata = mem_data;
 
 	assign IO_mem_addr  = em_ADDR;
 	assign IO_mem_wr    = isStype(em_IR) & M_isIO;
@@ -260,13 +184,10 @@ module torv32(
 
         assign mem_wmask = m_WMASK;
         assign mem_addr = {9'b0,em_ADDR[22:0]};
+        //assign mem_addr = {11'b0,m_word_ADDR};
         assign mem_wdata = m_store_DATA;
-	
-	/*
-	wire [31:0] csr_write = (em_IR[13:12]==2'b01) ?               em_rs2 :
-	*			(em_IR[13:12]==2'b10) ? mw_CSR_RES |  em_rs2 :
-	*						mw_CSR_RES & ~em_rs2 ;
-	*/
+
+	wire [31:0] mw_Mdata = mem_data;
 
 	always@(posedge clk) begin
 		mw_IR     <= em_IR;
@@ -274,26 +195,13 @@ module torv32(
 		mw_RES    <= em_RES;
 		mw_IO_RES <= IO_mem_rdata;
 		mw_ADDR   <= em_ADDR;
-		mw_rs2    <= em_rs2;
-	end
 
-
-	always@(posedge clk) begin
-
-		case(em_IR[31:20])
-			12'hC00: mw_CSR_RES <= cycle  [31:0 ];
-			12'hC02: mw_CSR_RES <= instret[31:0 ];
-			12'hC80: mw_CSR_RES <= cycle  [63:32];
-			12'hC82: mw_CSR_RES <= instret[63:32];
-			
-			12'h300: mw_CSR_RES <= MSTATUS;
-			12'h305: mw_CSR_RES <=   MTVEC;
-			12'h341: mw_CSR_RES <=    MEPC;
-			12'h342: mw_CSR_RES <=  MCAUSE;
-		
-			default: mw_CSR_RES <= mw_CSR_RES;
-		endcase
-
+		case(csrId(em_IR)) 
+			2'b00: mw_CSR_RES <= cycle[31:0];
+			2'b10: mw_CSR_RES <= cycle[63:32];
+			2'b01: mw_CSR_RES <= instret[31:0];
+			2'b11: mw_CSR_RES <= instret[63:32];	 
+		endcase 
 
 		if(!resetn) begin
 			instret <= 0;
@@ -308,7 +216,7 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	reg [31:0] mw_IR, mw_PC, mw_RES, mw_IO_RES, mw_ADDR, mw_CSR_RES, mw_rs2;
+	reg [31:0] mw_IR, mw_PC, mw_RES, mw_IO_RES, mw_ADDR, mw_CSR_RES;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -335,32 +243,8 @@ module torv32(
 
 	assign wb_rdID = rdID(mw_IR);
 
-	wire [31:0] wb_csr = (mw_IR[13:12]==2'b01) ?               mw_rs2 :
-                             (mw_IR[13:12]==2'b10) ? mw_CSR_RES |  mw_rs2 :
-                                                     mw_CSR_RES & ~mw_rs2 ;
-
-	wire wb_csr_en = isCSRRS(mw_IR) & (mw_IR[13:12]==2'b01 | mw_IR[13:12]==2'b10 | mw_IR[13:12]==2'b11);
-
-	wire [11:0] wb_csr_addr = mw_IR[31:20];
-
 	wire JoB = e_JoB;
 	wire [31:0] JoB_ADDR = e_JoB_ADDR;
-
-	always@(posedge clk) begin
-
-		if(wb_csr_en) begin
-			case(wb_csr_addr)
-				12'h300: MSTATUS <= wb_csr;
-				12'h305: MTVEC   <= wb_csr;
-				12'h341: MEPC    <= wb_csr;
-				12'h342: MCAUSE  <= wb_csr;
-				default: un<=un;
-			endcase
-		end
-	end
-
-	reg un=0;
-	reg [31:0] MEPC=0, MTVEC, MCAUSE, MSTATUS;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -384,14 +268,12 @@ module torv32(
 	function isJALR  ; input [31:0] I; isJALR   =(I[6:0]==7'b1100111); endfunction
 	function isSYSTEM; input [31:0] I; isSYSTEM =(I[6:0]==7'b1110011); endfunction
 
-	function isMulDiv; input [31:0] I; isMulDiv =(I[6:0]==7'b0110011 && I[25]); endfunction
-
 	function writes_rd; input [31:0] I; writes_rd = !isStype(I) & !isBtype(I)           ; endfunction
 	function reads_rs1; input [31:0] I; reads_rs1 = !(isJAL(I) | isAUIPC(I) | isLUI(I)) ; endfunction
 	function reads_rs2; input [31:0] I; reads_rs2 = isRtype(I) | isBtype(I) | isStype(I); endfunction
 
 	function isEBREAK; input [31:0] I; isEBREAK = (isSYSTEM(I) && funct3(I) == 3'b000); endfunction
-	function isCSRRS;  input [31:0] I; isCSRRS = (isSYSTEM(I)); endfunction
+	function isCSRRS; input [31:0] I; isCSRRS = (isSYSTEM(I) && funct3(I) == 3'b010); endfunction
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -399,94 +281,11 @@ module torv32(
                 /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
                         if(halt) begin
-				/*$display("Simulated processor's report");
-				$display("----------------------------");
-				$display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
-				$display("CPI = %f" , cycle/instret);*/
-				//$display("MEPC 0x%04x\nMSTATUS 0x%04x\nMTVEC 0x%04x\nMCAUSE 0x%04x\n", MEPC, MSTATUS, MTVEC, MCAUSE);
-				$finish();
+                        	$display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
+                                $finish();
                         end
                 end
                 /* verilator lint_on WIDTH */
         `endif
 
 endmodule
-
-/*
-*         wire        pcpi_valid;
-        wire [31:0] pcpi_insn, pcpi_rs1, pcpi_rs2  ;
-
-        wire [31:0] pcpi_rd   ;
-        wire        pcpi_wr, pcpi_wait, pcpi_ready;
-
-        wire [31:0] pcpi_mul_rd   ;
-        wire        pcpi_mul_wr, pcpi_mul_wait, pcpi_mul_ready;
-
-        wire [31:0] pcpi_div_rd   ;
-        wire        pcpi_div_wr, pcpi_div_wait, pcpi_div_ready;
-
-        picorv32_pcpi_fast_mul pcpi_mul (
-                .clk       (clk            ),
-                .resetn    (resetn         ),
-                .pcpi_valid(pcpi_valid     ),
-                .pcpi_insn (pcpi_insn      ),
-                .pcpi_rs1  (pcpi_rs1       ),
-                .pcpi_rs2  (pcpi_rs2       ),
-                .pcpi_wr   (pcpi_mul_wr    ),
-                .pcpi_rd   (pcpi_mul_rd    ),
-                .pcpi_wait (pcpi_mul_wait  ),
-                .pcpi_ready(pcpi_mul_ready )
-        );
-
-        picorv32_pcpi_div pcpi_div (
-                .clk       (clk            ),
-                .resetn    (resetn         ),
-                .pcpi_valid(pcpi_valid     ),
-                .pcpi_insn (pcpi_insn      ),
-                .pcpi_rs1  (pcpi_rs1       ),
-                .pcpi_rs2  (pcpi_rs2       ),
-                .pcpi_wr   (pcpi_div_wr    ),
-                .pcpi_rd   (pcpi_div_rd    ),
-                .pcpi_wait (pcpi_div_wait  ),
-                .pcpi_ready(pcpi_div_ready )
-        );
-
-        assign pcpi_rd    = pcpi_insn[14] ? pcpi_div_rd :
-                                            pcpi_mul_rd ;
-        assign pcpi_wr    = pcpi_insn[14] ? pcpi_div_wr :
-                                            pcpi_mul_wr ;
-        assign pcpi_wait  = pcpi_insn[14] ? pcpi_div_wait :
-                                            pcpi_mul_wait ;
-        assign pcpi_ready = pcpi_insn[14] ? pcpi_div_ready :
-                                            pcpi_mul_ready ;
-
-        torv32 CPU (
-                .clk          (clk),
-                .resetn       (resetn),
-
-                .imem_en      (imem_en),
-                .imem_addr    (imem_addr),
-                .imem_data    (imem_data),
-
-                .mem_data     (mem_data),
-                .mem_wmask    (mem_wmask),
-                .mem_addr     (mem_addr),
-                .mem_wdata    (mem_wdata),
-
-                .IO_mem_addr  (IO_mem_addr),
-                .IO_mem_rdata (IO_mem_rdata),
-                .IO_mem_wdata (IO_mem_wdata),
-                .IO_mem_wr    (IO_mem_wr),
-
-                .pcpi_valid(pcpi_valid),
-                .pcpi_insn(pcpi_insn),
-                .pcpi_rs1(pcpi_rs1),
-                .pcpi_rs2(pcpi_rs2),
-                .pcpi_wr(pcpi_wr),
-                .pcpi_rd(pcpi_rd),
-                .pcpi_wait(pcpi_wait),
-                .pcpi_ready(pcpi_ready)
-
-        );
-				    
-*/

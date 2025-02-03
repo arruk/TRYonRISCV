@@ -1,13 +1,13 @@
-`define TORVS
+//`define TORVS
 //`define GOWIN
-//`define DUALMEM
+//`define TORV
 //`define DE10S
 
 `ifndef BENCH
 	`define SYN
 `endif
 
-`ifdef DUALMEM
+`ifdef TORV
 module mem (
         input             clk,
 

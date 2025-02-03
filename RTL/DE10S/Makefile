@@ -1,3 +1,14 @@
+fix:
+	rm src/core.sv
+	rm src/soc.v
+	rm src/mem.sv
+	rm src/alu.v
+	rm src/clockworks.v
+	rm src/uart_tx.v
+	rm src/DATARAM.hex
+	rm src/PROGROM.hex
+	rm src/RAM.mif
+
 change:
 	rm -rf src/core.v
 	ln -P ../../SIM/CORE/$(v).v src/core.v

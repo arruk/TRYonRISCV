@@ -1,77 +1,16 @@
+# Classificação dos PIPELINES simples
 
-INFORMACOES SOBRE OS PROCESSADORES:
+- torv1.v
+    - implementacao mais simples
 
-core2.v :
- - ULA SEPARADA
- - ESTAGIO "E" SIMPLIFICADO
- - LEITURA E ESCRITA NO MESMO CICLO
- - SEM FORWARDING
+- torv2.v
+    - forwarding adicionado
 
-core2_1.v :
- - LIMPEZA DO core2.v
+- torv3.v
+    - BTFNT
 
-core3.v :
- - ADICAO DE FORWARDING
+- torv4.v
+    - Bimodal 2bit
 
-core4.v :
- - INTRODUÇÃO À PREDIÇÃO DE DESVIO ESTÁTICA
- - FEITO COM: BTFNT(Backwards Taken Forward Not Taken)
- - RESULTADO DHRYSTONES: 84.285% DE ACERTO
- - RESULTADO RAYSTONES : 63.941% DE ACERTO
-
-core5.v :
- - INTRODUCAO À PREDICAO DE DESVIO DINÂMICA
- - USO DE UMA TABELA DE HISTÓRICO DE DESVIO(BHT) COM 1bit POR ENDEREÇO
- - DHRYSTONES:
-	 - RESULTADO COM 12bits DE ENDEREÇAMENTO: 87.488% DE ACERTO (1894 LUT4/ 507 DFF/ 16 BSRAM).
-	 - RESULTADO COM 7 bits DE ENDEREÇAMENTO: 87.487% DE ACERTO (1909 LUT4/ 512 DFF/ 15 BSRAM).
-	 - RESULTADO COM 6 bits DE ENDEREÇAMENTO: 81.488% DE ACERTO (1896 LUT4/ 511 DFF/ 15 BSRAM).
- - RAYSTONES:
-	 - RESULTADO COM 12bits DE ENDEREÇAMENTO: 74.590% DE ACERTO.
-	 - RESULTADO COM 7 bits DE ENDEREÇAMENTO: 73.137% DE ACERTO.
-	 - RESULTADO COM 6 bits DE ENDEREÇAMENTO: 72.145% DE ACERTO.
-	 - RESULTADO COM 3 bits DE ENDEREÇAMENTO: 68.783% DE ACERTO.
-
-core6.v :
- - APRIMORAMENTO DA BHT PARA 2bits POR ENDEREÇO
- - DHRYSTONES:
-	 - RESULTADO COM 12bits DE ENDEREÇAMENTO: 93.725% DE ACERTO.
-	 - RESULTADO COM 7 bits DE ENDEREÇAMENTO: 93.725% DE ACERTO.
-	 - RESULTADO COM 6 bits DE ENDEREÇAMENTO: 90.612% DE ACERTO.
-	 - RESULTADO COM 5 bits DE ENDEREÇAMENTO: 87.498% DE ACERTO.
-	 - RESULTADO COM 3 bits DE ENDEREÇAMENTO: 81.253% DE ACERTO.
- - RAYSTONES:
-	 - RESULTADO COM 12bits DE ENDEREÇAMENTO: 77.014% DE ACERTO.
-	 - RESULTADO COM 7 bits DE ENDEREÇAMENTO: 75.697% DE ACERTO.
-	 - RESULTADO COM 6 bits DE ENDEREÇAMENTO: 74.441% DE ACERTO.
-	 - RESULTADO COM 5 bits DE ENDEREÇAMENTO: 73.908% DE ACERTO.
-	 - RESULTADO COM 3 bits DE ENDEREÇAMENTO: 70.807% DE ACERTO.
-
-core7.v :
- - INTRODUÇÃO À PREDICAO GLOBAL ADAPTATIVA DE DOIS NÍVEIS
- - RAYSTONES: 
-	- RESULTADO COM 9bits DE BHT E 6bits de BH: 78.710% DE ACERTO.
- - DHRYSTONES: 
-	- RESULTADO COM 9bits DE BHT E 6bits de BH: 98.398% DE ACERTO.
-
-core8.v :
- - INTRODUÇÃO À GSHARE 
- - DHRYSTONES: 
-	- RESULTADO COM 12bits DE BHT E 9bits de BH: 98.399% DE ACERTO.
-	- RESULTADO COM 9 bits DE BHT E 6bits de BH: 96.839% DE ACERTO.
- - RAYSTONES: 
-	- RESULTADO COM 12bits DE BHT E 9bits de BH: 81.943% DE ACERTO.
-	- RESULTADO COM 9 bits DE BHT E 6bits de BH: 78.346% DE ACERTO.
-
-------------------------------------------------------------------------------------------------------------
-INFORMACOES SOBRE AS ALUs:
-
-ALU :
- - Unidade mais básica
- - Somador/Subtrator com o simbolo "+" do Verilog
-
-ALU2:
- - Substituição do antigo Somador/Subtrator por um 
- CarryLookAhead-Adder hierárquico com 4 CLA-Adders 
- de 8bits.
-------------------------------------------------------------------------------------------------------------
+- torv5.v
+    - GSHARE ou GSELECT
