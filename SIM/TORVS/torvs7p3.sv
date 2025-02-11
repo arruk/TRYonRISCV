@@ -3,7 +3,7 @@
 `endif
 
 `ifndef SYN
-        `include "AUX/alu.v"
+        `include "AUX/alu_old.v"
 `endif
 
 module torv32(

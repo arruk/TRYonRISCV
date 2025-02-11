@@ -3,7 +3,6 @@ main() {
 	(cd obj_dir; rm -f *.cpp *.o *.a VSOC)
 
 	PREC="PRECOMPILED"
-	INFO_DIR="../INFO/BENCH/TORV"
 	BENCH=$(cut -d. -f 1 firmware.txt)
 
 	if [ "$2" = "v" ]
@@ -32,19 +31,45 @@ main() {
 		obj_dir/VSOC > ${INFO_DIR}/temp
 		rayst_parse	
 
-		#cp ${PREC}/DHRYSTONES/DATARAM.hex HEX/ && cp ${PREC}/DHRYSTONES/PROGROM.hex HEX/
-		#echo "dhrystones.pipeline.hex" > firmware.txt
-		#BENCH=$(cut -d. -f 1 firmware.txt)
-		#echo $BENCH
-		#obj_dir/VSOC > ${INFO_DIR}/temp
-		#dhry_parse
+		cp ${PREC}/DHRYSTONES/DATARAM.hex HEX/ && cp ${PREC}/DHRYSTONES/PROGROM.hex HEX/
+		echo "dhrystones.pipeline.hex" > firmware.txt
+		BENCH=$(cut -d. -f 1 firmware.txt)
+		echo $BENCH
+		obj_dir/VSOC > ${INFO_DIR}/temp
+		dhry_parse
 
-		#cp ${PREC}/COREMARK/DATARAM.hex HEX/ && cp ${PREC}/COREMARK/PROGROM.hex HEX/
-		#echo "coremark.pipeline.hex" > firmware.txt
-		#BENCH=$(cut -d. -f 1 firmware.txt)
-		#echo $BENCH
-		#obj_dir/VSOC > ${INFO_DIR}/temp
-		#cmark_parse
+		cp ${PREC}/COREMARK/DATARAM.hex HEX/ && cp ${PREC}/COREMARK/PROGROM.hex HEX/
+		echo "coremark.pipeline.hex" > firmware.txt
+		BENCH=$(cut -d. -f 1 firmware.txt)
+		echo $BENCH
+		obj_dir/VSOC > ${INFO_DIR}/temp
+		cmark_parse
+
+	elif [ "$2" = "b" ]
+	then	
+		
+		verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -D$CORE -D$CPUT -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
+			  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c soc.v
+		
+		(cd obj_dir; make -f VSOC.mk)
+		
+		cp ${PREC}/RAYSTONES/DATARAM.hex HEX/ && cp ${PREC}/RAYSTONES/PROGROM.hex HEX/
+		echo "raystones.pipeline.hex" > firmware.txt
+		BENCH=$(cut -d. -f 1 firmware.txt)
+		echo $BENCH
+		obj_dir/VSOC
+
+		cp ${PREC}/DHRYSTONES/DATARAM.hex HEX/ && cp ${PREC}/DHRYSTONES/PROGROM.hex HEX/
+		echo "dhrystones.pipeline.hex" > firmware.txt
+		BENCH=$(cut -d. -f 1 firmware.txt)
+		echo $BENCH
+		obj_dir/VSOC
+
+		cp ${PREC}/COREMARK/DATARAM.hex HEX/ && cp ${PREC}/COREMARK/PROGROM.hex HEX/
+		echo "coremark.pipeline.hex" > firmware.txt
+		BENCH=$(cut -d. -f 1 firmware.txt)
+		echo $BENCH
+		obj_dir/VSOC
 
 	else
 
@@ -109,17 +134,43 @@ cmark_parse(){
 
 if [ "$2" = "a" ]
 then
-	for i in {3..5}
+	for i in {5..8}
 	do
-		for j in {1..1}
+		for j in {5..5}
 		do
-			#CORE="TORVS"$i"P"$j 
-			#IMPL="torvs"$i"p"$j
-			CORE="TORV"$i 
-			IMPL="torv"$i
+			#CORE="TORV"$i 
+			#IMPL="torv"$i
+			#IMPL_T=$IMPL	
+			#CPUT="TORV"
+			#ln -s CORE/$IMPL.v
+			#INFO_DIR="../INFO/BENCH/TORV"
+			
+			CORE="TORVS"$i"P"$j 
+			IMPL="torvs"$i"p"$j
 			IMPL_T=$IMPL	
-			CPUT="TORV"
-			ln -s CORE/$IMPL.v
+			CPUT="TORVS"
+			ln -s TORVS/$IMPL.sv
+			INFO_DIR="../INFO/BENCH/TORVS"
+
+			echo "STARTING $CORE"
+			main "$@"
+			rm -rf $IMPL.sv
+			echo "FINISHED IN $CORE"
+		done
+	done
+elif [ "$2" = "b" ]
+then
+	for i in 5 7 9
+	do
+		for j in 1 3 5
+		do
+			CORE="TORVS"$i"BP"$j 
+			IMPL="torvs"$i"Bp"$j
+			IMPL_T=$IMPL	
+			CPUT="TORVS"
+			ln -s TORVS/$IMPL.sv
+			INFO_DIR="../INFO/BENCH/TORVS"
+
 			echo "STARTING $CORE"
 			main "$@"
 			rm -rf $IMPL.sv
@@ -130,7 +181,7 @@ else
 	CORE=$(echo $1 | cut -d. -f 1 | tr 'a-z' 'A-Z' )
 	IMPL=$(echo $1 | cut -d. -f 1)
 	IMPL_T=$IMPL
-	CPUT=$(echo $1 | sed 's/[0-9].*//' | tr 'a-z' 'A-Z')
+	CPUT="TORV"#$(echo $1 | sed 's/[0-9].*//' | tr 'a-z' 'A-Z')
 	main "$@"
 fi
 

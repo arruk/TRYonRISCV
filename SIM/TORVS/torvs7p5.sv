@@ -3,7 +3,7 @@
 `endif
 
 `ifndef SYN
-        `include "AUX/alu.v"
+        `include "AUX/alu_old.v"
 `endif
 
 module torv32(
@@ -79,7 +79,7 @@ module torv32(
 
 	wire control_HAZ = !b_ins_ALL | fd_data_HAZ;
 	
-	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR) | isAUIPC(b_fd_IR) | isLUI(b_fd_IR) | isStype(b_fd_IR) | isLoad(b_fd_IR) | isJAL(b_fd_IR) | isJALR(b_fd_IR); // | isBtype(b_fd_IR);
+	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR) | isAUIPC(b_fd_IR) | isLUI(b_fd_IR) | isStype(b_fd_IR) | isLoad(b_fd_IR) | isJAL(b_fd_IR) | isJALR(b_fd_IR) | isBtype(b_fd_IR);
 
 	wire ba_fd_rs1_HAZ = !b_fd_NOP & reads_rs1(b_fd_IR) & rs1ID(b_fd_IR)!=0 & (
 			   (writes_rd(a_fd_IR) & (rs1ID(b_fd_IR) == rdID(a_fd_IR))));

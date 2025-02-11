@@ -1,4 +1,4 @@
-//`define TORVS
+`define TORVS
 //`define COPROC
 //`define DE10S
 //`define PRIMER20K
@@ -292,18 +292,60 @@ endmodule
 		`include "torv1.v"
 	`elsif TORV2
 		`include "torv2.v"
+	`elsif TORV2P1
+		`include "torv2p1.v"
+	`elsif TORV4P1
+		`include "torv4p1.v"
 	`elsif TORV3
 		`include "torv3.v"
 	`elsif TORV4
 		`include "torv4.v"
 	`elsif TORV5
 		`include "torv5.v"
+	`elsif TORVS2
+		`include "torvs2.sv"
 	`elsif TORVS1
 		`include "torvs1.sv"
 	`elsif TORVS6P1
 		`include "torvs6p1.sv"
 	`elsif TORVS9P4
 		`include "torvs9p4.sv"
+	`elsif TORVS9AP4
+		`include "torvs9Ap4.sv"
+	`elsif TORVS9A1P4
+		`include "torvs9A1p4.sv"
+	`elsif TORVS9BP4
+		`include "torvs9Bp4.sv"
+        `elsif TORVS9B1P4
+                `include "torvs9B1p4.sv"
+        `elsif TORVS9B2P4
+                `include "torvs9B2p4.sv"
+        `elsif TORVS9B3P4
+                `include "torvs9B3p4.sv"
+        `elsif TORVS9B5P4
+                `include "torvs9B4p4.sv"
+        `elsif TORVS9B6P4
+                `include "torvs9B6p4.sv"
+        `elsif TORVS9B4P4
+                `include "torvs9B4p4.sv"
+        `elsif TORVS9BP5
+                `include "torvs9Bp5.sv"
+        `elsif TORVS9BP3
+                `include "torvs9Bp3.sv"
+        `elsif TORVS9BP1
+                `include "torvs9Bp1.sv"
+        `elsif TORVS7BP5
+                `include "torvs7Bp5.sv"
+        `elsif TORVS7BP3
+                `include "torvs7Bp3.sv"
+        `elsif TORVS7BP1
+                `include "torvs7Bp1.sv"
+	`elsif TORVS5BP5
+                `include "torvs5Bp5.sv"
+        `elsif TORVS5BP3
+                `include "torvs5Bp3.sv"
+        `elsif TORVS5BP1
+                `include "torvs5Bp1.sv"
 	`elsif TORVS1P4
 		`include "torvs1p4.sv"
 	`elsif TORVS9P5
@@ -324,6 +366,8 @@ endmodule
 		`include "torvs1p4.sv"
 	`elsif TORVS1P5
 		`include "torvs1p5.sv"
+	`elsif TORVS1P6
+		`include "torvs1p6.sv"
 	`elsif TORVS8P1
 		`include "torvs8p1.sv"
 	`elsif TORVS8P2
@@ -366,6 +410,8 @@ endmodule
 		`include "torvs5p4.sv"
 	`elsif TORVS5P5
 		`include "torvs5p5.sv"
+	`elsif TORVSA1
+		`include "torvsA1.sv"
 	`endif
 
 `endif

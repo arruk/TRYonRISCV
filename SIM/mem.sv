@@ -1,4 +1,4 @@
-//`define TORVS
+`define TORVS
 //`define GOWIN
 //`define TORV
 //`define DE10S

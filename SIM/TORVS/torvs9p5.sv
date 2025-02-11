@@ -3,7 +3,7 @@
 `endif
 
 `ifndef SYN
-        `include "AUX/alu.v"
+        `include "AUX/alu_old.v"
 `endif
 
 module torv32(
@@ -79,7 +79,7 @@ module torv32(
 
 	wire control_HAZ = !b_ins_ALL | fd_data_HAZ;
 
-	wire b_ins_ALL =isRtype(b_fd_IR) | isRimm(b_fd_IR) | isAUIPC(b_fd_IR) | isLUI(b_fd_IR) | isStype(b_fd_IR) | isLoad(b_fd_IR) | isJAL(b_fd_IR) | isJALR(b_fd_IR);// | isBtype(b_fd_IR);
+	wire b_ins_ALL = isRtype(b_fd_IR) | isRimm(b_fd_IR) | isAUIPC(b_fd_IR) | isLUI(b_fd_IR) | isStype(b_fd_IR) | isLoad(b_fd_IR) | isJAL(b_fd_IR) | isJALR(b_fd_IR) | isBtype(b_fd_IR);
 
 	wire ba_fd_rs1_HAZ = !b_fd_NOP & b_ins_ALL & reads_rs1(b_fd_IR) & rs1ID(b_fd_IR)!=0 & (
 			   (writes_rd(a_fd_IR) & (rs1ID(b_fd_IR) == rdID(a_fd_IR))));
@@ -105,11 +105,13 @@ module torv32(
         reg [1:0] BHT [BHT_SIZE-1:0];
 	reg [BP_HIST_BITS-1:0] BH;
 
-        reg [1:0] BHT_data;
-	reg [BHT_ADDR_BITS-1:0] a_BHT_index;
+        reg [1:0] a_BHT_data, b_BHT_data;
+	reg [BHT_ADDR_BITS-1:0] a_BHT_index, b_BHT_index;
 	always@(posedge clk)begin
-                BHT_data    <= BHT[BHT_index(a_imem_addr)];
+                a_BHT_data    <= BHT[BHT_index(a_imem_addr)];
+                b_BHT_data    <= BHT[BHT_index(b_imem_addr)];
 		a_BHT_index <= BHT_index(a_imem_addr);
+		b_BHT_index <= BHT_index(b_imem_addr);
 	end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -163,11 +165,11 @@ module torv32(
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	wire a_d_predict = BHT_data[1];
+	wire a_d_predict = a_BHT_data[1];
 	wire a_d_JoB_now = !a_fd_NOP & (isJAL(a_fd_IR) | (isBtype(a_fd_IR) & a_d_predict));
         wire [31:0] a_d_JoB_ADDR = a_fd_PC + (isJAL(a_fd_IR) ? Jimm(a_fd_IR) : Bimm(a_fd_IR));
 
-        wire b_d_predict = BHT_data[1];
+        wire b_d_predict = b_BHT_data[1];
         wire b_d_JoB_now = !b_fd_NOP & !control_HAZ & (isJAL(b_fd_IR) | (isBtype(b_fd_IR) & b_d_predict));
         wire [31:0] b_d_JoB_ADDR = b_fd_PC + (isJAL(b_fd_IR) ? Jimm(b_fd_IR) : Bimm(b_fd_IR));
 
@@ -200,7 +202,7 @@ module torv32(
 			b_de_IR       <= (b_e_flush | b_fd_NOP | control_HAZ | a_d_JoB_now) ? NOP : b_fd_IR;
 			b_de_PC       <= b_fd_PC;
 			b_de_predict  <= b_d_predict;
-			b_de_BHTindex <= BHT_index(b_fd_PC);
+			b_de_BHTindex <= b_BHT_index;//BHT_index(b_fd_PC);
 		end 
 			
 		if(b_e_flush) begin
@@ -298,6 +300,10 @@ module torv32(
 		if(isBtype(a_de_IR)) begin
 			BH <= {a_e_takeB, BH[BP_HIST_BITS-1:1]};
 			BHT[a_de_BHTindex] <= incdec_sat(BHT[a_de_BHTindex], a_e_takeB);
+		end
+		if(isBtype(b_de_IR)) begin
+			BH <= {b_e_takeB, BH[BP_HIST_BITS-1:1]};
+			BHT[b_de_BHTindex] <= incdec_sat(BHT[b_de_BHTindex], b_e_takeB);
 		end
 		
 	end
@@ -595,6 +601,7 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	/*
         `ifdef BENCH
 
                 integer a_nbBranch = 0;
@@ -602,6 +609,125 @@ module torv32(
                 integer b_nbBranch = 0;
                 integer b_nbPredictHit = 0;
 		integer nbJAL  = 0;
+                integer nbJALR = 0;
+		integer nbControl_haz = 0;
+		integer nb_notallowed_haz = 0;
+		integer nb_fddata_haz = 0;
+		integer nb_bothcont_haz = 0;
+		integer nb_bothbtype = 0;
+		integer nb_fstalls = 0;
+		integer nb_data_HAZ = 0;
+		integer nb_a_data_HAZ = 0;
+		integer nb_ba_data_HAZ = 0;
+		integer nb_b_data_HAZ = 0;
+		integer nb_ab_data_HAZ = 0;
+		integer nb_ar_HAZ = 0;
+		integer nb_aLoC_HAZ = 0;
+		integer nb_afdN_HAZ = 0;
+		
+		always @(posedge clk) begin
+                        if(resetn) begin
+                                if(isBtype(a_de_IR)) begin
+                                        a_nbBranch <= a_nbBranch + 1;
+                                        if(a_e_takeB == a_de_predict) begin
+                                                a_nbPredictHit <= a_nbPredictHit + 1;
+                                        end
+                                end
+
+				if(isBtype(b_de_IR)) begin
+                                        b_nbBranch <= b_nbBranch + 1;
+                                        if(b_e_takeB == b_de_predict) begin
+                                                b_nbPredictHit <= b_nbPredictHit + 1;
+                                        end
+                                end
+
+                                if(isJAL(a_de_IR)) begin
+                                        nbJAL <= nbJAL + 1;
+                                end
+                                if(isJALR(b_de_IR)) begin
+                                        nbJALR <= nbJALR + 1;
+                                end
+
+				if(control_HAZ) begin
+					nbControl_haz <= nbControl_haz + 1;
+					if(!b_ins_ALL && !fd_data_HAZ) begin
+						nb_notallowed_haz <= nb_notallowed_haz + 1;
+					end
+					if(b_ins_ALL && fd_data_HAZ) begin
+						nb_fddata_haz <= nb_fddata_haz + 1;
+					end
+					if(!b_ins_ALL && fd_data_HAZ) begin
+						nb_bothcont_haz <= nb_bothcont_haz + 1;
+					end
+				end
+				
+				if(isBtype(a_de_IR) && isBtype(b_de_IR)) begin
+					nb_bothbtype <= nb_bothbtype + 1;
+				end
+
+				if(a_e_flush) begin
+					nb_fstalls <= nb_fstalls + 1;
+				end
+				
+				if(data_HAZ) begin
+					nb_data_HAZ <= nb_data_HAZ + 1;
+				end
+				
+				if(a_data_HAZ) begin
+					nb_a_data_HAZ <= nb_a_data_HAZ + 1;
+				end
+				if(ba_data_HAZ) begin
+					nb_ba_data_HAZ <= nb_ba_data_HAZ + 1;
+				end
+				if(b_data_HAZ) begin
+					nb_b_data_HAZ <= nb_b_data_HAZ + 1;
+				end
+				if(ab_data_HAZ) begin
+					nb_ab_data_HAZ <= nb_ab_data_HAZ + 1;
+				end
+				if((a_rs1_HAZ | a_rs2_HAZ) & (isLoad(a_de_IR) | isCSRRS(a_de_IR))) begin
+					nb_ar_HAZ <= nb_ar_HAZ + 1;
+				end
+				if(isLoad(a_de_IR) | isCSRRS(a_de_IR)) begin
+					nb_aLoC_HAZ <= nb_aLoC_HAZ + 1;
+				end
+				if(!a_fd_NOP) begin
+					nb_afdN_HAZ <= nb_afdN_HAZ + 1;
+				end
+                        end
+		end
+	*/
+                /* verilator lint_off WIDTH */
+                /*always @(posedge clk) begin
+                        if(halt) begin
+                                $display("----------------------------");
+                                $display("A Branch hits= %3.3f\%%", a_nbPredictHit*100.0/a_nbBranch);
+                                $display("B Branch hits= %3.3f\%%", b_nbPredictHit*100.0/b_nbBranch);
+                                $display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
+				$display("Number of Control Hazards = %d", nbControl_haz);
+				$display("Number of only not allowed instructions in B = %d (%3.3f\%% of total)",nb_notallowed_haz, nb_notallowed_haz*100.0/nbControl_haz );
+				$display("Number of only fd datahaz in B = %d (%3.3f\%% of total)", nb_fddata_haz, nb_fddata_haz*100.0/nbControl_haz );
+				$display("Number of both hazs in B = %d (%3.3f\%% of total)", nb_bothcont_haz, nb_bothcont_haz*100.0/nbControl_haz );
+				$display("Number of both branch = %d", nb_bothbtype);
+				$display("Number of data haz = %d", nb_data_HAZ);
+				$display("Number of A data haz = %d", nb_a_data_HAZ);
+				$display("Number of BA data haz = %d", nb_ba_data_HAZ);
+				$display("Number of B data haz = %d", nb_b_data_HAZ);
+				$display("Number of AB data haz = %d", nb_ab_data_HAZ);
+				$display("Number of a_rs1_HAZ | a_rs2_HAZ & isLoad(a_de_IR) | isCSRRS(a_de_IR)= %d", nb_ar_HAZ);
+				$display("Number of !a_fd_NOP = %d", nb_afdN_HAZ);
+                                $finish();
+                        end
+                end*/
+                /* verilator lint_on WIDTH */
+        //`endif
+        `ifdef BENCH
+
+                integer a_nbBranch = 0;
+                integer a_nbPredictHit = 0;
+                integer b_nbBranch = 0;
+                integer b_nbPredictHit = 0;
+                integer nbJAL  = 0;
                 integer nbJALR = 0;
 
                 always @(posedge clk) begin
@@ -620,7 +746,7 @@ module torv32(
                                         nbJALR <= nbJALR + 1;
                                 end
                         end
-		end
+                end
 
                 /* verilator lint_off WIDTH */
                 always @(posedge clk) begin
