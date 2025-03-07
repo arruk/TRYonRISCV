@@ -174,6 +174,11 @@ module torv32(
 
                 a_de_type <= a_d_type;
 
+                aC_de_ALUin1  <= (isJAL(a_fd_IR) | isJALR(a_fd_IR) | isAUIPC(a_fd_IR));
+                aC_de_ALUin2  <= (isRtype(a_fd_IR) | isBtype(a_fd_IR)) ? 2'b01 :
+                                 (isRimm(a_fd_IR)  | isAUIPC(a_fd_IR)) ? 2'b10 :
+                                                                         2'b00 ;
+
 		if(!b_d_stall) begin
 			b_de_IR <= (b_e_flush | b_fd_NOP | control_HAZ) ? NOP : b_fd_IR;
 			b_de_PC <= b_fd_PC;
@@ -193,6 +198,11 @@ module torv32(
                 b_e_aw_fwd_rs2 <= (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs2ID(b_fd_IR));
 
                 b_de_type <= b_d_type;
+
+		bC_de_ALUin1  <= (isJAL(b_fd_IR) | isJALR(b_fd_IR) | isAUIPC(b_fd_IR));
+                bC_de_ALUin2  <= (isRtype(b_fd_IR) | isBtype(b_fd_IR)) ? 2'b01 :
+                                 (isRimm(b_fd_IR)  | isAUIPC(b_fd_IR)) ? 2'b10 :
+                                                                         2'b00 ;
 
 		if(a_wb_enable) begin
 			reg_file[a_wb_rdID] <= a_wb_DATA;
@@ -222,6 +232,9 @@ module torv32(
         reg b_e_bm_fwd_rs2, b_e_bw_fwd_rs2, b_e_am_fwd_rs2, b_e_aw_fwd_rs2;
 
         reg [2:0] a_de_type, b_de_type;
+
+	reg aC_de_ALUin1, aC_de_isLUI, aC_de_ADDin1, aC_de_ADDin2, aC_de_nisJALR;  reg [1:0] aC_de_ALUin2;
+        reg bC_de_ALUin1, bC_de_isLUI, bC_de_ADDin1, bC_de_nisJALR;                reg [1:0] bC_de_ALUin2;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -255,16 +268,23 @@ module torv32(
 
 	wire [31:0] a_e_IMM;
 
-	imm_mux m0(
+	imm_mux_c m0(
 		.instr(a_de_IR),
                 .immtype(a_de_type),
 		.imm(a_e_IMM)
 	);
 
+	/*
 	wire [31:0] a_e_ALUin1 = (isJAL(a_de_IR) | isJALR(a_de_IR) | isAUIPC(a_de_IR)) ? a_de_PC : a_e_rs1;
 	wire [31:0] a_e_ALUin2 = (isRtype(a_de_IR) | isBtype(a_de_IR))? a_e_rs2 :
 	       		         (isRimm(a_de_IR)  | isAUIPC(a_de_IR))? a_e_IMM  :
 			       		                    		  32'd4  ;	
+	*/
+
+        wire [31:0] a_e_ALUin1 = aC_de_ALUin1 ? a_de_PC : a_e_rs1;
+        wire [31:0] a_e_ALUin2 = aC_de_ALUin2[0] ? a_e_rs2 :
+                                 aC_de_ALUin2[1] ? a_e_IMM :
+                                                    32'd4  ;
 	wire [31:0] a_e_ALUout;
 	wire a_e_takeB;
 
@@ -324,17 +344,25 @@ module torv32(
 
 	wire [31:0] b_e_IMM;
 
-        imm_mux m1(
+        imm_mux_c m1(
                 .instr(b_de_IR),
                 .immtype(b_de_type),
                 .imm(b_e_IMM)
         );
 
+	/*
         wire [31:0] b_e_ALUin1 = (isJAL(b_de_IR) | isJALR(b_de_IR) | isAUIPC(b_de_IR)) ? b_de_PC : b_e_rs1;
         wire [31:0] b_e_ALUin2 = (isRtype(b_de_IR) | isBtype(b_de_IR))? b_e_rs2 :
                                  (isRimm(b_de_IR)  | isAUIPC(b_de_IR))? b_e_IMM :
                                                                           32'd4 ;
-        wire [31:0] b_e_ALUout;
+	*/									  
+	
+        wire [31:0] b_e_ALUin1 = bC_de_ALUin1 ? b_de_PC : b_e_rs1;
+        wire [31:0] b_e_ALUin2 = bC_de_ALUin2[0] ? b_e_rs2 :
+                                 bC_de_ALUin2[1] ? b_e_IMM :
+                                                    32'd4  ;
+									  
+	wire [31:0] b_e_ALUout;
         wire b_e_takeB;
 
         alu u1(

@@ -2,7 +2,7 @@ INFO="../../INFO/BOARDS/DE10S"
 
 main () {
 
-	make clean all
+	#make clean all
 
 	BENCH=$(cat firmware.txt)
 	CPU=$(cat core.txt)
@@ -36,27 +36,28 @@ main () {
 
 echo "STARTING SCRIPT"
 
-for i in {1..5}
+for i in 5
 do
-        rm -rf src/core.sv
-	#ln -P ../../SIM/TORVS/torvs8p$i.sv src/core.sv
-	cp ../../SIM/TORVS/torvs1p$i.sv src/core.sv
-        echo "torvs1p$i" > core.txt
+	for j in 4
+	do
+		#rm -rf src/core.sv
+		#ln -P ../../SIM/TORVS/torvs8p$i.sv src/core.sv
+		#cp ../../SIM/TORVS/torvs"$i"Bp"$j".sv src/core.sv
+		#echo "torvs$i""Bp$j" > core.txt
 
-	#cp ../../SIM/PRECOMPILED/DHRYSTONES/PROGROM.hex src/
-	#cp mem/DHRYSTONES.mif ./src/RAM.mif
-        #echo "dhrystones" > firmware.txt
-	main "@"	
-	#cp ../../SIM/PRECOMPILED/RAYSTONES/PROGROM.hex src/
-	#cp mem/RAYSTONES.mif ./src/RAM.mif
-        #echo "raystones" > firmware.txt
-	#main "@"	
-	#cp ../../SIM/PRECOMPILED/COREMARK/PROGROM.hex src/
-	#cp mem/COREMARK.mif ./src/RAM.mif
-        #echo "coremark" > firmware.txt
-	#main "@"	
-
-
+		#cp ../../SIM/PRECOMPILED/DHRYSTONES/PROGROM.hex src/
+		#cp mem/DHRYSTONES.mif ./src/RAM.mif
+		#echo "dhrystones" > firmware.txt
+		main "@"	
+		#cp ../../SIM/PRECOMPILED/RAYSTONES/PROGROM.hex src/
+		#cp mem/RAYSTONES.mif ./src/RAM.mif
+		#echo "raystones" > firmware.txt
+		#main "@"	
+		#cp ../../SIM/PRECOMPILED/COREMARK/PROGROM.hex src/
+		#cp mem/COREMARK.mif ./src/RAM.mif
+		#echo "coremark" > firmware.txt
+		#main "@"	
+	done
 done
 
 exit

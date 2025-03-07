@@ -1,6 +1,6 @@
 # TORVS (Try On RISC-V Superscalar)
 
-Utilizando os seguintes processadores na analise: 1 (implementacao mais simples), 5 (adicao de forwarding), 7 (predicao estatica), 9 (predicao dinamica). Alem disso, as modificacoes utilizadas serão p1 (mais simples), p3 (STOREs no B, e btype em A não causa refetch em B), p5 (LOADs, JAL e JALR no B)
+Utilizando os seguintes processadores na analise: 1 (implementacao mais simples), 5 (adicao de forwarding), 7 (predicao estatica), 9 (predicao dinamica). Alem disso, as modificacoes utilizadas serão p1 (mais simples), p3 (STOREs no B, e btype em A não causa refetch em B), p4 (LOAD no B), p5 (JAL e JALR no B)
 
 - torvs1.sv
 	- despacho duplo simples (pipelines A e B)

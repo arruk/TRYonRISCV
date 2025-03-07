@@ -344,7 +344,6 @@ module torv32(
 	        .take_b(a_e_takeB)
 	);
 
-	/*
 	wire [31:0] a_e_RES = isLUI(a_de_IR) ? a_e_IMM : a_e_ALUout;
 
 	wire [31:0] a_e_ADDin1 = (isJAL(a_de_IR) | isBtype(a_de_IR)) ? a_de_PC : a_e_rs1;
@@ -354,9 +353,9 @@ module torv32(
 
 	wire a_e_JoB = isJALR(a_de_IR) | (isBtype(a_de_IR) & (a_e_takeB^a_de_predict));
 	wire [31:0] a_e_JoB_ADDR = a_e_ADDR;
-	*/
 	
 	
+	/*
 	wire [31:0] a_e_RES = aC_de_isLUI ? a_e_IMM : a_e_ALUout;
 
 	wire [31:0] a_e_ADDin1 = aC_de_ADDin1 ? a_de_PC : a_e_rs1;
@@ -367,6 +366,7 @@ module torv32(
 	wire a_e_JoB = isJALR(a_de_IR) | (isBtype(a_de_IR) & (a_e_takeB^a_de_predict));
 	wire [31:0] a_e_JoB_ADDR = a_e_ADDR;
 
+	*/
 
 	always@(posedge clk) begin
 		a_em_IR       <= a_de_IR;
@@ -470,21 +470,21 @@ module torv32(
                 .result(b_e_ALUout),
                 .take_b(b_e_takeB)
         );
-
-	/*
+	
         wire [31:0] b_e_RES = isLUI(b_de_IR) ? b_e_IMM : b_e_ALUout;
 
 	wire [31:0] b_e_ADDin1 = (isJAL(b_de_IR) | isBtype(b_de_IR)) ? b_de_PC : b_e_rs1;
         wire [31:0] b_e_ADDR_RES = b_e_ADDin1 + b_e_IMM;
         wire [31:0] b_e_ADDR = {b_e_ADDR_RES[31:1], b_e_ADDR_RES[0] & (~isJALR(b_de_IR))};
-	*/
 
+	/*
 	wire [31:0] b_e_RES = bC_de_isLUI ? b_e_IMM : b_e_ALUout;
 
 	wire [31:0] b_e_ADDin1 =  bC_de_ADDin1 ? b_de_PC : b_e_rs1;
         wire [31:0] b_e_ADDR_RES = b_e_ADDin1 + b_e_IMM;
         wire [31:0] b_e_ADDR = {b_e_ADDR_RES[31:1], b_e_ADDR_RES[0] & (aC_de_nisJALR)};
 
+	*/
         always@(posedge clk) begin
                 if(a_e_JoB)
                         b_em_IR   <= NOP;

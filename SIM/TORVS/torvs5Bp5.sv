@@ -138,6 +138,7 @@ module torv32(
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	/*
         wire [2:0] a_d_type = (a_fd_IR[6:0] == 7'b1100111 | a_fd_IR[6:0] == 7'b0000011 | a_fd_IR[6:0] == 7'b0010011) ? 3'b000 : // Itype
                                                                                         (a_fd_IR[6:0] == 7'b0100011) ? 3'b001 : // Stype
                                                                                         (a_fd_IR[6:0] == 7'b1100011) ? 3'b010 : // Btype
@@ -149,6 +150,19 @@ module torv32(
                                                                                         (b_fd_IR[6:0] == 7'b1100011) ? 3'b010 : // Btype
                                                            (b_fd_IR[6:0] == 7'b0110111 | b_fd_IR[6:0] == 7'b0010111) ? 3'b011 : // Utype
 							   							       3'b111 ; // Jtype
+	*/
+
+        wire [31:0] a_d_IMM = (a_fd_IR[6:0] == 7'b1100111 | a_fd_IR[6:0] == 7'b0000011 | a_fd_IR[6:0] == 7'b0010011) ? {{21{a_fd_IR[31]}}, a_fd_IR[30:20]} : // Itype
+                                                                         (a_fd_IR[6:0] == 7'b0100011) ? {{21{a_fd_IR[31]}}, a_fd_IR[30:25], a_fd_IR[11:7]} : // Stype
+                                                       (a_fd_IR[6:0] == 7'b1100011) ? {{20{a_fd_IR[31]}}, a_fd_IR[7], a_fd_IR[30:25], a_fd_IR[11:8], 1'b0} : // Btype
+                                                     (a_fd_IR[6:0] == 7'b0110111 | a_fd_IR[6:0] == 7'b0010111) ? {a_fd_IR[31], a_fd_IR[30:12], {12{1'b0}}} : // Utype
+                                                                                    {{12{a_fd_IR[31]}}, a_fd_IR[19:12], a_fd_IR[20], a_fd_IR[30:21], 1'b0} ; // Jtype
+
+        wire [31:0] b_d_IMM = (b_fd_IR[6:0] == 7'b1100111 | b_fd_IR[6:0] == 7'b0000011 | b_fd_IR[6:0] == 7'b0010011) ? {{21{b_fd_IR[31]}}, b_fd_IR[30:20]} : // Itype
+                                                                         (b_fd_IR[6:0] == 7'b0100011) ? {{21{b_fd_IR[31]}}, b_fd_IR[30:25], b_fd_IR[11:7]} : // Stype
+                                                       (b_fd_IR[6:0] == 7'b1100011) ? {{20{b_fd_IR[31]}}, b_fd_IR[7], b_fd_IR[30:25], b_fd_IR[11:8], 1'b0} : // Btype
+                                                     (b_fd_IR[6:0] == 7'b0110111 | b_fd_IR[6:0] == 7'b0010111) ? {b_fd_IR[31], b_fd_IR[30:12], {12{1'b0}}} : // Utype
+                                                                                    {{12{b_fd_IR[31]}}, b_fd_IR[19:12], b_fd_IR[20], b_fd_IR[30:21], 1'b0} ; // Jtype
 
 	localparam NOP = 32'b0000000_00000_00000_000_00000_0110011;
 	
@@ -174,6 +188,7 @@ module torv32(
 			a_de_IR <= NOP;
 		end
 
+		/*
                 ae_am_fwd_rs1 <= (rdID(a_de_IR)!=0) & (writes_rd(a_de_IR)) & (rdID(a_de_IR) == rs1ID(a_fd_IR));
                 ae_aw_fwd_rs1 <= (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs1ID(a_fd_IR));
                 ae_bm_fwd_rs1 <= (rdID(b_de_IR)!=0) & (writes_rd(b_de_IR)) & (rdID(b_de_IR) == rs1ID(a_fd_IR));
@@ -182,8 +197,15 @@ module torv32(
                 ae_aw_fwd_rs2 <= (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs2ID(a_fd_IR));
                 ae_bm_fwd_rs2 <= (rdID(b_de_IR)!=0) & (writes_rd(b_de_IR)) & (rdID(b_de_IR) == rs2ID(a_fd_IR));
                 ae_bw_fwd_rs2 <= (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs2ID(a_fd_IR));
+		*/
 
-                a_de_type <= a_d_type;
+                //a_de_type <= a_d_type;
+
+                aC_de_ALUin1  <= (isJAL(a_fd_IR) | isJALR(a_fd_IR) | isAUIPC(a_fd_IR));
+                aC_de_ALUin2  <= (isRtype(a_fd_IR) | isBtype(a_fd_IR)) ? 2'b01 :
+                                 (isRimm(a_fd_IR)  | isAUIPC(a_fd_IR)) ? 2'b10 :
+                                                                         2'b00 ;
+		a_de_IMM <= a_d_IMM;									 
 
 		if(!b_d_stall) begin
 			b_de_IR <= (b_e_flush | b_fd_NOP | control_HAZ) ? NOP : b_fd_IR;
@@ -194,6 +216,7 @@ module torv32(
 			b_de_IR <= NOP;
 		end
 
+		/*
                 b_e_bm_fwd_rs1 <= (rdID(b_de_IR)!=0) & (writes_rd(b_de_IR)) & (rdID(b_de_IR) == rs1ID(b_fd_IR));
                 b_e_bw_fwd_rs1 <= (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs1ID(b_fd_IR));
                 b_e_am_fwd_rs1 <= (rdID(a_de_IR)!=0) & (writes_rd(a_de_IR)) & (rdID(a_de_IR) == rs1ID(b_fd_IR));
@@ -202,8 +225,15 @@ module torv32(
                 b_e_bw_fwd_rs2 <= (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs2ID(b_fd_IR));
                 b_e_am_fwd_rs2 <= (rdID(a_de_IR)!=0) & (writes_rd(a_de_IR)) & (rdID(a_de_IR) == rs2ID(b_fd_IR));
                 b_e_aw_fwd_rs2 <= (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs2ID(b_fd_IR));
+		*/
 
-                b_de_type <= b_d_type;
+                //b_de_type <= b_d_type;
+
+                bC_de_ALUin1  <= (isJAL(b_fd_IR) | isJALR(b_fd_IR) | isAUIPC(b_fd_IR));
+                bC_de_ALUin2  <= (isRtype(b_fd_IR) | isBtype(b_fd_IR)) ? 2'b01 :
+                                 (isRimm(b_fd_IR)  | isAUIPC(b_fd_IR)) ? 2'b10 :
+                                                                         2'b00 ;
+		b_de_IMM <= b_d_IMM;
 
 		if(a_wb_enable) begin
 			reg_file[a_wb_rdID] <= a_wb_DATA;
@@ -220,23 +250,31 @@ module torv32(
 	reg [31:0] a_de_IR, a_de_PC;
 	reg [31:0] b_de_IR, b_de_PC;
 
+
 	wire [31:0] a_de_rs1 = reg_file[rs1ID(a_de_IR)];
        	wire [31:0] a_de_rs2 = reg_file[rs2ID(a_de_IR)];
 
 	wire [31:0] b_de_rs1 = reg_file[rs1ID(b_de_IR)];
        	wire [31:0] b_de_rs2 = reg_file[rs2ID(b_de_IR)];
 
+	/*
 	reg ae_am_fwd_rs1, ae_aw_fwd_rs1, ae_bm_fwd_rs1, ae_bw_fwd_rs1;
         reg ae_am_fwd_rs2, ae_aw_fwd_rs2, ae_bm_fwd_rs2, ae_bw_fwd_rs2;
 
         reg b_e_bm_fwd_rs1, b_e_bw_fwd_rs1, b_e_am_fwd_rs1, b_e_aw_fwd_rs1;
         reg b_e_bm_fwd_rs2, b_e_bw_fwd_rs2, b_e_am_fwd_rs2, b_e_aw_fwd_rs2;
+	*/
 
-        reg [2:0] a_de_type, b_de_type;
+        //reg [2:0] a_de_type, b_de_type;
+
+	reg aC_de_ALUin1; reg [1:0] aC_de_ALUin2;
+        reg bC_de_ALUin1; reg [1:0] bC_de_ALUin2;
+	
+	reg [31:0] a_de_IMM, b_de_IMM;
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/*
 	wire ae_am_fwd_rs1 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs1ID(a_de_IR));
         wire ae_aw_fwd_rs1 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs1ID(a_de_IR));
 
@@ -248,7 +286,6 @@ module torv32(
 
 	wire ae_bm_fwd_rs2 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs2ID(a_de_IR));
         wire ae_bw_fwd_rs2 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs2ID(a_de_IR));
-	*/
 
         wire [31:0] a_e_rs1 = ae_bm_fwd_rs1 ? b_em_RES  : //
 			      ae_am_fwd_rs1 ? a_em_RES  : //
@@ -264,18 +301,38 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	/*
+	wire [31:0] a_d_IMM = 32'b0;
+
+	imm_mux_c m0(
+		.instr(a_fd_IR),
+                .immtype(a_d_type),
+		.imm(a_d_IMM)
+	);
+	*/
+
+	/*
 	wire [31:0] a_e_IMM;
 
-	imm_mux m0(
+	imm_mux_c m0(
 		.instr(a_de_IR),
                 .immtype(a_de_type),
 		.imm(a_e_IMM)
 	);
+	*/
 
+	/*
 	wire [31:0] a_e_ALUin1 = (isJAL(a_de_IR) | isJALR(a_de_IR) | isAUIPC(a_de_IR)) ? a_de_PC : a_e_rs1;
 	wire [31:0] a_e_ALUin2 = (isRtype(a_de_IR) | isBtype(a_de_IR))? a_e_rs2 :
-	       		         (isRimm(a_de_IR)  | isAUIPC(a_de_IR))? a_e_IMM  :
+	       		         (isRimm(a_de_IR)  | isAUIPC(a_de_IR))? a_de_IMM  :
 			       		                    		  32'd4  ;	
+	*/
+
+	wire [31:0] a_e_ALUin1 = aC_de_ALUin1 ? a_de_PC : a_e_rs1;
+        wire [31:0] a_e_ALUin2 = aC_de_ALUin2[0] ? a_e_rs2 :
+                                 aC_de_ALUin2[1] ? a_de_IMM :
+                                                    32'd4  ;
+
 	wire [31:0] a_e_ALUout;
 	wire a_e_takeB;
 
@@ -286,10 +343,11 @@ module torv32(
 	        .result(a_e_ALUout),
 	        .take_b(a_e_takeB)
 	);
-	wire [31:0] a_e_RES = isLUI(a_de_IR) ? a_e_IMM : a_e_ALUout;
+
+	wire [31:0] a_e_RES = isLUI(a_de_IR) ? a_de_IMM : a_e_ALUout;
 
 	wire [31:0] a_e_ADDin1 = (isJAL(a_de_IR) | isBtype(a_de_IR)) ? a_de_PC : a_e_rs1;
-	wire [31:0] a_e_ADDR_RES = a_e_ADDin1 + a_e_IMM;
+	wire [31:0] a_e_ADDR_RES = a_e_ADDin1 + a_de_IMM;
 	wire [31:0] a_e_ADDR = {a_e_ADDR_RES[31:1], a_e_ADDR_RES[0] & (~isJALR(a_de_IR))}; 
 
 	wire a_e_JoB = isJAL(a_de_IR) | isJALR(a_de_IR) | (isBtype(a_de_IR) & a_e_takeB);
@@ -305,7 +363,6 @@ module torv32(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/*
         wire b_e_bm_fwd_rs1 = (rdID(b_em_IR)!=0) & (writes_rd(b_em_IR)) & (rdID(b_em_IR) == rs1ID(b_de_IR));
         wire b_e_bw_fwd_rs1 = (rdID(b_mw_IR)!=0) & (writes_rd(b_mw_IR)) & (rdID(b_mw_IR) == rs1ID(b_de_IR));
 
@@ -317,7 +374,6 @@ module torv32(
 
         wire b_e_am_fwd_rs2 = (rdID(a_em_IR)!=0) & (writes_rd(a_em_IR)) & (rdID(a_em_IR) == rs2ID(b_de_IR));
         wire b_e_aw_fwd_rs2 = (rdID(a_mw_IR)!=0) & (writes_rd(a_mw_IR)) & (rdID(a_mw_IR) == rs2ID(b_de_IR));
-	*/
 
         wire [31:0] b_e_rs1 = b_e_bm_fwd_rs1 ? b_em_RES  : //
                               b_e_am_fwd_rs1 ? a_em_RES  : //
@@ -332,18 +388,40 @@ module torv32(
                                                b_de_rs2  ; //
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        wire [31:0] b_e_IMM;
 
-	imm_mux m1(
+	/*
+        wire [31:0] b_d_IMM;
+
+	imm_mux_c m1(
+                .instr(b_fd_IR),
+                .immtype(b_d_type),
+                .imm(b_d_IMM)
+        );
+	*/
+
+	/*
+	wire [31:0] b_e_IMM;
+
+	imm_mux_c m1(
                 .instr(b_de_IR),
                 .immtype(b_de_type),
                 .imm(b_e_IMM)
         );
+	*/
 
+	/*
         wire [31:0] b_e_ALUin1 = (isJAL(b_de_IR) | isJALR(b_de_IR) | isAUIPC(b_de_IR)) ? b_de_PC : b_e_rs1;
         wire [31:0] b_e_ALUin2 = (isRtype(b_de_IR) | isBtype(b_de_IR))? b_e_rs2 :
-                                 (isRimm(b_de_IR)  | isAUIPC(b_de_IR))? b_e_IMM  :
+                                 (isRimm(b_de_IR)  | isAUIPC(b_de_IR))? b_de_IMM  :
                                                                           32'd4  ;
+	*/
+
+
+	wire [31:0] b_e_ALUin1 = bC_de_ALUin1 ? b_de_PC : b_e_rs1;
+        wire [31:0] b_e_ALUin2 = bC_de_ALUin2[0] ? b_e_rs2 :
+                                 bC_de_ALUin2[1] ? b_de_IMM :
+                                                    32'd4  ;
+
         wire [31:0] b_e_ALUout;
         wire b_e_takeB;
 
@@ -354,10 +432,11 @@ module torv32(
                 .result(b_e_ALUout),
                 .take_b(b_e_takeB)
         );
-        wire [31:0] b_e_RES = isLUI(b_de_IR) ? b_e_IMM : b_e_ALUout;
+
+        wire [31:0] b_e_RES = isLUI(b_de_IR) ? b_de_IMM : b_e_ALUout;
 
         wire [31:0] b_e_ADDin1 = (isJAL(b_de_IR) | isBtype(b_de_IR)) ? b_de_PC : b_e_rs1;
-        wire [31:0] b_e_ADDR_RES = b_e_ADDin1 + b_e_IMM;
+        wire [31:0] b_e_ADDR_RES = b_e_ADDin1 + b_de_IMM;
         wire [31:0] b_e_ADDR = {b_e_ADDR_RES[31:1], b_e_ADDR_RES[0] & (~isJALR(b_de_IR))};
 
         wire b_e_JoB = isJAL(b_de_IR) | isJALR(b_de_IR) | (isBtype(b_de_IR) & b_e_takeB);

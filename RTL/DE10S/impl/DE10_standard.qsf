@@ -5,6 +5,11 @@ set_global_assignment -name DEVICE 5CSXFC6D6F31C6
 
 set_location_assignment PIN_AF14 -to CLK
 
+set_instance_assignment -name AUTO_GLOBAL_CLOCK OFF -to CLK
+#set_instance_assignment -name GLOBAL_SIGNAL GLOBAL_CLOCK -to CLK
+#set_instance_assignment -name GLOBAL_SIGNAL  -to CLK
+#set_instance_assignment -name GLOBAL_SIGNAL GLOBAL_CLOCK -to CLK
+
 set_location_assignment PIN_AG5 -to UART_TX
 
 set_location_assignment PIN_AJ4  -to RESET

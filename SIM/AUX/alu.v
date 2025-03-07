@@ -10,7 +10,7 @@ module alu(
 	wire [1:0] d_take_b = inst[14:13];
        	wire [2:0] d_result = (inst[6:0] == 7'b1101111 | inst[6:0] == 7'b0010111) ? 3'b000 : inst[14:12];
 
-	wire t_EQ = (in_a==in_b);//~(|result_sub);
+	wire t_EQ = in_a == in_b;//~(|result_sub);
 	wire t_LTU = result_sub[32];
 	wire t_LT = (in_a[31] ^ in_b[31]) ? in_a[31] : t_LTU;
 
@@ -30,11 +30,11 @@ module alu(
 	wire [31:0] in_shifter = (func3 == 3'b001) ? a_flipped : in_a ;
 
 	/* verilator lint_off WIDTH */
-	wire [31:0] right_shift = $signed({inst[30] & in_a[31] ,in_shifter}) >>> in_b[4:0];
+	wire [32:0] right_shift = $signed({inst[30] & in_a[31] ,in_shifter}) >>> in_b[4:0];
 	/* verilator lint_off WIDTH */
 
 	wire [31:0] left_shift;
-	flip32 fl1 (right_shift, left_shift);
+	flip32 fl1 (right_shift[31:0], left_shift);
 
 	always@(*) begin
 		case(d_result)
@@ -43,7 +43,7 @@ module alu(
 			3'b010: result = {31'b0, t_LT};
 			3'b011: result = {31'b0, t_LTU};
 			3'b100: result = r_XOR;
-			3'b101: result = right_shift;
+			3'b101: result = right_shift[31:0];
 			3'b110: result = r_OR;
 			3'b111: result = r_AND;
 		endcase
@@ -167,7 +167,7 @@ module imm_mux(
 endmodule
 */
 
-module imm_mux (
+module imm_mux_c (
         input [31:0] instr,
 	input [2:0] immtype,
         output [31:0] imm
@@ -178,5 +178,18 @@ module imm_mux (
 		     (immtype==3'b010) ? {{20{instr[31]}}, instr[7]    , instr[30:25], instr[11:8 ], 1'b0}: // Btype
 		     (immtype==3'b011) ? {instr[31]      , instr[30:12], {12{1'b0}}}                      : // Utype
 		                         {{12{instr[31]}}, instr[19:12], instr[20]   , instr[30:21], 1'b0}; // Jtype
+
+endmodule
+
+module imm_mux (
+        input [31:0] instr,
+	input [1:0] immtype,
+        output [31:0] imm
+);
+
+	assign imm = (immtype==2'b00) ? {{21{instr[31]}}, instr[30:20]}                                  : // Itype
+		     (immtype==2'b01) ? {{21{instr[31]}}, instr[30:25], instr[11:7]}                     : // Stype
+		     (immtype==2'b10) ? {{20{instr[31]}}, instr[7]    , instr[30:25], instr[11:8 ], 1'b0}: // Btype
+		     			 {instr[31]      , instr[30:12], {12{1'b0}}}                     ;  // Utype
 
 endmodule
