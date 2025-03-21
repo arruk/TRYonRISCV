@@ -244,11 +244,7 @@ module data_mem(
 
 	parameter DRAM_SIZE = 32768;
 	
-	`ifdef DE10S
-	logic [3:0][7:0] RAM [0:DRAM_SIZE-1];  // 64kB of RAM
-	`else
 	reg [31:0] RAM [0:DRAM_SIZE-1];  // 64kB of RAM
-	`endif
 
 	initial begin
 		`ifndef SYN
@@ -259,52 +255,23 @@ module data_mem(
 	end
 	
 	always@(posedge clk) begin
-		`ifdef DE10S
-
-		if(a_mem_we) begin
-			if(a_mem_wmask[0]) RAM[a_mem_addr_seg][0] <= a_mem_wdata[ 7:0 ];
-			if(a_mem_wmask[1]) RAM[a_mem_addr_seg][1] <= a_mem_wdata[15:8 ];
-			if(a_mem_wmask[2]) RAM[a_mem_addr_seg][2] <= a_mem_wdata[23:16];
-			if(a_mem_wmask[3]) RAM[a_mem_addr_seg][3] <= a_mem_wdata[31:24];
-		end
-	        a_mem_data <= RAM[a_mem_addr_seg];
-		
-
-		`else
-
-		if(a_mem_we) begin
+		//if(a_mem_we) begin
 			if(a_mem_wmask[0]) RAM[a_mem_addr_seg][ 7:0 ] <= a_mem_wdata[ 7:0 ];
 			if(a_mem_wmask[1]) RAM[a_mem_addr_seg][15:8 ] <= a_mem_wdata[15:8 ];
 			if(a_mem_wmask[2]) RAM[a_mem_addr_seg][23:16] <= a_mem_wdata[23:16];
 			if(a_mem_wmask[3]) RAM[a_mem_addr_seg][31:24] <= a_mem_wdata[31:24];
-		end
+		//end
 	        a_mem_data <= RAM[a_mem_addr_seg];
-
-		`endif
 	end
 
 	always@(posedge clk) begin
-		`ifdef DE10S
-		
-		if(b_mem_we) begin
-			if(b_mem_wmask[0]) RAM[b_mem_addr_seg][0] <= b_mem_wdata[ 7:0 ];
-			if(b_mem_wmask[1]) RAM[b_mem_addr_seg][1] <= b_mem_wdata[15:8 ];
-			if(b_mem_wmask[2]) RAM[b_mem_addr_seg][2] <= b_mem_wdata[23:16];
-			if(b_mem_wmask[3]) RAM[b_mem_addr_seg][3] <= b_mem_wdata[31:24];
-		end 
-	        b_mem_data <= RAM[b_mem_addr_seg];
-
-		`else
-
-		if(b_mem_we) begin
+		//if(b_mem_we) begin
 			if(b_mem_wmask[0]) RAM[b_mem_addr_seg][ 7:0 ] <= b_mem_wdata[ 7:0 ];
 			if(b_mem_wmask[1]) RAM[b_mem_addr_seg][15:8 ] <= b_mem_wdata[15:8 ];
 			if(b_mem_wmask[2]) RAM[b_mem_addr_seg][23:16] <= b_mem_wdata[23:16];
 			if(b_mem_wmask[3]) RAM[b_mem_addr_seg][31:24] <= b_mem_wdata[31:24];
-		end
+		//end 
 	        b_mem_data <= RAM[b_mem_addr_seg];
-
-		`endif
 	end
 
 endmodule 

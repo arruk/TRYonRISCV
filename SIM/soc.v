@@ -38,7 +38,7 @@ module SOC(
 
         wire [31:0] b_mem_data ;
         wire [ 3:0] b_mem_wmask;
-        wire [31:0] b_mem_addr ;
+        wire [31:0] b_mem_addr;
         wire [31:0] b_mem_wdata;
 	wire        b_mem_cen  ;
 
@@ -55,9 +55,9 @@ module SOC(
 	`ifdef FIFO
         wire [31:0] a_IO_mem_rdata = a_IO_wordaddr[2] ? { 22'b0,   fifo_full, 9'b0} : 32'b0;
         wire [31:0] b_IO_mem_rdata = b_IO_wordaddr[2] ? { 22'b0,   fifo_full, 9'b0} : 32'b0;
-	//`elsif BENCH
-        //wire [31:0] a_IO_mem_rdata = a_IO_wordaddr[2] ? { 22'b0,        1'b0, 9'b0} : 32'b0;
-        //wire [31:0] b_IO_mem_rdata = b_IO_wordaddr[2] ? { 22'b0,        1'b0, 9'b0} : 32'b0;
+	`elsif BENCH
+        wire [31:0] a_IO_mem_rdata = a_IO_wordaddr[2] ? { 22'b0,        1'b0, 9'b0} : 32'b0;
+        wire [31:0] b_IO_mem_rdata = b_IO_wordaddr[2] ? { 22'b0,        1'b0, 9'b0} : 32'b0;
         `else
         wire [31:0] a_IO_mem_rdata = a_IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
         wire [31:0] b_IO_mem_rdata = b_IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
@@ -94,8 +94,8 @@ module SOC(
 	
 	`ifdef FIFO 
         wire [31:0] IO_mem_rdata = IO_wordaddr[2] ? { 22'b0,   fifo_full, 9'b0} : 32'b0;
-	//`elsif BENCH
-        //wire [31:0] IO_mem_rdata = IO_wordaddr[2] ? { 22'b0,        1'b0, 9'b0} : 32'b0;
+	`elsif BENCH
+        wire [31:0] IO_mem_rdata = IO_wordaddr[2] ? { 22'b0,        1'b0, 9'b0} : 32'b0;
 	`else
         wire [31:0] IO_mem_rdata = IO_wordaddr[2] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
 	`endif
@@ -187,7 +187,7 @@ module SOC(
 		.a_mem_cen  (a_mem_cen  ), //
                 .a_mem_data (a_mem_data ),  //
                 .a_mem_wmask(a_mem_wmask), //
-                .a_mem_addr (a_mem_addr ),  //
+                .a_mem_addr (a_mem_addr),  //
                 .a_mem_wdata(a_mem_wdata), //
 	       	.b_mem_cen  (b_mem_cen  ),  // DUAL PORT DATA
                 .b_mem_data (b_mem_data ), //    MEMORY
@@ -414,6 +414,12 @@ endmodule
 		`include "torvs5p5.sv"
 	`elsif TORVSA1
 		`include "torvsA1.sv"
+	`elsif TORVS9C
+		`include "torvs9C.sv"
+	`elsif TORVS7C
+		`include "torvs7C.sv"
+	`elsif TORVS5C
+		`include "torvs5C.sv"
 	`endif
 
 `endif
