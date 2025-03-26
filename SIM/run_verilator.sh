@@ -153,9 +153,9 @@ then
 	done
 elif [ "$2" = "a" ]
 then
-	#declare -a arr=("x" "STORE_IN_B" "LOAD_IN_B" "BTYPE_IN_B")
-	declare -a arr=("x" "STORE_IN_B" "LOAD_IN_B")
-	for i in 9
+	declare -a arr=("x" "STORE_IN_B" "LOAD_IN_B" "BTYPE_IN_B")
+	#declare -a arr=("BTYPE_IN_B")
+	for i in 5 7 9
 	do
 		for j in "${arr[@]}"
 		do

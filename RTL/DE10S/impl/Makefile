@@ -161,7 +161,7 @@ asm.chg:
 # Programming the device
 ###################################################################
 
-program: all $(PROJECT).sof
+program: $(PROJECT).sof
 	$(QUARTUS_PGM) $(PGM_ARGS) -o "P;$(PROJECT).sof$(JTAG_DEVICE_INDEX)"
 
 program-pof: $(PROJECT).pof

@@ -1,6 +1,6 @@
 //`define STORE_IN_B
 //`define LOAD_IN_B
-//`define CONFIG_RAS
+`define CONFIG_RAS
 //`define BTYPE_IN_B
 
 `ifndef BTYPE_IN_B
@@ -369,6 +369,11 @@ module torv32(
 	wire [31:0] a_m_wb_DATA;
 	wire [31:0] a_m_CSR_data;
 
+	wire a_m_lb;
+        wire a_m_lbu;
+        wire a_m_lh;
+        wire a_m_lhu;
+
 	reg a_mw_nop;
 	reg [4:0] a_mw_rdID;
 	reg [31:0] a_mw_wb_DATA;
@@ -377,6 +382,11 @@ module torv32(
 	reg [4:0] a_mw_funct3;
 	reg [31:0] a_mw_ADDR;
 	reg a_mw_isNotIOandLoad;
+
+	reg a_mw_lb;
+        reg a_mw_lbu;
+        reg a_mw_lh;
+        reg a_mw_lhu;
 // END OF "A" M STAGE WIRES //
 
 
@@ -392,6 +402,11 @@ module torv32(
 	wire b_m_isNotIOandLoad;
 	wire [31:0] b_m_wb_DATA;
 
+	wire b_m_lb;
+        wire b_m_lbu;
+        wire b_m_lh;
+        wire b_m_lhu;
+
 	wire store_addr_HAZ;
 	wire a_store_b_load_HAZ;
 
@@ -406,17 +421,21 @@ module torv32(
         reg b_mw_isNotIOandLoad;	
 	reg b_mw_ASBL;
 	reg [31:0] b_mw_store;
+        reg b_mw_lb;
+        reg b_mw_lbu;
+        reg b_mw_lh;
+        reg b_mw_lhu;
 `endif
 // END  OF "B" M STAGE WIRES //
 
 
 // START OF "A" W STAGE WIRES //
-	wire a_w_isB;
-	wire a_w_isH;
-	wire a_w_load_sign;
-	wire [15:0] a_w_loadH;
-	wire [7:0]  a_w_loadB;
-	wire [31:0] a_w_mem_RES;
+        wire a_w_isIO;
+        wire [31:0] a_w_LB;
+        wire [31:0] a_w_LBU;
+        wire [31:0] a_w_LH;
+        wire [31:0] a_w_LHU;
+        wire [31:0] a_w_mem_RES;
 
 	wire        a_wb_enable;
 	wire [31:0] a_wb_DATA;
@@ -426,12 +445,12 @@ module torv32(
 
 // START OF "B" W STAGE WIRES //
 `ifdef LOAD_IN_B
-	wire b_w_isB;
-	wire b_w_isH;
-	wire b_w_load_sign;
-	wire [15:0] b_w_loadH;
-	wire [7:0]  b_w_loadB;
-	wire [31:0] b_w_mem_RES;
+        wire b_w_isIO;
+        wire [31:0] b_w_LB;
+        wire [31:0] b_w_LBU;
+        wire [31:0] b_w_LH;
+        wire [31:0] b_w_LHU;
+        wire [31:0] b_w_mem_RES;
 `endif
 
 	wire        b_wb_enable;
@@ -491,13 +510,12 @@ module torv32(
 	wire ba_fd_rs1_HAZ = !b_fd_NOP & b_d_reads_rs1 & b_d_rs1ID!=0 & a_d_writes_rd & (b_d_rs1ID == a_d_rdID);
 	wire ba_fd_rs2_HAZ = !b_fd_NOP & b_d_reads_rs2 & b_d_rs2ID!=0 & a_d_writes_rd & (b_d_rs2ID == a_d_rdID);
 	wire fd_data_HAZ = (ba_fd_rs1_HAZ | ba_fd_rs2_HAZ);
-
 `endif
 
 `ifdef STORE_IN_B
 `ifdef LOAD_IN_B
 `ifdef BTYPE_IN_B
-	wire b_ins_ALL = b_d_isRRint | b_d_isRIint | b_d_isAUIPC | b_d_isLUI | b_d_isStore | b_d_isLoad | b_d_isJAL | b_d_isJALR;// | b_d_isBranch;
+	wire b_ins_ALL = b_d_isRRint | b_d_isRIint | b_d_isAUIPC | b_d_isLUI | b_d_isStore | b_d_isLoad | b_d_isJAL | b_d_isJALR | b_d_isBranch;
 `else
 	wire b_ins_ALL = b_d_isRRint | b_d_isRIint | b_d_isAUIPC | b_d_isLUI | b_d_isStore | b_d_isLoad;
 `endif
@@ -507,7 +525,6 @@ module torv32(
 `else
 	wire b_ins_ALL = b_d_isRRint | b_d_isRIint | b_d_isAUIPC | b_d_isLUI;
 `endif
-
 	wire control_HAZ = !b_ins_ALL | fd_data_HAZ;
 
 	wire halt = resetn & a_de_isEBREAK;	
@@ -536,6 +553,24 @@ module torv32(
                 b_BHT_data    <= BHT[BHT_index(b_imem_addr)];
                 a_BHT_index <= BHT_index(a_imem_addr);
                 b_BHT_index <= BHT_index(b_imem_addr);
+
+                if(a_de_isBranch) begin
+                        BH <= {a_e_take_branch, BH[BP_HIST_BITS-1:1]};
+                        BHT[a_de_BHTindex] <= incdec_sat(a_de_BHT_data, a_e_take_branch);
+                end else if(b_de_isBranch) begin
+                        BH <= {b_e_take_branch, BH[BP_HIST_BITS-1:1]};
+                        BHT[b_de_BHTindex] <= incdec_sat(b_de_BHT_data, b_e_take_branch);
+                end
+
+		/*
+		if(a_em_isBranch) begin
+                        BH <= {a_em_takeB, BH[BP_HIST_BITS-1:1]};
+                        BHT[a_em_BHTindex] <= incdec_sat(a_em_BHT_data, a_em_takeB);
+                end else if(b_em_isBranch) begin
+                        BH <= {b_em_takeB, BH[BP_HIST_BITS-1:1]};
+                        BHT[b_em_BHTindex] <= incdec_sat(b_em_BHT_data, b_em_takeB);
+                end
+		*/
         end       	
 `else
 	reg [1:0] a_BHT_data;
@@ -543,6 +578,11 @@ module torv32(
 	always@(posedge clk)begin
                 a_BHT_data    <= BHT[BHT_index(a_imem_addr)];
 		a_BHT_index <= BHT_index(a_imem_addr);
+
+                if(a_de_isBranch) begin
+                        BH <= {a_e_take_branch, BH[BP_HIST_BITS-1:1]};
+                        BHT[a_de_BHTindex] <= incdec_sat(a_de_BHT_data, a_e_take_branch);
+                end		
 	end
 `endif
 
@@ -902,7 +942,7 @@ module torv32(
 
 	assign a_e_ALUplus = a_e_ALUin1 + a_e_ALUin2;
 	assign a_e_ALUminus = {1'b0, a_e_ALUin1} + {1'b1, ~a_e_ALUin2} + 33'b1;
-
+	
 	assign a_e_LT  = (a_e_ALUin1[31] ^ a_e_ALUin2[31]) ? a_e_ALUin1[31] : a_e_ALUminus[32];
 	assign a_e_LTU = a_e_ALUminus[32];
 	assign a_e_EQ  = (a_e_ALUin1 == a_e_ALUin2);
@@ -968,18 +1008,6 @@ module torv32(
                 a_em_takeB    <= a_e_take_branch;
                 a_em_BHTindex <= a_de_BHTindex;
                 a_em_BHT_data <= a_de_BHT_data;
-
-                if(a_de_isBranch) begin
-                        BH <= {a_e_take_branch, BH[BP_HIST_BITS-1:1]};
-                        BHT[a_de_BHTindex] <= incdec_sat(a_de_BHT_data, a_e_take_branch);
-                end
-
-		/*
-		if(a_em_isBranch) begin
-                        BH <= {a_em_takeB, BH[BP_HIST_BITS-1:1]};
-                        BHT[a_em_BHTindex] <= incdec_sat(a_em_BHT_data, a_em_takeB);
-                end
-		*/
 	end
 
 
@@ -1069,6 +1097,7 @@ module torv32(
                 b_em_isLoad       <= b_de_isLoad & !a_e_JoB;
                 b_em_isStore      <= b_de_isStore & !a_e_JoB;
                 b_em_isCSRRS      <= b_de_isCSRRS & !a_e_JoB;
+		b_em_isBranch     <= b_de_isBranch & !a_e_JoB;
                 b_em_wbEnable     <= b_de_wbEnable & !a_e_JoB;
 
 `ifdef BTYPE_IN_B		
@@ -1078,17 +1107,6 @@ module torv32(
 		b_em_takeB    <= b_e_take_branch;
                 b_em_BHTindex <= b_de_BHTindex;
                 b_em_BHT_data <= b_de_BHT_data;
-
-		if(b_de_isBranch) begin
-                        BH <= {b_e_take_branch, BH[BP_HIST_BITS-1:1]};
-                        BHT[b_de_BHTindex] <= incdec_sat(b_de_BHT_data, b_e_take_branch);
-                end		
-		/*
-		if(b_em_isBranch) begin
-                        BH <= {b_em_takeB, BH[BP_HIST_BITS-1:1]};
-                        BHT[b_em_BHTindex] <= incdec_sat(b_em_BHT_data, b_em_takeB);
-                end		
-		*/
 `endif
         end
        	
@@ -1133,6 +1151,12 @@ module torv32(
 
 	assign a_m_isNotIOandLoad = a_em_isLoad & ! a_m_isIO;
 
+
+        assign a_m_lb  = (a_em_funct3[2:0] == 3'b000);
+        assign a_m_lbu = (a_em_funct3[2:0] == 3'b100);
+        assign a_m_lh  = (a_em_funct3[2:0] == 3'b001);
+        assign a_m_lhu = (a_em_funct3[2:0] == 3'b101);
+
 	always@(posedge clk) begin
 		a_mw_nop      <= a_em_nop;
 		a_mw_rdID     <= a_em_rdID;
@@ -1142,6 +1166,12 @@ module torv32(
 		a_mw_funct3   <= a_em_funct3;
 		a_mw_ADDR     <= a_em_ADDR;
 		a_mw_isNotIOandLoad <= a_m_isNotIOandLoad;
+
+                a_mw_lb     <= a_m_lb;
+                a_mw_lbu    <= a_m_lbu;
+                a_mw_lh     <= a_m_lh;
+                a_mw_lhu    <= a_m_lhu;
+
 	end
 
 	always@(posedge clk) begin
@@ -1194,39 +1224,15 @@ module torv32(
 
 `ifdef LOAD_IN_B
 
-	reg [31:0] a_mw_mem_addr, b_mw_mem_addr;
+	assign b_mw_Mdata  = b_mw_ASBL ? b_mw_store : b_mem_data;
+	assign a_store_b_load_HAZ = a_em_isStore & (|a_mem_wmask) & b_em_isLoad & (a_mem_addr == b_mem_addr);
+        assign store_addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);
 
-	wire [3:0] a_w_WMASK = a_w_isB ? (a_mw_ADDR[1] ? (a_mw_ADDR[0] ? 4'b1000 : 4'b0100)  :
-                                                         (a_mw_ADDR[0] ? 4'b0010 : 4'b0001)) :
-                               a_w_isH ? (a_mw_ADDR[1] ?                 4'b1100 : 4'b0011)  :
-                                                                                   4'b1111   ;	
-
-        wire [3:0] b_w_RMASK = b_w_isB ? (b_mw_ADDR[1] ? (b_mw_ADDR[0] ? 4'b1000 : 4'b0100)  :
-                                                         (b_mw_ADDR[0] ? 4'b0010 : 4'b0001)) :
-                               b_w_isH ? (b_mw_ADDR[1] ?                 4'b1100 : 4'b0011)  :
-                                                                                   4'b1111   ;	
-
-	wire [4:0] diff = {1'b0, a_mw_mem_addr[3:0]} + {1'b1, ~b_mw_mem_addr[3:0]} + {5'b1};
-	wire [4:0] diff_shamt = diff[4] ? ~diff + 5'b1 : diff ;
-
-	wire [31:0] store_data_sh = diff[4] ? b_mw_store >> diff_shamt[3:0] : b_mw_store << diff_shamt[3:0];
-
-	wire [3:0] dC = diff[4] ? (a_w_WMASK >> diff_shamt[3:0]) & b_w_RMASK : (a_w_WMASK << diff_shamt[3:0]) & b_w_RMASK;
-
-	wire [31:0] aSbL_result = {{dC[3] ? store_data_sh[31:24] : b_mem_data[31:24]},
-		                   {dC[2] ? store_data_sh[23:16] : b_mem_data[23:16]},
-				   {dC[1] ? store_data_sh[15:8 ] : b_mem_data[15:8 ]},
-				   {dC[0] ? store_data_sh[ 7:0 ] : b_mem_data[ 7:0 ]}};
-
-	assign b_mw_Mdata  = b_mw_ASBL ? aSbL_result : b_mem_data;
-	assign a_store_b_load_HAZ = a_em_isStore & (|a_mem_wmask) & b_em_isLoad &
-	       			    ((a_mem_addr-32'd3==b_mem_addr) | (a_mem_addr-32'd2==b_mem_addr) |
-				     (a_mem_addr-32'd1==b_mem_addr) | (a_mem_addr      ==b_mem_addr) |
-				     (a_mem_addr+32'd1==b_mem_addr) | (a_mem_addr+32'd2==b_mem_addr) |
-				     (a_mem_addr+32'd3==b_mem_addr) );
-
-	//assign b_mw_Mdata  = b_mw_ASBL ? b_mw_store : b_mem_data;
-	//assign a_store_b_load_HAZ = a_em_isStore & (|a_mem_wmask) & b_em_isLoad & (a_mem_addr == b_mem_addr);
+        assign b_m_lb  = (b_em_funct3[2:0] == 3'b000);
+        assign b_m_lbu = (b_em_funct3[2:0] == 3'b100);
+        assign b_m_lh  = (b_em_funct3[2:0] == 3'b001);
+        assign b_m_lhu = (b_em_funct3[2:0] == 3'b101);
+	
 `else
 	assign b_mw_Mdata  = b_mem_data;
         assign store_addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);	
@@ -1260,43 +1266,69 @@ module torv32(
 		b_mw_ASBL     <= a_store_b_load_HAZ;
                 b_mw_store    <= a_m_store_DATA;
 
-		a_mw_mem_addr <= a_mem_addr;
-		b_mw_mem_addr <= b_mem_addr;
+                b_mw_lb     <= b_m_lb;
+                b_mw_lbu    <= b_m_lbu;
+                b_mw_lh     <= b_m_lh;
+                b_mw_lhu    <= b_m_lhu;
+
 	`endif
 
         end
 	
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	assign a_w_isB = (a_mw_funct3[1:0] == 2'b00);
-	assign a_w_isH = (a_mw_funct3[1:0] == 2'b01);
-	
-	assign a_w_loadH = a_mw_ADDR[1] ? a_mw_Mdata[31:16] : a_mw_Mdata[15:0];
-        assign a_w_loadB = a_mw_ADDR[0] ? a_w_loadH [15:8 ] : a_w_loadH [7: 0];
+        assign a_w_isIO   = a_mw_ADDR[22];
 
-        assign a_w_load_sign = !a_mw_funct3[2] & (a_w_isB ? a_w_loadB[7] : a_w_loadH[15]);
+        assign a_w_LB = a_mw_ADDR[1:0] == 2'b00 ? {{24{a_mw_Mdata[7 ]}}, a_mw_Mdata[ 7:0 ]} :
+                        a_mw_ADDR[1:0] == 2'b01 ? {{24{a_mw_Mdata[15]}}, a_mw_Mdata[15:8 ]} :
+                        a_mw_ADDR[1:0] == 2'b10 ? {{24{a_mw_Mdata[23]}}, a_mw_Mdata[23:16]} :
+                                                  {{24{a_mw_Mdata[31]}}, a_mw_Mdata[31:24]} ;
 
-        assign a_w_mem_RES = a_w_isB ? {{24{a_w_load_sign}}, a_w_loadB} :
-                             a_w_isH ? {{16{a_w_load_sign}}, a_w_loadH} :
-                                                             a_mw_Mdata ;
+        assign a_w_LBU = a_mw_ADDR[1:0] == 2'b00 ? {24'b0, a_mw_Mdata[ 7:0 ]} :
+                         a_mw_ADDR[1:0] == 2'b01 ? {24'b0, a_mw_Mdata[15:8 ]} :
+                         a_mw_ADDR[1:0] == 2'b10 ? {24'b0, a_mw_Mdata[23:16]} :
+                                                   {24'b0, a_mw_Mdata[31:24]} ;
+
+        assign a_w_LH = a_mw_ADDR[1] == 1'b0 ? {{16{a_mw_Mdata[15]}}, a_mw_Mdata[15:0 ]} :
+                                               {{16{a_mw_Mdata[31]}}, a_mw_Mdata[31:16]} ;
+
+        assign a_w_LHU = a_mw_ADDR[1] == 1'b0 ? {16'b0, a_mw_Mdata[15:0 ]} :
+                                                {16'b0, a_mw_Mdata[31:16]} ;
+
+
+        assign a_w_mem_RES = a_mw_lb  ? a_w_LB  :
+                             a_mw_lbu ? a_w_LBU :
+                             a_mw_lh  ? a_w_LH  :
+                             a_mw_lhu ? a_w_LHU :
+                                     a_mw_Mdata ;
 
 	assign a_wb_DATA   = a_mw_isNotIOandLoad ? a_w_mem_RES : a_mw_wb_DATA;
 	assign a_wb_enable = a_mw_wbEnable;
 	assign a_wb_rdID   = a_mw_rdID;
 
 `ifdef LOAD_IN_B
+        assign b_w_isIO   = b_mw_ADDR[22];
 
-        assign b_w_isB = (b_mw_funct3[1:0] == 2'b00);
-        assign b_w_isH = (b_mw_funct3[1:0] == 2'b01);
+        assign b_w_LB = b_mw_ADDR[1:0] == 2'b00 ? {{24{b_mw_Mdata[7 ]}}, b_mw_Mdata[ 7:0 ]} :
+                        b_mw_ADDR[1:0] == 2'b01 ? {{24{b_mw_Mdata[15]}}, b_mw_Mdata[15:8 ]} :
+                        b_mw_ADDR[1:0] == 2'b10 ? {{24{b_mw_Mdata[23]}}, b_mw_Mdata[23:16]} :
+                                                  {{24{b_mw_Mdata[31]}}, b_mw_Mdata[31:24]} ;
 
-        assign b_w_loadH = b_mw_ADDR[1] ? b_mw_Mdata[31:16] : b_mw_Mdata[15:0];
-        assign b_w_loadB = b_mw_ADDR[0] ? b_w_loadH [15:8 ] : b_w_loadH [7: 0];
+        assign b_w_LBU = b_mw_ADDR[1:0] == 2'b00 ? {24'b0, b_mw_Mdata[ 7:0 ]} :
+                         b_mw_ADDR[1:0] == 2'b01 ? {24'b0, b_mw_Mdata[15:8 ]} :
+                         b_mw_ADDR[1:0] == 2'b10 ? {24'b0, b_mw_Mdata[23:16]} :
+                                                   {24'b0, b_mw_Mdata[31:24]} ;
 
-        assign b_w_load_sign = !b_mw_funct3[2] & (b_w_isB ? b_w_loadB[7] : b_w_loadH[15]);
+        assign b_w_LH = b_mw_ADDR[1] == 1'b0 ? {{16{b_mw_Mdata[15]}}, b_mw_Mdata[15:0 ]} :
+                                               {{16{b_mw_Mdata[31]}}, b_mw_Mdata[31:16]} ;
 
-        assign b_w_mem_RES = b_w_isB ? {{24{b_w_load_sign}}, b_w_loadB} :
-                             b_w_isH ? {{16{b_w_load_sign}}, b_w_loadH} :
-                                                             b_mw_Mdata ;
+        assign b_w_LHU = b_mw_ADDR[1] == 1'b0 ? {16'b0, b_mw_Mdata[15:0 ]} :
+                                                {16'b0, b_mw_Mdata[31:16]} ;
+
+        assign b_w_mem_RES = b_mw_lb  ? b_w_LB  :
+                             b_mw_lbu ? b_w_LBU :
+                             b_mw_lh  ? b_w_LH  :
+                             b_mw_lhu ? b_w_LHU :
+                                     b_mw_Mdata ;
 
         assign b_wb_DATA   = b_mw_isNotIOandLoad ? b_w_mem_RES : b_mw_wb_DATA;
         assign b_wb_enable = b_mw_wbEnable;
