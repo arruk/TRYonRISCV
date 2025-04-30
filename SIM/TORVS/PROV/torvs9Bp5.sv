@@ -112,6 +112,16 @@ module torv32(
                 b_BHT_data    <= BHT[BHT_index(b_imem_addr)];
 		a_BHT_index <= BHT_index(a_imem_addr);
 		b_BHT_index <= BHT_index(b_imem_addr);
+
+                if(isBtype(a_em_IR)) begin 
+                        BH <= {a_em_takeB, BH[BP_HIST_BITS-1:1]}; 
+                        BHT[a_em_BHTindex] <= a_m_BHT_data; // incdec_sat(a_em_BHT_data, a_em_takeB); 
+                end 
+                if(isBtype(b_em_IR)) begin 
+                        BH <= {b_em_takeB, BH[BP_HIST_BITS-1:1]}; 
+                        BHT[b_em_BHTindex] <= incdec_sat(b_em_BHT_data, b_em_takeB); 
+                end
+		
 	end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -306,7 +316,7 @@ module torv32(
 
 	wire [31:0] a_e_IMM;
 
-	imm_mux m0(
+	imm_mux_c m0(
 		.instr(a_de_IR),
                 .immtype(a_de_type),		
 		.imm(a_e_IMM)
@@ -360,6 +370,7 @@ module torv32(
 		end
 		*/
 
+		/*
 		if(isBtype(a_em_IR)) begin
                         BH <= {a_em_takeB, BH[BP_HIST_BITS-1:1]};
                         BHT[a_em_BHTindex] <= a_m_BHT_data; // incdec_sat(a_em_BHT_data, a_em_takeB);
@@ -368,6 +379,7 @@ module torv32(
                         BH <= {b_em_takeB, BH[BP_HIST_BITS-1:1]};
                         BHT[b_em_BHTindex] <= incdec_sat(b_em_BHT_data, b_em_takeB);
                 end
+		*/
 		
 	end
 
@@ -423,7 +435,7 @@ module torv32(
         
 	wire [31:0] b_e_IMM;
 
-        imm_mux m1(
+        imm_mux_c m1(
                 .instr(b_de_IR),
 		.immtype(b_de_type),
                 .imm(b_e_IMM)

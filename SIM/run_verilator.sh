@@ -53,11 +53,11 @@ main() {
 		
 		(cd obj_dir; make -f VSOC.mk)
 		
-		#cp ${PREC}/RAYSTONES/DATARAM.hex HEX/ && cp ${PREC}/RAYSTONES/PROGROM.hex HEX/
-		#echo "raystones.pipeline.hex" > firmware.txt
-		#BENCH=$(cut -d. -f 1 firmware.txt)
-		#echo $BENCH
-		#obj_dir/VSOC
+		cp ${PREC}/RAYSTONES/DATARAM.hex HEX/ && cp ${PREC}/RAYSTONES/PROGROM.hex HEX/
+		echo "raystones.pipeline.hex" > firmware.txt
+		BENCH=$(cut -d. -f 1 firmware.txt)
+		echo $BENCH
+		obj_dir/VSOC
 
 		cp ${PREC}/DHRYSTONES/DATARAM.hex HEX/ && cp ${PREC}/DHRYSTONES/PROGROM.hex HEX/
 		echo "dhrystones.pipeline.hex" > firmware.txt
@@ -65,11 +65,11 @@ main() {
 		echo $BENCH
 		obj_dir/VSOC
 
-		#cp ${PREC}/COREMARK/DATARAM.hex HEX/ && cp ${PREC}/COREMARK/PROGROM.hex HEX/
-		#echo "coremark.pipeline.hex" > firmware.txt
-		#BENCH=$(cut -d. -f 1 firmware.txt)
-		#echo $BENCH
-		#obj_dir/VSOC
+		cp ${PREC}/COREMARK/DATARAM.hex HEX/ && cp ${PREC}/COREMARK/PROGROM.hex HEX/
+		echo "coremark.pipeline.hex" > firmware.txt
+		BENCH=$(cut -d. -f 1 firmware.txt)
+		echo $BENCH
+		obj_dir/VSOC
 
 	else
 
@@ -134,28 +134,33 @@ cmark_parse(){
 
 if [ "$2" = "b" ]
 then
-	for i in {5..8}
-	do
-		for j in {5..5}
-		do
-			CORE="TORVS"$i"P"$j 
-			IMPL="torvs"$i"C"$j
-			IMPL_T=$IMPL	
-			CPUT="TORVS"
-			ln -s TORVS/$IMPL.sv
-			INFO_DIR="../INFO/BENCH/TORVS"
+        declare -a arr=("x" "STORE_IN_B" "LOAD_IN_B" "BTYPE_IN_B")
+	#declare -a arr=("LOAD_IN_B" "BTYPE_IN_B")
+        for i in 9
+        do
+                for j in "${arr[@]}"
+                do
+                        CORE="TORVS"$i"C"
+                        IMPL="torvs"$i"C"
+                        IMPL_T=$IMPL
+                        CPUT="TORVS"
+                        #ln -s TORVS/$IMPL.sv
+                        INFO_DIR="../INFO/BENCH/TORVS"
+                        DEFINE=$j
+                        #echo "$DEFINE"
 
-			echo "STARTING $CORE"
-			main "$@"
-			rm -rf $IMPL.sv
-			echo "FINISHED IN $CORE"
-		done
-	done
+                        echo "STARTING $CORE"
+                        main "$@"
+                        #rm -rf $IMPL.sv
+                        echo "FINISHED IN $CORE"
+                done
+        done
+
 elif [ "$2" = "a" ]
 then
-	declare -a arr=("x" "STORE_IN_B" "LOAD_IN_B" "BTYPE_IN_B")
-	#declare -a arr=("BTYPE_IN_B")
-	for i in 5 7 9
+	#declare -a arr=("x" "STORE_IN_B" "LOAD_IN_B" "BTYPE_IN_B")
+	declare -a arr=("LOAD_IN_B" "BTYPE_IN_B")
+	for i in 9
 	do
 		for j in "${arr[@]}"
 		do

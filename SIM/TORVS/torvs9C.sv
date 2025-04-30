@@ -1,6 +1,6 @@
 //`define STORE_IN_B
 //`define LOAD_IN_B
-`define CONFIG_RAS
+//`define CONFIG_RAS
 //`define BTYPE_IN_B
 
 `ifndef BTYPE_IN_B
@@ -1143,7 +1143,12 @@ module torv32(
 	assign a_IO_mem_wr    = a_em_isStore & a_m_isIO;
 	assign a_IO_mem_wdata = a_em_rs2;
 
+`ifdef STORE_IN_B
+        //assign a_mem_wmask = a_m_WMASK;
+        assign a_mem_wmask = a_m_WMASK & {4{!store_addr_HAZ}};	
+`else
         assign a_mem_wmask = a_m_WMASK;
+`endif
         assign a_mem_addr = {9'b0,a_em_ADDR[22:0]};
         assign a_mem_wdata  = a_m_store_DATA;
 	assign a_mem_cen   = a_em_isLoad | a_em_isStore;
@@ -1156,6 +1161,8 @@ module torv32(
         assign a_m_lbu = (a_em_funct3[2:0] == 3'b100);
         assign a_m_lh  = (a_em_funct3[2:0] == 3'b001);
         assign a_m_lhu = (a_em_funct3[2:0] == 3'b101);
+
+	reg [3:0] a_mw_wmask;
 
 	always@(posedge clk) begin
 		a_mw_nop      <= a_em_nop;
@@ -1171,6 +1178,8 @@ module torv32(
                 a_mw_lbu    <= a_m_lbu;
                 a_mw_lh     <= a_m_lh;
                 a_mw_lhu    <= a_m_lhu;
+	
+		a_mw_wmask  <= a_mem_wmask;
 
 	end
 
@@ -1197,11 +1206,34 @@ module torv32(
 	assign b_m_isB = (b_em_funct3[1:0] == 2'b00);
 	assign b_m_isH = (b_em_funct3[1:0] == 2'b01);
 
+	/*
 	assign b_m_store_DATA[ 7:0 ] = b_em_rs2[7:0];
 	assign b_m_store_DATA[15:8 ] = b_em_ADDR[0] ? b_em_rs2[7:0]  : b_em_rs2[15:8 ] ;
 	assign b_m_store_DATA[23:16] = b_em_ADDR[1] ? b_em_rs2[7:0]  : b_em_rs2[23:16] ;
 	assign b_m_store_DATA[31:24] = b_em_ADDR[0] ? b_em_rs2[7:0]  :
 				       b_em_ADDR[1] ? b_em_rs2[15:8] : b_em_rs2[31:24] ;
+	*/				    
+
+	wire [3:0] s_haz = {!b_m_store_WMASK[3] & a_m_store_WMASK[3] & store_addr_HAZ,
+		      	    !b_m_store_WMASK[2] & a_m_store_WMASK[2] & store_addr_HAZ,
+	       	      	    !b_m_store_WMASK[1] & a_m_store_WMASK[1] & store_addr_HAZ,
+			    !b_m_store_WMASK[0] & a_m_store_WMASK[0] & store_addr_HAZ};
+
+	assign b_m_store_DATA[ 7:0 ] = s_haz[0] ? a_m_store_DATA[7:0 ] :
+	       					  b_em_rs2[7:0]        ;
+
+	assign b_m_store_DATA[15:8 ] = s_haz[1]     ? a_m_store_DATA[15:8] : 
+				       b_em_ADDR[0] ? b_em_rs2[7:0 ]  	   : 
+				       		      b_em_rs2[15:8]       ;
+
+	assign b_m_store_DATA[23:16] = s_haz[2]     ? a_m_store_DATA[23:16] :
+	       			       b_em_ADDR[1] ? b_em_rs2[ 7:0 ]       :
+				      		      b_em_rs2[23:16]       ;
+
+	assign b_m_store_DATA[31:24] = s_haz[3]     ? a_m_store_DATA[31:24] : 
+				       b_em_ADDR[0] ? b_em_rs2[ 7:0 ]       :
+				       b_em_ADDR[1] ? b_em_rs2[15:8 ] 	    :
+				      		      b_em_rs2[31:24]       ;
 
 	assign b_m_store_WMASK = b_m_isB ? (b_em_ADDR[1] ? (b_em_ADDR[0] ? 4'b1000 : 4'b0100)  :
 							   (b_em_ADDR[0] ? 4'b0010 : 4'b0001)) :
@@ -1217,16 +1249,30 @@ module torv32(
 	assign b_IO_mem_wr    = b_em_isStore & b_m_isIO;
 	assign b_IO_mem_wdata = b_em_rs2;
 
-        assign b_mem_wmask = b_m_WMASK & {4{!store_addr_HAZ}};
+       	//assign b_mem_wmask = b_m_WMASK & {4{!store_addr_HAZ}};
+       	assign b_mem_wmask = b_m_WMASK;
         assign b_mem_addr  = {9'b0,b_em_ADDR[22:0]};
         assign b_mem_wdata = b_m_store_DATA;
 	assign b_mem_cen   = b_em_isLoad | b_em_isStore;
 
 `ifdef LOAD_IN_B
 
-	assign b_mw_Mdata  = b_mw_ASBL ? b_mw_store : b_mem_data;
+	reg [3:0] b_mw_rmask;
+
+	wire [3:0] b_wmask_haz = {b_mw_rmask[3] & a_mw_wmask[3] & b_mw_ASBL,
+				  b_mw_rmask[2] & a_mw_wmask[2] & b_mw_ASBL,
+				  b_mw_rmask[1] & a_mw_wmask[1] & b_mw_ASBL,
+				  b_mw_rmask[0] & a_mw_wmask[0] & b_mw_ASBL};
+
+	wire [31:0] b_mw_LOAD_HAZ = {b_wmask_haz [3] ? b_mw_store[31:24] : b_mem_data[31:24],
+				     b_wmask_haz [2] ? b_mw_store[23:16] : b_mem_data[23:16],
+				     b_wmask_haz [1] ? b_mw_store[15:8 ] : b_mem_data[15:8 ],
+				     b_wmask_haz [0] ? b_mw_store[ 7:0 ] : b_mem_data[ 7:0 ]};
+
+	//assign b_mw_Mdata  = b_mw_ASBL ? b_mw_store : b_mem_data;
+	assign b_mw_Mdata  = b_mw_LOAD_HAZ;
 	assign a_store_b_load_HAZ = a_em_isStore & (|a_mem_wmask) & b_em_isLoad & (a_mem_addr == b_mem_addr);
-        assign store_addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);
+        assign store_addr_HAZ = (b_mem_addr==a_mem_addr) & (|b_mem_wmask);
 
         assign b_m_lb  = (b_em_funct3[2:0] == 3'b000);
         assign b_m_lbu = (b_em_funct3[2:0] == 3'b100);
@@ -1235,7 +1281,13 @@ module torv32(
 	
 `else
 	assign b_mw_Mdata  = b_mem_data;
-        assign store_addr_HAZ = (b_mem_addr==a_mem_addr) & (|a_mem_wmask);	
+        assign store_addr_HAZ = (b_mem_addr==a_mem_addr) & (|b_mem_wmask);
+
+	always@(posedge clk) begin
+		if(s_haz!=4'b0) begin
+			$display("b_wmask %b | a_wmask %b | s_haz %b", b_m_WMASK, a_m_WMASK, s_haz);
+		end
+	end
 `endif
 
 	assign b_m_isNotIOandLoad = b_em_isLoad & ! b_m_isIO;
@@ -1270,6 +1322,8 @@ module torv32(
                 b_mw_lbu    <= b_m_lbu;
                 b_mw_lh     <= b_m_lh;
                 b_mw_lhu    <= b_m_lhu;
+
+		b_mw_rmask <= b_m_store_WMASK & {4{b_em_isLoad}};
 
 	`endif
 
