@@ -4,7 +4,8 @@
 
 - [RISCV Toolchain (riscv64-unknow-ef)](https://github.com/sifive/freedom-tools/releases) (preferivelmente v8.3.0)
 	- export RV\_UNK=(caminho\_da\_toolchain)
-- Verilator: `apt-get install verilator`;
+- Verilator: `apt install verilator` ou `dnf install verilator`;
+- G++: `apt install g++` ou `dnf install gcc-c++`
 
 ## COMEÇANDO
 

@@ -27,6 +27,7 @@ LIBOBJECTS = $(S_OBJS) $(C_OBJS)
 	$(RVOBJDUMP) -Mnumeric -D $@ > $@.list
 
 %.PROGROM.hex: %.pipeline.elf $(FIRMWARE_DIR)/TOOLS/firmware_words 
+	mkdir -p ../HEX/
 	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x20000 -max_addr 0x20000 -out $@ -from_addr 0 -to_addr 0xFFFF
 	cp $@ ../HEX/PROGROM.hex
 	#cp $@ ../../RTL/PRIMER25k/src/PROGROM.hex
@@ -34,6 +35,7 @@ LIBOBJECTS = $(S_OBJS) $(C_OBJS)
 	cp $@ ../obj_dir/PROGROM.hex
 
 %.DATARAM.hex: %.pipeline.elf $(FIRMWARE_DIR)/TOOLS/firmware_words 
+	mkdir -p ../HEX/
 	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x20000 -max_addr 0x20000 -out $@ -from_addr 0x10000 -to_addr 0x1FFFF
 	cp $@ ../HEX/DATARAM.hex
 	#cp $@ ../../RTL/PRIMER25k/src/DATARAM.hex
@@ -189,10 +191,13 @@ allsmall: os.small.hex dhrystones.os.hex raystones.os.hex coremark.os.hex
 
 
 $(BDIR)/%.o: $(SDIR)/%.c
+	mkdir -p BUILD/
 	$(RVGCC) $(RVCFLAGS) $(RVUSERCFLAGS) -c $< -o $@
 
 $(BDIR)/%_asm.o: $(SDIR)/%.S $(RV_BINARIES)
+	mkdir -p BUILD/
 	$(RVAS) $(RVASFLAGS) $(RVUSERASFLAGS) -c $< -o $@
 
 $(BDIR)/%_asm.o: $(CDIR)/%.S $(RV_BINARIES)
+	mkdir -p BUILD/
 	$(RVAS) $(RVASFLAGS) $(RVUSERASFLAGS) -c $< -o $@

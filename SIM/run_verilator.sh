@@ -132,31 +132,7 @@ cmark_parse(){
 	IMPL_T=$IMPL	
 }
 
-if [ "$2" = "b" ]
-then
-        declare -a arr=("x" "STORE_IN_B" "LOAD_IN_B" "BTYPE_IN_B")
-	#declare -a arr=("LOAD_IN_B" "BTYPE_IN_B")
-        for i in 9
-        do
-                for j in "${arr[@]}"
-                do
-                        CORE="TORVS"$i"C"
-                        IMPL="torvs"$i"C"
-                        IMPL_T=$IMPL
-                        CPUT="TORVS"
-                        #ln -s TORVS/$IMPL.sv
-                        INFO_DIR="../INFO/BENCH/TORVS"
-                        DEFINE=$j
-                        #echo "$DEFINE"
-
-                        echo "STARTING $CORE"
-                        main "$@"
-                        #rm -rf $IMPL.sv
-                        echo "FINISHED IN $CORE"
-                done
-        done
-
-elif [ "$2" = "a" ]
+if [ "$2" = "a" ]
 then
 	#declare -a arr=("x" "STORE_IN_B" "LOAD_IN_B" "BTYPE_IN_B")
 	declare -a arr=("LOAD_IN_B" "BTYPE_IN_B")
