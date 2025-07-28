@@ -1,5 +1,5 @@
 //`define STORE_IN_B
-//`define LOAD_IN_B
+`define LOAD_IN_B
 //`define CONFIG_RAS
 //`define BTYPE_IN_B
 

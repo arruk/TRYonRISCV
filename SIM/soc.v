@@ -302,6 +302,8 @@ endmodule
 		`include "torv4.v"
 	`elsif TORV5
 		`include "torv5.v"
+	`elsif TORV6
+		`include "torv6.v"
 	`elsif TORVS2
 		`include "torvs2.sv"
 	`elsif TORVS1

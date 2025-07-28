@@ -958,6 +958,8 @@ module torv32(
         assign b_e_SHamt = b_de_isRRint ? b_e_rs2[4:0] : b_de_rs2ID;
         assign b_e_minus = b_de_funct7 & b_de_isRRint;
 
+	// TODO problema com arithshift
+
         assign b_e_ALUplus = b_e_ALUin1 + b_e_ALUin2;
         assign b_e_ALUminus = {1'b0, b_e_ALUin1} + {1'b1, ~b_e_ALUin2} + 33'b1;
 

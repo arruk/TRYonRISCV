@@ -1,0 +1,15 @@
+[submodule "CHISEL/rocket-chip"]
+	path = CHISEL/rocket-chip
+	url = https://github.com/freechipsproject/rocket-chip-blocks.git
+[submodule "CHISEL/CHISEL/rocket-chip"]
+	path = CHISEL/CHISEL/rocket-chip
+	url = https://github.com/chipsalliance/rocket-chip.git
+[submodule "CHISEL/sifive-blocks"]
+	path = CHISEL/sifive-blocks
+	url = https://github.com/sifive/sifive-blocks
+[submodule "CHISEL/diplomacy"]
+	path = CHISEL/diplomacy
+	url = https://github.com/chipsalliance/diplomacy.git
+[submodule "CHISEL/amba"]
+	path = CHISEL/amba
+	url = https://github.com/chipsalliance/amba.git

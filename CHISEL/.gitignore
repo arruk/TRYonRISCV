@@ -1,0 +1,44 @@
+############################
+# SBT / Scala build output #
+############################
+target/
+**/target/
+project/
+lib_managed/
+# metals / bloop cache
+.bloop/
+.metals/
+.bsp/
+.worksheet/
+
+############################
+# Chisel / Verilator runs  #
+############################
+test_run_dir/*
+sim_build/
+.vcd
+.vpd
+*.fir
+*.anno.json
+*.sv
+*.v
+*.d
+*.o
+*.so
+*.a
+*.elf
+*.hex    # <- comente esta linha se quiser manter DATARAM.hex/PROGROM.hex
+
+############################
+# IDE artefacts            #
+############################
+.idea/
+.vscode/
+*.iml
+
+############################
+# Misc                     #
+############################
+.DS_Store
+Thumbs.db
+
