@@ -22,7 +22,7 @@ class TorvChip extends Module {
 
   torv.io.reset := reset.asBool
   
-  torv.io.iomem.rdata := Cat(0.U(22.W), 0.U(1.W), 0.U(9.W))
+  torv.io.iomem.rdata := Cat(0.U(22.W), 1.U(1.W), 0.U(9.W))
   io.halt := torv.io.cpu_halted
 
   val muxPort = Wire(new DMemPort)

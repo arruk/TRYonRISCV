@@ -27,7 +27,7 @@ sim_build/
 *.so
 *.a
 *.elf
-*.hex    # <- comente esta linha se quiser manter DATARAM.hex/PROGROM.hex
+*.hex    
 
 ############################
 # IDE artefacts            #
