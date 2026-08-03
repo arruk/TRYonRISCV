@@ -1,4 +1,5 @@
 *~
+/build/
 *.o
 *.a
 *.exe
@@ -51,3 +52,4 @@ TODO/*
 INFO/GRAPHS/*
 MYFOLDER/*
 .ipynb_checkpoints/*
+estrutura.md

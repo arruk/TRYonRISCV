@@ -1,203 +1,96 @@
-include ../../FIRMWARE/makefile.inc
-RVASFLAGS= -march=$(ARCH) -mabi=$(ABI) 
-RVCFLAGS=-I. -O2 -fno-pic -march=$(ARCH) -mabi=$(ABI) -fno-stack-protector -w -Wl,--no-relax
+REPO_ROOT := $(abspath ../..)
+BUILD_ROOT ?= $(REPO_ROOT)/build
 
-RAM_SIZE=6144
-LIB=/home/arruk/riscv/SIM/FIRMWARE/LIB
+FW_BUILD := $(BUILD_ROOT)/firmware
+FW_OBJ := $(FW_BUILD)/obj
+FW_HEX := $(FW_BUILD)/HEX
 
-SDIR = LIB
-CDIR = CRT
-BDIR = BUILD
+RV_UNK ?= /opt/riscv32
+ARCH ?= rv32i
+ABI ?= ilp32
 
-S_SRCS = $(wildcard $(SDIR)/*.S)
-S_CRTS = $(wildcard $(CDIR)/*.S)
-C_SRCS = $(wildcard $(SDIR)/*.c)
+TOOLCHAIN_PREFIX ?= riscv64-unknown-elf
+TOOLCHAIN_BIN := $(RV_UNK)/bin/$(TOOLCHAIN_PREFIX)-
 
-S_OBJS = $(S_SRCS:$(SDIR)/%.S=$(BDIR)/%_asm.o)
-C_OBJS = $(C_SRCS:$(SDIR)/%.c=$(BDIR)/%.o)
-S_OCRT = $(S_CRTS:$(CDIR)/start_pipeline.S=$(BDIR)/start_pipeline_asm.o)
+RVAS := $(TOOLCHAIN_BIN)as
+RVLD := $(TOOLCHAIN_BIN)ld
+RVOBJDUMP := $(TOOLCHAIN_BIN)objdump
+RVGCC := $(TOOLCHAIN_BIN)gcc
 
-LIBOBJECTS = $(S_OBJS) $(C_OBJS)
+FIRMWARE_DIR ?= $(REPO_ROOT)/FIRMWARE
+FIRMWARE_WORDS := $(FIRMWARE_DIR)/TOOLS/firmware_words
 
-.PRECIOUS: %.pipeline.elf %.supervisor.pipeline.elf
+SDIR := LIB
+CDIR := CRT
+TDIR := TESTES
+LD_SCRIPT := LS/pipeline.ld
 
-# DUAL MEMORY (64 kb program ROM, 64 kb data RAM)
-%.pipeline.elf: %.o $(C_OBJS) $(S_OCRT) $(S_OBJS) $(RV_BINARIES)
-	$(RVLD) -T LS/pipeline.ld -m elf32lriscv -nostdlib -norelax $< $(LIBOBJECTS) -L$(RVTOOLCHAIN_LIB_DIR) -lm $(RVTOOLCHAIN_GCC_LIB_DIR)/libgcc.a  -o $@
+RVCPPFLAGS := -I.
+RVCFLAGS := -O2 -fno-pic -march=$(ARCH) -mabi=$(ABI) \
+	-fno-stack-protector -fno-tree-loop-distribute-patterns \
+	-w -Wno-implicit-int \
+	-Wno-implicit-function-declaration
+RVASFLAGS := -march=$(ARCH)_zicsr -mabi=$(ABI)
+RVLDFLAGS := -T $(LD_SCRIPT) -m elf32lriscv -nostdlib --no-relax
+
+# Ask GCC for the multilib selected by ARCH/ABI instead of hard-coding its version.
+RVLIBM := $(shell $(RVGCC) -march=$(ARCH) -mabi=$(ABI) \
+	-print-file-name=libm.a)
+RVLIBGCC := $(shell $(RVGCC) -march=$(ARCH) -mabi=$(ABI) \
+	-print-libgcc-file-name)
+
+S_SRCS := $(wildcard $(SDIR)/*.S)
+C_SRCS := $(wildcard $(SDIR)/*.c)
+PROGRAM_SRCS := $(wildcard *.c) $(wildcard $(TDIR)/*.c)
+
+S_OBJS := $(patsubst $(SDIR)/%.S,$(FW_OBJ)/%_asm.o,$(S_SRCS))
+C_OBJS := $(patsubst $(SDIR)/%.c,$(FW_OBJ)/%.o,$(C_SRCS))
+PROGRAM_OBJS := $(addprefix $(FW_OBJ)/,$(notdir $(PROGRAM_SRCS:.c=.o)))
+START_OBJ := $(FW_OBJ)/start_pipeline_asm.o
+LIBOBJECTS := $(S_OBJS) $(C_OBJS)
+DEPS := $(C_OBJS:.o=.d) $(PROGRAM_OBJS:.o=.d)
+
+vpath %.c . $(TDIR) $(SDIR)
+vpath %.S $(SDIR) $(CDIR)
+
+.PHONY: clean print-config
+.SECONDARY:
+
+# Keep the existing user-facing target while storing every generated file in build/.
+%.pipeline.hex: $(FW_BUILD)/%.pipeline.hex
+	@:
+
+$(FW_BUILD)/%.pipeline.hex: $(FW_HEX)/%.PROGROM.hex $(FW_HEX)/%.DATARAM.hex | $(FW_BUILD) $(FW_HEX)
+	cp $(FW_HEX)/$*.PROGROM.hex $(FW_HEX)/PROGROM.hex
+	cp $(FW_HEX)/$*.DATARAM.hex $(FW_HEX)/DATARAM.hex
+	cat $(FW_HEX)/PROGROM.hex $(FW_HEX)/DATARAM.hex > $(FW_HEX)/RAM.hex
+	printf '%s\n' '$*.pipeline.hex' > $(FW_BUILD)/firmware.txt
+	touch $@
+
+$(FW_HEX)/%.PROGROM.hex: $(FW_BUILD)/%.pipeline.elf $(FIRMWARE_WORDS) | $(FW_HEX)
+	$(FIRMWARE_WORDS) $< -ram 0x20000 -max_addr 0x20000 -out $@ -from_addr 0 -to_addr 0xFFFF
+
+$(FW_HEX)/%.DATARAM.hex: $(FW_BUILD)/%.pipeline.elf $(FIRMWARE_WORDS) | $(FW_HEX)
+	$(FIRMWARE_WORDS) $< -ram 0x20000 -max_addr 0x20000 -out $@ -from_addr 0x10000 -to_addr 0x1FFFF
+
+$(FW_BUILD)/%.pipeline.elf: $(FW_OBJ)/%.o $(START_OBJ) $(C_OBJS) $(S_OBJS) $(LD_SCRIPT) $(RVLD) | $(FW_BUILD)
+	$(RVLD) $(RVLDFLAGS) $(START_OBJ) $< $(LIBOBJECTS) $(RVLIBM) $(RVLIBGCC) -o $@
 	$(RVOBJDUMP) -Mnumeric -D $@ > $@.list
 
-%.PROGROM.hex: %.pipeline.elf $(FIRMWARE_DIR)/TOOLS/firmware_words 
-	mkdir -p ../HEX/
-	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x20000 -max_addr 0x20000 -out $@ -from_addr 0 -to_addr 0xFFFF
-	cp $@ ../HEX/PROGROM.hex
-	#cp $@ ../../RTL/PRIMER25k/src/PROGROM.hex
-	mkdir -p ../obj_dir
-	cp $@ ../obj_dir/PROGROM.hex
+# VPATH lets these two rules cover programs, tests, LIB/, and CRT/ sources.
+$(FW_OBJ)/%.o: %.c Makefile $(RVGCC) | $(FW_OBJ)
+	$(RVGCC) $(RVCPPFLAGS) $(RVCFLAGS) $(RVUSERCFLAGS) -MMD -MP -MF $(@:.o=.d) -c $< -o $@
 
-%.DATARAM.hex: %.pipeline.elf $(FIRMWARE_DIR)/TOOLS/firmware_words 
-	mkdir -p ../HEX/
-	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x20000 -max_addr 0x20000 -out $@ -from_addr 0x10000 -to_addr 0x1FFFF
-	cp $@ ../HEX/DATARAM.hex
-	#cp $@ ../../RTL/PRIMER25k/src/DATARAM.hex
-	mkdir -p ../obj_dir
-	cp $@ ../obj_dir/DATARAM.hex
-
-%.pipeline.hex: %.PROGROM.hex %.DATARAM.hex
-	rm -rf ../HEX/RAM.hex
-	cat ../HEX/PROGROM.hex ../HEX/DATARAM.hex > ../HEX/RAM.hex
-	echo $@ > ../firmware.txt
-
-#%.pipeline.hex: os.supervisor.pipeline.hex %.PROGROM.hex %.DATARAM.hex
-#	rm -rf ../RAM.hex
-#	cat ../PROGROM.hex ../DATARAM.hex ../RAM_SO.hex > ../RAM.hex
-#	echo $@ > ../firmware.txt
-
-# SMALL VERSION
-#%.small.pipeline.elf: %.o  $(C_OBJS) $(S_CRTS:$(CDIR)/small_pipeline.S=$(BDIR)/small_pipeline_asm.o) $(S_OBJS) $(RV_BINARIES)
-#	$(RVLD) -T LS/spipeline.ld -m elf32lriscv -nostdlib -norelax $< $(LIBOBJECTS) -L$(RVTOOLCHAIN_LIB_DIR) -lm $(RVTOOLCHAIN_GCC_LIB_DIR)/libgcc.a  -o $@
-#	$(RVOBJDUMP) -Mnumeric -D $@ > $@.list
-#
-#%.small.PROGROM.hex: %.small.pipeline.elf $(FIRMWARE_DIR)/TOOLS/firmware_words 
-#	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x10000 -max_addr 0x10000 -out $@ -from_addr 0 -to_addr 0x7FFF
-#	cp $@ ../HEX/PROGROM.hex
-#	mkdir -p ../obj_dir
-#	cp $@ ../obj_dir/PROGROM.hex
-
-#%.small.DATARAM.hex: %.small.pipeline.elf $(FIRMWARE_DIR)/TOOLS/firmware_words 
-#	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x10000 -max_addr 0x10000 -out $@ -from_addr 0x8000 -to_addr 0xFFFF
-#	cp $@ ../HEX/DATARAM.hex
-#	mkdir -p ../obj_dir
-#	cp $@ ../obj_dir/DATARAM.hex
-#
-#%.small.pipeline.hex: %.small.PROGROM.hex %.small.DATARAM.hex
-#	rm -rf ../HEX/RAM.hex
-#	cat ../HEX/PROGROM.hex ../HEX/DATARAM.hex ../HEX/RAM_SO.hex > ../HEX/RAM.hex
-#	echo $@ > ../firmware.txt
-
-# SUPERVISOR
-%.supervisor.pipeline.elf: %.o $(C_OBJS) $(S_CRTS:$(CDIR)/os_one_crt0.S=$(BDIR)/os_one_crt0_asm.o) $(S_OBJS) $(RV_BINARIES)
-	$(RVLD) -T LS/os_one.ld -m elf32lriscv -nostdlib -norelax $< $(LIBOBJECTS) -L$(RVTOOLCHAIN_LIB_DIR) -lm $(RVTOOLCHAIN_GCC_LIB_DIR)/libgcc.a  -o $@
-	$(RVOBJDUMP) -Mnumeric -D $@ > $@.list
-
-%.supervisor.PROGROM.hex: %.supervisor.pipeline.elf $(FIRMWARE_DIR)/TOOLS/firmware_words
-	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x30000 -max_addr 0x30000 -out $@ -from_addr 0x20000 -to_addr 0x27FFF
-	cp $@ ./PROGROM.hex
-	mkdir -p ../obj_dir
-	cp $@ ../obj_dir/PROGROM.hex
-
-%.supervisor.DATARAM.hex: %.supervisor.pipeline.elf $(FIRMWARE_DIR)/TOOLS/firmware_words
-	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x30000 -max_addr 0x30000 -out $@ -from_addr 0x28000 -to_addr 0x2FFFF
-	cp $@ ./DATARAM.hex
-	mkdir -p ../obj_dir
-	cp $@ ../obj_dir/DATARAM.hex
-
-%.supervisor.pipeline.hex: %.supervisor.PROGROM.hex %.supervisor.DATARAM.hex
-	rm -rf ../HEX/RAM_SO.hex
-	cat PROGROM.hex DATARAM.hex > ../HEX/RAM_SO.hex
-	echo $@ > ../firmware.txt
-
-
-
-# RAYSTONES SMALL VERSION
-raystones.os.elf: raystones.o $(C_OBJS) $(S_CRTS:$(CDIR)/raystones_start.S=$(BDIR)/raystones_start_asm.o) $(S_OBJS) $(RV_BINARIES)
-	$(RVLD) -T LS/raystones.ld -m elf32lriscv -nostdlib -norelax $< $(LIBOBJECTS) -L$(RVTOOLCHAIN_LIB_DIR) -lm $(RVTOOLCHAIN_GCC_LIB_DIR)/libgcc.a  -o $@
-	$(RVOBJDUMP) -Mnumeric -D $@ > $@.list
-
-raystones.os.PROGROM.hex: raystones.os.elf $(FIRMWARE_DIR)/TOOLS/firmware_words
-	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x20000 -max_addr 0x20000 -out $@ -from_addr 0x10000 -to_addr 0x17FFF
-	cp $@ ../HEX/PROGROM.hex
-	mkdir -p ../obj_dir
-	cp $@ ../obj_dir/PROGROM.hex
-
-raystones.os.DATARAM.hex: raystones.os.elf $(FIRMWARE_DIR)/TOOLS/firmware_words
-	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x20000 -max_addr 0x20000 -out $@ -from_addr 0x18000 -to_addr 0x1FFFF
-	cp $@ ../HEX/DATARAM.hex
-	mkdir -p ../obj_dir
-	cp $@ ../obj_dir/DATARAM.hex
-
-raystones.os.hex: raystones.os.PROGROM.hex raystones.os.DATARAM.hex
-	rm -f ../HEX/RAM_RAY.hex
-	cat ../HEX/PROGROM.hex ../HEX/DATARAM.hex > ../HEX/RAM_RAY.hex
-
-dhrystones.os.elf: dhrystones.o $(C_OBJS) $(S_CRTS:$(CDIR)/dhrystones_start.S=$(BDIR)/dhrystones_start_asm.o) $(S_OBJS) $(RV_BINARIES)
-	$(RVLD) -T LS/dhrystones.ld -m elf32lriscv -nostdlib -norelax $< $(LIBOBJECTS) -L$(RVTOOLCHAIN_LIB_DIR) -lm $(RVTOOLCHAIN_GCC_LIB_DIR)/libgcc.a  -o $@
-	$(RVOBJDUMP) -Mnumeric -D $@ > $@.list
-
-dhrystones.os.PROGROM.hex: dhrystones.os.elf $(FIRMWARE_DIR)/TOOLS/firmware_words
-	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x10000 -max_addr 0x10000 -out $@ -from_addr 0 -to_addr 0x7FFF
-	cp $@ ../HEX/PROGROM.hex
-	mkdir -p ../obj_dir
-	cp $@ ../obj_dir/PROGROM.hex
-
-dhrystones.os.DATARAM.hex: dhrystones.os.elf $(FIRMWARE_DIR)/TOOLS/firmware_words
-	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x10000 -max_addr 0x10000 -out $@ -from_addr 0x8000 -to_addr 0xFFFF
-	cp $@ ../HEX/DATARAM.hex
-	mkdir -p ../obj_dir
-	cp $@ ../obj_dir/DATARAM.hex
-
-dhrystones.os.hex: dhrystones.os.PROGROM.hex dhrystones.os.DATARAM.hex
-	rm -f ../HEX/RAM_DHRY.hex
-	cat ../HEX/PROGROM.hex ../HEX/DATARAM.hex > ../HEX/RAM_DHRY.hex
-
-coremark.os.elf: coremark.o $(C_OBJS) $(S_CRTS:$(CDIR)/coremark_start.S=$(BDIR)/coremark_start_asm.o) $(S_OBJS) $(RV_BINARIES)
-	$(RVLD) -T LS/coremark.ld -m elf32lriscv -nostdlib -norelax $< $(LIBOBJECTS) -L$(RVTOOLCHAIN_LIB_DIR) -lm $(RVTOOLCHAIN_GCC_LIB_DIR)/libgcc.a  -o $@
-	$(RVOBJDUMP) -Mnumeric -D $@ > $@.list
-
-coremark.os.PROGROM.hex: coremark.os.elf $(FIRMWARE_DIR)/TOOLS/firmware_words
-	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x30000 -max_addr 0x30000 -out $@ -from_addr 0x20000 -to_addr 0x27FFF
-	cp $@ ../HEX/PROGROM.hex
-	mkdir -p ../obj_dir
-	cp $@ ../obj_dir/PROGROM.hex
-
-coremark.os.DATARAM.hex: coremark.os.elf $(FIRMWARE_DIR)/TOOLS/firmware_words
-	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x30000 -max_addr 0x30000 -out $@ -from_addr 0x28000 -to_addr 0x2FFFF
-	cp $@ ../HEX/DATARAM.hex
-	mkdir -p ../obj_dir
-	cp $@ ../obj_dir/DATARAM.hex
-
-coremark.os.hex: coremark.os.PROGROM.hex coremark.os.DATARAM.hex
-	rm -f ../HEX/RAM_CM.hex
-	cat ../HEX/PROGROM.hex ../HEX/DATARAM.hex > ../HEX/RAM_CM.hex
-
-# OS SMALL VERSION
-allsmall: os.small.hex dhrystones.os.hex raystones.os.hex coremark.os.hex
-	rm -f ../HEX/RAM.hex
-	cat ../HEX/RAM_DHRY.hex ../HEX/RAM_RAY.hex ../HEX/RAM_CM.hex ../HEX/RAM_SO.hex > ../HEX/RAM.hex
-	echo "os" > ../firmware.txt
-	#rm -rf ../PROGROM.hex ../DATARAM.hex ../RAM_P.hex ../RAM_SO.hex
-
-
-# OS SMALL VERSION
-%.small.elf: %.o $(C_OBJS) $(S_CRTS:$(CDIR)/os_small_crt0.S=$(BDIR)/os_small_crt0_asm.o) $(S_OBJS) $(RV_BINARIES)
-	$(RVLD) -T LS/os_small.ld -m elf32lriscv -nostdlib -norelax $< $(LIBOBJECTS) -L$(RVTOOLCHAIN_LIB_DIR) -lm $(RVTOOLCHAIN_GCC_LIB_DIR)/libgcc.a  -o $@
-	$(RVOBJDUMP) -Mnumeric -D $@ > $@.list
-
-%.small.PROGROM.hex: %.small.elf $(FIRMWARE_DIR)/TOOLS/firmware_words
-	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x40000 -max_addr 0x40000 -out $@ -from_addr 0x30000 -to_addr 0x37FFF
-	cp $@ ./PROGROM.hex
-	mkdir -p ../obj_dir
-	cp $@ ../obj_dir/PROGROM.hex
-
-%.small.DATARAM.hex: %.small.elf $(FIRMWARE_DIR)/TOOLS/firmware_words
-	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -ram 0x40000 -max_addr 0x40000 -out $@ -from_addr 0x38000 -to_addr 0x3FFFF
-	cp $@ ./DATARAM.hex
-	mkdir -p ../obj_dir
-	cp $@ ../obj_dir/DATARAM.hex
-
-%.small.hex: %.small.PROGROM.hex %.small.DATARAM.hex
-	rm -rf ../HEX/RAM_SO.hex
-	cat PROGROM.hex DATARAM.hex > ../HEX/RAM_SO.hex
-	echo $@ > ../firmware.txt
-
-
-$(BDIR)/%.o: $(SDIR)/%.c
-	mkdir -p BUILD/
-	$(RVGCC) $(RVCFLAGS) $(RVUSERCFLAGS) -c $< -o $@
-
-$(BDIR)/%_asm.o: $(SDIR)/%.S $(RV_BINARIES)
-	mkdir -p BUILD/
+$(FW_OBJ)/%_asm.o: %.S Makefile $(RVAS) | $(FW_OBJ)
 	$(RVAS) $(RVASFLAGS) $(RVUSERASFLAGS) -c $< -o $@
 
-$(BDIR)/%_asm.o: $(CDIR)/%.S $(RV_BINARIES)
-	mkdir -p BUILD/
-	$(RVAS) $(RVASFLAGS) $(RVUSERASFLAGS) -c $< -o $@
+$(FW_BUILD) $(FW_OBJ) $(FW_HEX):
+	mkdir -p $@
+
+print-config:
+	@printf 'RVGCC=%s\nARCH=%s\nABI=%s\nBUILD_ROOT=%s\n' '$(RVGCC)' '$(ARCH)' '$(ABI)' '$(BUILD_ROOT)'
+
+clean:
+	rm -rf $(FW_BUILD)
+
+-include $(DEPS)

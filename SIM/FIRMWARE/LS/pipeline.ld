@@ -7,7 +7,6 @@ SECTIONS {
 
     .text : {
         . = ALIGN(4);
-	BUILD/start_pipeline_asm.o (.text)
         *(.text*)
     } > PROGROM
 

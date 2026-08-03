@@ -42,8 +42,8 @@ module mem (
 	end
 	`else
 	initial begin
-                $readmemh("HEX/DATARAM.hex", RAM);		
-                $readmemh("HEX/PROGROM.hex", ROM);		
+                $readmemh("../build/firmware/HEX/DATARAM.hex", RAM);		
+                $readmemh("../build/firmware/HEX/PROGROM.hex", ROM);		
 	end
 	`endif
 
@@ -204,7 +204,7 @@ module insn_mem(
 
 	initial begin
 		`ifndef SYN
-                $readmemh("HEX/PROGROM.hex", ROM);		
+                $readmemh("../build/firmware/HEX/PROGROM.hex", ROM);		
 		`else
                 $readmemh("PROGROM.hex", ROM);		
 		`endif
@@ -248,7 +248,7 @@ module data_mem(
 
 	initial begin
 		`ifndef SYN
-                $readmemh("HEX/DATARAM.hex", RAM);		
+                $readmemh("../build/firmware/HEX/DATARAM.hex", RAM);		
 		`else
                 $readmemh("DATARAM.hex", RAM);		
 		`endif
@@ -299,7 +299,7 @@ module mem (
 	reg [ 3:0][7:0] RAM [0:RAM_SIZE-1];  // 64kB of RAM
 
 	initial begin
-                $readmemh("HEX/RAM.hex", RAM);		
+                $readmemh("../build/firmware/HEX/RAM.hex", RAM);		
 	end
 	
 	always@(posedge clk) begin
