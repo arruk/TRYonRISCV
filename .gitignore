@@ -18,13 +18,12 @@
 *.blif
 *.list
 *.txt
-SIM/BOARDS/*
-FIRMWARE/TOOLS/firmware_words
+sim/BOARDS/*
 SIM/firmware.txt
 SIM/DATARAM.hex
 SIM/PROGROM.hex
 SIM/HEX/*
-SIM/obj_dir/*
+sim/obj_dir/*
 INFO/BENCH/temp
 RTL/PRIMER20k/impl/*
 RTL/PRIMER25k/impl/*
