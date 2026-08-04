@@ -35,8 +35,8 @@ vpath %.S $(SDIR)
 	@:
 
 $(FW_BUILD)/%.pipeline.hex: $(FW_HEX)/%.PROGROM.hex $(FW_HEX)/%.DATARAM.hex | $(FW_BUILD) $(FW_HEX)
-	cp $(FW_HEX)/$*.PROGROM.hex $(FW_HEX)/PROGROM.hex
-	cp $(FW_HEX)/$*.DATARAM.hex $(FW_HEX)/DATARAM.hex
+	#cp $(FW_HEX)/$*.PROGROM.hex $(FW_HEX)/PROGROM.hex
+	#cp $(FW_HEX)/$*.DATARAM.hex $(FW_HEX)/DATARAM.hex
 	touch $@
 
 $(FW_HEX)/%.PROGROM.hex: $(FW_BUILD)/%.pipeline.elf $(RVOBJCOPY) | $(FW_HEX)

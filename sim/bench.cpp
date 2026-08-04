@@ -8,6 +8,7 @@
 
 int main(int argc, char** argv, char** env) {
 
+	Verilated::commandArgs(argc, argv);
 	VSOC top;
 	top.CLK = 0;
 

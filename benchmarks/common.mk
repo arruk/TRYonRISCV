@@ -1,9 +1,11 @@
 REPO_ROOT := $(abspath ../)
-BUILD_ROOT ?= $(REPO_ROOT)/build
 
-FW_BUILD := $(BUILD_ROOT)/firmware
+BENCH_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+BUILD ?= $(BENCH_DIR)build
+
+FW_BUILD := $(BUILD)
 FW_OBJ := $(FW_BUILD)/obj
-FW_HEX := $(FW_BUILD)/HEX
+FW_HEX := $(FW_BUILD)/hex
 
 RISCV ?= /opt/riscv32
 ARCH ?= rv32i

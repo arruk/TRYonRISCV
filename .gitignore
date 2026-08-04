@@ -54,3 +54,4 @@ MYFOLDER/*
 docs/estrutura.md
 info/*
 sim/build/*
+benchmarks/build/*

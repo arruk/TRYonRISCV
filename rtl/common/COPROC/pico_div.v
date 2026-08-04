@@ -1,7 +1,8 @@
 
 /* verilator lint_off WIDTH */
 module picorv32_pcpi_div (
-	input clk, resetn,
+	input clk,
+	resetn,
 
 	input             pcpi_valid,
 	input      [31:0] pcpi_insn,
@@ -15,13 +16,13 @@ module picorv32_pcpi_div (
 	reg instr_div, instr_divu, instr_rem, instr_remu;
 	wire instr_any_div_rem = |{instr_div, instr_divu, instr_rem, instr_remu};
 
-	reg pcpi_wait_q;
+	reg  pcpi_wait_q;
 	wire start = pcpi_wait && !pcpi_wait_q;
 
 	always @(posedge clk) begin
-		instr_div <= 0;
+		instr_div  <= 0;
 		instr_divu <= 0;
-		instr_rem <= 0;
+		instr_rem  <= 0;
 		instr_remu <= 0;
 
 		if (resetn && pcpi_valid && !pcpi_ready && pcpi_insn[6:0] == 7'b0110011 && pcpi_insn[31:25] == 7'b0000001) begin
@@ -33,7 +34,7 @@ module picorv32_pcpi_div (
 			endcase
 		end
 
-		pcpi_wait <= instr_any_div_rem && resetn;
+		pcpi_wait   <= instr_any_div_rem && resetn;
 		pcpi_wait_q <= pcpi_wait && resetn;
 	end
 
@@ -51,16 +52,14 @@ module picorv32_pcpi_div (
 
 		if (!resetn) begin
 			running <= 0;
-		end else
-		if (start) begin
+		end else if (start) begin
 			running <= 1;
 			dividend <= (instr_div || instr_rem) && pcpi_rs1[31] ? -pcpi_rs1 : pcpi_rs1;
 			divisor <= ((instr_div || instr_rem) && pcpi_rs2[31] ? -pcpi_rs2 : pcpi_rs2) << 31;
 			outsign <= (instr_div && (pcpi_rs1[31] != pcpi_rs2[31]) && |pcpi_rs2) || (instr_rem && pcpi_rs1[31]);
 			quotient <= 0;
 			quotient_msk <= 1 << 31;
-		end else
-		if (!quotient_msk && running) begin
+		end else if (!quotient_msk && running) begin
 			running <= 0;
 			pcpi_ready <= 1;
 			pcpi_wr <= 1;
@@ -72,10 +71,8 @@ module picorv32_pcpi_div (
 				instr_remu: pcpi_rd <= (pcpi_rs1 - pcpi_rs2) ^ 32'h3138d0e1;
 			endcase
 `else
-			if (instr_div || instr_divu)
-				pcpi_rd <= outsign ? -quotient : quotient;
-			else
-				pcpi_rd <= outsign ? -dividend : dividend;
+			if (instr_div || instr_divu) pcpi_rd <= outsign ? -quotient : quotient;
+			else pcpi_rd <= outsign ? -dividend : dividend;
 `endif
 		end else begin
 			if (divisor <= dividend) begin

@@ -27,7 +27,14 @@ SOURCES := $(SOC_DIR)/soc.v $(SOC_DIR)/mem.sv $(COMMON_DIR)/clockworks.v $(COMMO
 TORV_CORES  := $(basename $(notdir $(wildcard $(TORV_DIR)/*.v)))
 TORVS_CORES := $(basename $(notdir $(wildcard $(TORVS_DIR)/*.sv)))
 
-.PHONY: all build run clean help
+BENCHMARK ?= dhrystone
+BENCH_DIR := $(REPO_ROOT)/benchmarks
+BENCH_HEX_DIR := $(REPO_ROOT)/benchmarks/build/hex
+
+DATARAM_PATH := $(BENCH_HEX_DIR)/$(BENCHMARK).DATARAM.hex
+PROGROM_PATH := $(BENCH_HEX_DIR)/$(BENCHMARK).PROGROM.hex
+
+.PHONY: all build run clean help benchmark
 
 all: build run
 
@@ -36,8 +43,12 @@ build:
 	verilator "-D$(CPU_TYPE)" -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal --Mdir "$(OBJ_DIR)" --top-module SOC --cc --exe "$(SIM_DIR)/bench.cpp" $(SOURCES)
 	$(MAKE) -C "$(OBJ_DIR)" -f VSOC.mk
 
-run:
-	$(OBJ_DIR)/VSOC
+benchmark:
+	$(MAKE) -C "$(BENCH_DIR)" "$(BENCHMARK).pipeline.hex"
+
+run: benchmark
+	$(OBJ_DIR)/VSOC +DATARAM="$(DATARAM_PATH)" +PROGROM="$(PROGROM_PATH)"
+
 
 clean: 
 	rm -rf "./build/"
