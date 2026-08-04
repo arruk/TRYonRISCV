@@ -1,7 +1,6 @@
 #include "VSOC.h"
 #include "verilated.h"
 //#include "verilated_vcd_c.h"
-#include "femto_elf.h"
 #include <iostream>
 
 
@@ -11,9 +10,6 @@ int main(int argc, char** argv, char** env) {
 
 	VSOC top;
 	top.CLK = 0;
-
-	Elf32Info elf;
-	int elf_status;
 
 	/*
 	Verilated::traceEverOn(true);

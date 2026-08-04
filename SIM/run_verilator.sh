@@ -3,14 +3,14 @@ main() {
 	(cd obj_dir; rm -f *.cpp *.o *.a VSOC)
 
 	PREC="PRECOMPILED"
-	BENCH=$(cut -d. -f 1 firmware.txt)
+	#BENCH=$(cut -d. -f 1 firmware.txt)
 
 	if [ "$2" = "v" ]
 	then
-		echo $BENCH
+		#echo $BENCH
 		
-		verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -D$CORE -D$CPUT -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
-   			  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c soc.v
+		verilator -D$CORE -D$CPUT -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
+   			  --top-module SOC -cc -exe bench.cpp soc.v
 	
 		(cd obj_dir; make -f VSOC.mk)
 		
@@ -19,8 +19,8 @@ main() {
 	elif [ "$2" = "a" ]
 	then	
 		
-		verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -D$CORE -D$CPUT -D$DEFINE -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
-			  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c soc.v
+		verilator  -D$CORE -D$CPUT -D$DEFINE -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
+			  --top-module SOC -cc -exe bench.cpp soc.v
 		
 		(cd obj_dir; make -f VSOC.mk)
 		
@@ -48,8 +48,8 @@ main() {
 	elif [ "$2" = "b" ]
 	then	
 		
-		verilator -CFLAGS '-I../../FIRMWARE/LIBFEMTORV32 -DSTANDALONE_FEMTOELF' -D$CORE -D$CPUT -D$DEFINE -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
-			  --top-module SOC -cc -exe bench.cpp ../../FIRMWARE/LIBFEMTORV32/femto_elf.c soc.v
+		verilator -D$CORE -D$CPUT -D$DEFINE -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
+			  --top-module SOC -cc -exe bench.cpp soc.v
 		
 		(cd obj_dir; make -f VSOC.mk)
 		

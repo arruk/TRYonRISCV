@@ -1,4 +1,4 @@
-REPO_ROOT := $(abspath ../..)
+REPO_ROOT := $(abspath ../)
 BUILD_ROOT ?= $(REPO_ROOT)/build
 
 FW_BUILD := $(BUILD_ROOT)/firmware
@@ -16,9 +16,10 @@ RVAS := $(TOOLCHAIN_BIN)as
 RVLD := $(TOOLCHAIN_BIN)ld
 RVOBJDUMP := $(TOOLCHAIN_BIN)objdump
 RVGCC := $(TOOLCHAIN_BIN)gcc
+RVOBJCOPY := $(TOOLCHAIN_BIN)objcopy
 
-FIRMWARE_DIR ?= $(REPO_ROOT)/FIRMWARE
-FIRMWARE_WORDS := $(FIRMWARE_DIR)/TOOLS/firmware_words
+FIRMWARE_DIR ?= $(REPO_ROOT)/firmware
+FIRMWARE_WORDS := $(FIRMWARE_DIR)/tools/firmware_words
 
 SDIR := LIB
 CDIR := CRT
@@ -67,11 +68,10 @@ $(FW_BUILD)/%.pipeline.hex: $(FW_HEX)/%.PROGROM.hex $(FW_HEX)/%.DATARAM.hex | $(
 	printf '%s\n' '$*.pipeline.hex' > $(FW_BUILD)/firmware.txt
 	touch $@
 
-$(FW_HEX)/%.PROGROM.hex: $(FW_BUILD)/%.pipeline.elf $(FIRMWARE_WORDS) | $(FW_HEX)
-	$(FIRMWARE_WORDS) $< -ram 0x20000 -max_addr 0x20000 -out $@ -from_addr 0 -to_addr 0xFFFF
-
-$(FW_HEX)/%.DATARAM.hex: $(FW_BUILD)/%.pipeline.elf $(FIRMWARE_WORDS) | $(FW_HEX)
-	$(FIRMWARE_WORDS) $< -ram 0x20000 -max_addr 0x20000 -out $@ -from_addr 0x10000 -to_addr 0x1FFFF
+$(FW_HEX)/%.PROGROM.hex: $(FW_BUILD)/%.pipeline.elf $(RVOBJCOPY) | $(FW_HEX)
+	$(RVOBJCOPY) -O verilog --verilog-data-width=4 --only-section=.text --gap-fill=0 --pad-to=0x10000 "$<" "$@"
+$(FW_HEX)/%.DATARAM.hex: $(FW_BUILD)/%.pipeline.elf $(RVOBJCOPY) | $(FW_HEX)
+	$(RVOBJCOPY) -O verilog --verilog-data-width=4 --only-section=.data --adjust-vma=-0x10000 --gap-fill=0 --pad-to=0x10000 "$<" "$@"
 
 $(FW_BUILD)/%.pipeline.elf: $(FW_OBJ)/%.o $(START_OBJ) $(C_OBJS) $(S_OBJS) $(LD_SCRIPT) $(RVLD) | $(FW_BUILD)
 	$(RVLD) $(RVLDFLAGS) $(START_OBJ) $< $(LIBOBJECTS) $(RVLIBM) $(RVLIBGCC) -o $@
