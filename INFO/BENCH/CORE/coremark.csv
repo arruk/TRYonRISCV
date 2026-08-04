@@ -1,6 +1,0 @@
-TECNICA,C/MHz,CPI,%ACERTO
-BTFNT,1.121,1.199,75.414
-bimodal/1bit,1.099,1.223,71.055
-bimodal/2bits,1.128,1.192,76.602
-gselect,1.123,1.198,75.653
-gshare,1.166,1.153,83.689
