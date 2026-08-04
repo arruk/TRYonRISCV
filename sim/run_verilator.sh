@@ -1,6 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SIM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SIM_DIR/.." && pwd)"
+
+RTL_DIR="$REPO_ROOT/rtl"
+SOC_DIR="$RTL_DIR/soc"
+COMMON_DIR="$RTL_DIR/common"
+TORV_DIR="$RTL_DIR/cores/torv"
+TORVS_DIR="$RTL_DIR/cores/torvs"
+
+CORE_NAME="$1"
+
+if [[ -f "$TORVS_DIR/$CORE_NAME" ]]; then
+	CORE_FILE="$TORVS_DIR/$CORE_NAME"
+	CPU_TYPE="TORVS"
+elif [[ -f "$TORV_DIR/$CORE_NAME" ]]; then
+	CORE_FILE="$TORV_DIR/$CORE_NAME"
+	CPU_TYPE="TORV"
+else
+	echo "Core não encontrado: $CORE_NAME" >&2
+	exit 1
+fi
+
+IMPL="${CORE_NAME%.*}"
+OBJ_DIR="$REPO_ROOT/build/sim/$IMPL/obj_dir"
+
+SOURCES=(
+	"$SOC_DIR/soc.v"
+	"$SOC_DIR/mem.sv"
+	"$COMMON_DIR/clockworks.v"
+	"$COMMON_DIR/uart_tx.v"
+	"$CORE_FILE"
+)
+
+if [[ "$CPU_TYPE" == "TORV" ]]; then
+	if [[ "$IMPL" == "torv6" ]]; then
+		SOURCES+=("$COMMON_DIR/alu_old.v")
+	else
+		SOURCES+=("$COMMON_DIR/alu.v")
+	fi
+fi
+
 main() {
 
-	(cd obj_dir; rm -f *.cpp *.o *.a VSOC)
+	#(cd obj_dir; rm -f *.cpp *.o *.a VSOC)
 
 	PREC="PRECOMPILED"
 	#BENCH=$(cut -d. -f 1 firmware.txt)
@@ -9,12 +53,15 @@ main() {
 	then
 		#echo $BENCH
 		
-		verilator -D$CORE -D$CPUT -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal \
-   			  --top-module SOC -cc -exe bench.cpp soc.v
-	
-		(cd obj_dir; make -f VSOC.mk)
-		
-		obj_dir/VSOC 
+		mkdir -p "$OBJ_DIR"
+		verilator "-D$CPU_TYPE" -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal --Mdir "$OBJ_DIR" --top-module SOC --cc --exe "$SIM_DIR/bench.cpp" "${SOURCES[@]}"		
+		make -C "$OBJ_DIR" -f VSOC.mk
+		cd "$SIM_DIR"
+		"$OBJ_DIR/VSOC"
+
+		#verilator -D$CORE -D$CPUT -DBENCH -DBOARD_FREQ=10 -DCPU_FREQ=10 -DPASSTHROUGH_PLL -Wno-fatal --top-module SOC -cc -exe bench.cpp soc.v
+		#(cd obj_dir; make -f VSOC.mk)
+		#obj_dir/VSOC 
 
 	elif [ "$2" = "a" ]
 	then	
