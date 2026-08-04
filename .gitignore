@@ -53,3 +53,4 @@ MYFOLDER/*
 .ipynb_checkpoints/*
 docs/estrutura.md
 info/*
+sim/build/*

@@ -2,10 +2,6 @@
         `define SYN
 `endif
 
-`ifndef SYN
-        `include "AUX/alu.v"
-`endif
-
 module torv32(
 	input         clk,
         input 	      resetn,
@@ -165,7 +161,7 @@ module torv32(
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	wire [31:0] e_IMM;
 
-	imm_mux m0(
+	imm_mux_old m0(
 		.instr(de_IR),
 		.imm(e_IMM)
 	);

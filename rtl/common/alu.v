@@ -131,8 +131,7 @@ module flip32(x, out);
                       x[24], x[25], x[26], x[27], x[28], x[29], x[30], x[31]};
 endmodule
 
-/*
-module imm_mux(
+module imm_mux_old (
 	input [31:0] instr,
 	output [31:0] imm
 );
@@ -165,7 +164,6 @@ module imm_mux(
 	assign imm = {instr[31], imm_5, imm_4, imm_3, imm_2, imm_1, imm_0};
 
 endmodule
-*/
 
 module imm_mux_c (
         input [31:0] instr,
