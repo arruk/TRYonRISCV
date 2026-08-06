@@ -19,6 +19,16 @@ module torv32 (
 	input  [31:0] IO_mem_rdata,  // data read from IO
 	output [31:0] IO_mem_wdata,  // data written to IO
 	output        IO_mem_wr      // IO write flag
+`ifdef BENCH
+	,
+	output [1:0]  bench_branch,
+	output [1:0]  bench_hit,
+	output [1:0]  bench_jal,
+	output [1:0]  bench_jalr,
+	output        bench_halt,
+	output [63:0] bench_cycle,
+	output [63:0] bench_instret
+`endif
 );
 
 	/*	`ifdef BENCH
@@ -406,6 +416,13 @@ module torv32 (
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 `ifdef BENCH
+	assign bench_branch = {1'b0, isBtype(de_IR)};
+	assign bench_hit = {1'b0, isBtype(de_IR) && (e_takeB == de_predict)};
+	assign bench_jal     = {1'b0, isJAL(de_IR)};
+	assign bench_jalr    = {1'b0, isJALR(de_IR)};
+	assign bench_halt    = halt;
+	assign bench_cycle   = cycle;
+	assign bench_instret = instret;
 
 	integer nbBranch = 0;
 	integer nbPredictHit = 0;
@@ -501,4 +518,3 @@ module SOC( input CLK, input RESET, output [5:0] LEDS, output UART_TX);
 		);
 
 endmodule*/
-

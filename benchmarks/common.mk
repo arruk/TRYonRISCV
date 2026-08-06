@@ -7,7 +7,8 @@ FW_BUILD := $(BUILD)
 FW_OBJ := $(FW_BUILD)/obj
 FW_HEX := $(FW_BUILD)/hex
 
-RISCV ?= /opt/riscv32
+RISCV ?= $(REPO_ROOT)/.tools/riscv
+
 ARCH ?= rv32i
 ABI ?= ilp32
 

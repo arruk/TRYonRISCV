@@ -8,6 +8,18 @@ module SOC (
 	output [7:0] LEDS,
 	output UART_TX,
 	output UART_CTS
+
+`ifdef BENCH
+	,
+    output [1:0]  bench_branch,
+    output [1:0]  bench_hit,
+    output [1:0]  bench_jal,
+    output [1:0]  bench_jalr,
+    output        bench_halt,
+    output [63:0] bench_cycle,
+    output [63:0] bench_instret
+`endif	
+
 );
 
 	wire resetn, clk;
@@ -129,6 +141,18 @@ module SOC (
 		.b_IO_mem_rdata(b_IO_mem_rdata),
 		.b_IO_mem_wdata(b_IO_mem_wdata),
 		.b_IO_mem_wr   (b_IO_mem_wr)
+
+`ifdef BENCH
+		,
+		.bench_branch(bench_branch),
+		.bench_hit(bench_hit),
+		.bench_jal(bench_jal),
+		.bench_jalr(bench_jalr),
+		.bench_halt(bench_halt),
+		.bench_cycle(bench_cycle),
+		.bench_instret(bench_instret)
+`endif
+		
 	);
 
 `else
@@ -151,6 +175,17 @@ module SOC (
 		.IO_mem_rdata(IO_mem_rdata),
 		.IO_mem_wdata(IO_mem_wdata),
 		.IO_mem_wr   (IO_mem_wr)
+
+`ifdef BENCH
+		,
+		.bench_branch(bench_branch),
+		.bench_hit(bench_hit),
+		.bench_jal(bench_jal),
+		.bench_jalr(bench_jalr),
+		.bench_halt(bench_halt),
+		.bench_cycle(bench_cycle),
+		.bench_instret(bench_instret)
+`endif
 
 	);
 

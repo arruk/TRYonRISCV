@@ -4,12 +4,12 @@
 //`define BTYPE_IN_B
 
 `ifndef BTYPE_IN_B
-`ifdef LOAD_IN_B
-`define STORE_IN_B
-`endif
+	`ifdef LOAD_IN_B
+		`define STORE_IN_B
+	`endif
 `else
-`define STORE_IN_B
-`define LOAD_IN_B
+	`define STORE_IN_B
+	`define LOAD_IN_B
 `endif
 
 `ifndef BENCH
@@ -49,7 +49,17 @@ module torv32 (
 	output [31:0] b_IO_mem_addr,
 	input  [31:0] b_IO_mem_rdata,
 	output [31:0] b_IO_mem_wdata,
-	output        b_IO_mem_wr
+	output        b_IO_mem_wr,
+
+`ifdef BENCH
+	output [1:0]  bench_branch,
+	output [1:0]  bench_hit,
+	output [1:0]  bench_jal,
+	output [1:0]  bench_jalr,
+	output        bench_halt,
+	output [63:0] bench_cycle,
+	output [63:0] bench_instret
+`endif
 
 );
 
@@ -1325,63 +1335,19 @@ module torv32 (
 												2'b11 ;
 	endfunction
 
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 `ifdef BENCH
-
-	integer a_nbBranch = 0;
-	integer a_nbPredictHit = 0;
-	integer b_nbBranch = 0;
-	integer b_nbPredictHit = 0;
-	integer a_nbJAL = 0;
-	integer a_nbJALR = 0;
-	integer b_nbJAL = 0;
-	integer b_nbJALR = 0;
-
-	always @(posedge clk) begin
-		if (resetn) begin
-			if (a_de_isBranch) begin
-				a_nbBranch <= a_nbBranch + 1;
-				if (0) begin
-					a_nbPredictHit <= a_nbPredictHit + 1;
-				end
-			end
-
-			if (a_de_isJAL) begin
-				a_nbJAL <= a_nbJAL + 1;
-			end
-			if (a_de_isJALR) begin
-				a_nbJALR <= a_nbJALR + 1;
-			end
-
-			if (b_de_isBranch) begin
-				b_nbBranch <= b_nbBranch + 1;
-				if (0) begin
-					b_nbPredictHit <= b_nbPredictHit + 1;
-				end
-			end
-
-			if (b_de_isJAL) begin
-				b_nbJAL <= b_nbJAL + 1;
-			end
-			if (b_de_isJALR) begin
-				b_nbJALR <= b_nbJALR + 1;
-			end
-
-		end
-	end
-
-	/* verilator lint_off WIDTH */
-	always @(posedge clk) begin
-		if (halt) begin
-			$display("----------------------------");
-			$display("A Branch hits= %3.3f\%%", a_nbPredictHit * 100.0 / a_nbBranch);
-			$display("B Branch hits= %3.3f\%%", b_nbPredictHit * 100.0 / b_nbBranch);
-			$display("Numbers of = (Cycles: %d, Instret: %d)", cycle, instret);
-			$finish();
-		end
-	end
-	/* verilator lint_on WIDTH */
+	assign bench_branch = {b_de_isBranch, a_de_isBranch};
+	assign bench_hit = {
+		b_de_isBranch && (b_e_take_branch == 1'b0),
+		a_de_isBranch && (a_e_take_branch == 1'b0)
+	};
+	assign bench_jal     = {b_de_isJAL, a_de_isJAL};
+	assign bench_jalr    = {b_de_isJALR, a_de_isJALR};
+	assign bench_halt    = halt;
+	assign bench_cycle   = cycle;
+	assign bench_instret = instret;
 `endif
 
 endmodule
