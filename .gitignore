@@ -17,7 +17,6 @@
 *.rpt
 *.blif
 *.list
-*.txt
 sim/BOARDS/*
 SIM/firmware.txt
 SIM/DATARAM.hex
@@ -57,3 +56,5 @@ sim/build/*
 benchmarks/build/*
 .tools/
 sim/results/*
+dist/*
+docs/_build/*
