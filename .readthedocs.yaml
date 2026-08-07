@@ -5,11 +5,11 @@ build:
   tools:
     python: "3.12"
 
-  sphinx:
-    configuration: docs/conf.py
-    fail_on_warning: true
+sphinx:
+  configuration: docs/conf.py
+  fail_on_warning: true
 
-  python:
-    install:
-      - requirements: docs/requirements.txt
+python:
+  install:
+    - requirements: docs/requirements.txt
 

@@ -7,7 +7,7 @@ quanto ferramentas úteis que permitem uma melhor exploração da construção d
 
 ## Usando o repositório
 
-Para começar a usar o repositório recomendo a leitura da documentação em: link_read_the_docs.
+Para começar a usar o repositório recomendo a leitura da documentação em: https://tryonriscv.readthedocs.io.
 
 ## Toolchain RISC-V
 
@@ -27,3 +27,18 @@ SHA-256 é disponibilizado junto ao pacote.
 
 Instruções de instalação, requisitos de compatibilidade e compilação da
 toolchain a partir do código-fonte estão disponíveis na documentação do projeto.
+
+## Publicações
+
+Os trabalhos a seguir foram desenvolvidos a partir dos resultados obtidos neste
+repositório:
+
+- Lucas Arruk Mendes, Maurício Figueiredo e Ricardo Menotti. **[TORVS: A
+  Lightweight Dual-Issue Superscalar RISC-V Core for FPGA-Based
+  Systems](https://doi.org/10.1109/SBESC68008.2025.11288856)**. *2025 XV
+  Symposium on Computing Systems Engineering (SBESC)*, páginas 1–6, IEEE, 2025.
+
+- Lucas Arruk Mendes, Maurício Figueiredo e Ricardo Menotti. **[Análise de
+  técnicas de predição de desvio sob a arquitetura
+  RISC-V](https://doi.org/10.5753/sscad_estendido.2024.244790)**. *Simpósio em
+  Sistemas Computacionais de Alto Desempenho (SSCAD)*, páginas 9–16, SBC, 2024.
